@@ -1,5 +1,5 @@
 import { FaHeart, FaPhoneAlt, FaRegCalendarAlt, FaArrowLeft, FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from 'react-icons/fa';
-import { LuMapPin, LuMessageCircleMore } from 'react-icons/lu';
+import { LuMapPin } from 'react-icons/lu';
 import { IoIosEye, IoLogoWhatsapp } from 'react-icons/io';
 import { HiBadgeCheck } from 'react-icons/hi';
 import { TbAlertTriangleFilled } from 'react-icons/tb';
@@ -342,16 +342,6 @@ const Product = () => {
                                         <IoLogoWhatsapp size={20} />
                                         Chat on WhatsApp
                                     </a>
-                                )}
-                                
-                                {product.contact_methods?.includes('message') && (
-                                    <Link
-                                        to={`/messages/${encodeURIComponent(product.product_user.username)}`}
-                                        className="flex items-center justify-center gap-2.5 bg-brand text-white font-bold rounded-xl py-3.5 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-brand/20"
-                                    >
-                                        <LuMessageCircleMore size={20} />
-                                        Message Seller
-                                    </Link>
                                 )}
                             </div>
                         )}

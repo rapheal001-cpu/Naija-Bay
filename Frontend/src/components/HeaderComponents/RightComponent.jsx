@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink } from "react-router-dom";
-import { FaSignalMessenger, FaCircleInfo } from "react-icons/fa6";
+import { FaCircleInfo } from "react-icons/fa6";
 import { GoBellFill } from "react-icons/go";
 import { FaUserAlt, FaShoppingCart, FaPhoneAlt, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { RiLogoutCircleRLine } from "react-icons/ri";
@@ -48,11 +48,6 @@ const RightComponent = () => {
 
                 {isAuthenticated ? (
                     <div className="relative flex items-center gap-0.5" ref={menuRef}>
-                        <NavLink to="/message-list" className={navLinkClass}>
-                            <FaSignalMessenger size={17} />
-                            <span>Messages</span>
-                        </NavLink>
-
                         <NavLink to="/notifications" className={navLinkClass}>
                             <GoBellFill size={17} />
                             <span>Notifications</span>
@@ -197,9 +192,6 @@ const RightComponent = () => {
                                 </div>
 
                                 <div className="border-t border-gray-100 py-1">
-                                    <NavLink to="/message-list" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
-                                        <FaSignalMessenger size={15} className="text-gray-400" /> Messages
-                                    </NavLink>
                                     <NavLink to="/notifications" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
                                         <GoBellFill size={15} className="text-gray-400" /> Notifications
                                     </NavLink>

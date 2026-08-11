@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 const CategoryList = () => {
     const categories = useSelector((state) => state.categories.categories) || [];
-    const sub_categories = useSelector((state) => state.categories.sub_categories)|| [];
+    const sub_categories = useSelector((state) => state.categories.subCategories)|| [];
 
     const dispatch = useDispatch();
     const navigate = useNavigate();

@@ -11,7 +11,7 @@ const ProfileData = ({ profile, isOwnProfile }) => {
     const [activeTab, setActiveTab] = useState('active');
 
     const listings = profile?.products || [];
-    const favoriteListings = profile?.favorite_products || [];
+    const favoriteListings = profile?.favorites || [];
 
     const activeListings = listings.filter((p) => p.active && !p.sold);
     const soldListings = listings.filter((p) => p.sold && !p.active);

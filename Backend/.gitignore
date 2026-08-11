@@ -1,0 +1,9 @@
+.env
+.env.local
+.env.production
+logs/
+mediafiles/
+staticfiles/
+db.sqlite3
+__pycache__/
+*.pyc

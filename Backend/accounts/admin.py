@@ -30,12 +30,11 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = (
         "date_joined",
         "last_login",
-        "identifier",
         "followers_count",
         "following_count",
     )
     fieldsets = (
-        (None, {"fields": ("identifier", "username", "email", "password")}),
+        (None, {"fields": ("username", "email", "password")}),
         (
             "Profile",
             {

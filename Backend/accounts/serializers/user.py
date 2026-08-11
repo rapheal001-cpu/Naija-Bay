@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from accounts.models import User, UserVerification
-from products.serializers import ProductSerializer
 from phonenumber_field.serializerfields import PhoneNumberField
 from NaijaBay.utils import (
     FILE_UPLOAD_ALLOWED_EXTENSIONS,
@@ -20,8 +19,8 @@ class UserFollowerAndFolloweringSerializer(serializers.ModelSerializer):
 
 # User Serailizer
 class CustomUserSerializer(serializers.ModelSerializer):
-    products = ProductSerializer(many=True, read_only=True)
-    favorites = ProductSerializer(many=True, read_only=True, source='favorite_products')
+    products = serializers.SerializerMethodField(read_only=True)
+    favorites = serializers.SerializerMethodField(read_only=True)
     phone_number = PhoneNumberField()
     followers = UserFollowerAndFolloweringSerializer(many=True, read_only=True)
     following = UserFollowerAndFolloweringSerializer(many=True, read_only=True)
@@ -65,7 +64,20 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "following",
         )
 
-    # Computed read-only fields
+    
+    def get_products(self, obj):
+        from products.serializers import ProductSerializer
+
+        return ProductSerializer(
+            obj.products.all(), many=True, context=self.context
+        ).data
+
+    def get_favorites(self, obj):
+        from products.serializers import ProductSerializer
+
+        return ProductSerializer(
+            obj.favorite_products.all(), many=True, context=self.context
+        ).data
 
     @extend_schema_field(serializers.CharField())
     def get_full_name(self, obj):

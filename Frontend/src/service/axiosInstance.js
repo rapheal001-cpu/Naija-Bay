@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { store } from '../store.js';
 import { removeIsAuthenticated } from '../slice/AuthSlice';
-import { removeData } from '../slice/UserSlice';
+import { removeUserData } from '../slice/UserSlice';
 
 
 export const axiosInstance = axios.create({
@@ -57,7 +57,7 @@ axiosInstance.interceptors.response.use(
 
                 // Refresh failed — refresh token itself expired, force logout
                 store.dispatch(removeIsAuthenticated()); 
-                store.dispatch(removeData());
+                store.dispatch(removeUserData());
 
                 return Promise.reject(refreshError);
             }

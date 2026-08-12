@@ -493,28 +493,20 @@ AUTH_KIT = {
 # EMAIL
 # =============================================================================
 
-try:
-    if IS_PRODUCTION:
-        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-        EMAIL_HOST = config("EMAIL_HOST", cast=str)
-        EMAIL_PORT = config("EMAIL_PORT", cast=int)
-        EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
-        EMAIL_HOST_USER = config("EMAIL_HOST_USER", cast=str)
-        EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", cast=str)
-        DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", cast=str)
-    else:
-        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-        DEFAULT_FROM_EMAIL = config(
-            "DEFAULT_FROM_EMAIL", default="noreply@naijabay.local", cast=str
-        )
-except Exception as e:
-    if IS_PRODUCTION:
-        raise ValueError(f"Email configuration error: {e}")
+EMAIL_HOST = config("EMAIL_HOST", default="", cast=str)
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="", cast=str)
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="", cast=str)
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL", default="noreply@naijabay.com", cast=str
+)
+EMAIL_TIMEOUT = 10
+
+if IS_PRODUCTION and EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    DEFAULT_FROM_EMAIL = "noreply@naijabay.local"
-    logger.warning(
-        f"Email not configured properly: {e}. Using console backend for development."
-    )
 
 
 # =============================================================================

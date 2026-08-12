@@ -124,6 +124,13 @@ class ProductsDetailAPIView(RetrieveUpdateDestroyAPIView):
 
         return self.retrieve(request, *args, **kwargs)
 
+    def perform_update(self, serializer):
+        if serializer.validated_data.get("sold") is True:
+            serializer.save(active=False)
+        else:
+            serializer.save()
+
+
 products_detail_view = ProductsDetailAPIView.as_view()
 
 

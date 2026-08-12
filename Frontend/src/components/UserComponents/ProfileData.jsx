@@ -23,6 +23,8 @@ const ProfileData = ({ profile, isOwnProfile }) => {
         { key: 'favorite', label: favoriteListings.length === 1 ? 'Favorite' : 'Favorites', count: favoriteListings.length },
     ];
 
+    console.log(soldListings)
+
     return (
         <>
             <Header />

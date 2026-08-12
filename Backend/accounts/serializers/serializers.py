@@ -2,6 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from .user import CustomUserSerializer
 from products.serializers import ProductSerializer
+from accounts.models import User
 from accounts.models import Notifications, Store
 from core.models import State, City
 from phonenumber_field.serializerfields import PhoneNumberField
@@ -24,7 +25,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 # Store Members Serailizer
 class StoreMembersSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Store
+        model = User
         fields = ['id', 'avatar', 'full_name', 'username', 'is_active', 'verified', 'date_joined']
 
 

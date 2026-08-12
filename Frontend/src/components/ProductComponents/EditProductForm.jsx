@@ -176,7 +176,7 @@ const EditProductForm = ({ productSlug, initialData }) => {
             };
 
             const updatedProduct = await updateProductData.mutateAsync({
-                slug: productSlug,
+                productSlug: productSlug,
                 payload,
             });
 
@@ -231,11 +231,10 @@ const EditProductForm = ({ productSlug, initialData }) => {
                     <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                         {submitError && <p className="text-red-600 text-sm font-semibold leading-snug">{submitError}</p>}
-                        {serverError.map((err, i) => (
-                            <p key={i} className="text-red-600 text-sm font-semibold leading-snug">
-                                {typeof err === 'string' ? err : JSON.stringify(err)}
-                            </p>
-                        ))}
+                        {serverError && <p className="text-red-600 text-sm font-semibold leading-snug">
+                            {serverError}
+                        </p>
+                        }
                     </div>
                 </div>
             )}

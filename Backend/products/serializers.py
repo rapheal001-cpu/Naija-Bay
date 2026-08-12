@@ -35,7 +35,7 @@ class ProductSerializer(serializers.ModelSerializer):
     city = serializers.ChoiceField(choices=CITY_CHOICES)
     category = serializers.ChoiceField(choices=CATEGORY_CHOICES)
     sub_category = serializers.ChoiceField(choices=SUBCATEGORY_CHOICES)
-    contact_methods = serializers.ListField(child=serializers.MultipleChoiceField(choices=CONTACT_METHOD_CHOICES))
+    contact_methods = serializers.ListField(child=serializers.ChoiceField(choices=CONTACT_METHOD_CHOICES))
     contact_number = PhoneNumberField()
     images = serializers.SerializerMethodField(read_only=True)
     is_favorited = serializers.SerializerMethodField(read_only=True)

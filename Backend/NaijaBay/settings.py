@@ -73,6 +73,7 @@ if DEBUG:
         CSRF_TRUSTED_ORIGINS = [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
+            'https://naija-bay.vercel.app',
         ]
 else:
     CSRF_TRUSTED_ORIGINS = [
@@ -166,6 +167,7 @@ if DEBUG:
         CORS_ALLOWED_ORIGINS = [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
+            'https://naija-bay.vercel.app',
         ]
 else:
     CORS_ALLOWED_ORIGINS = [

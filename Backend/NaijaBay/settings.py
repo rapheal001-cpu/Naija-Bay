@@ -299,9 +299,9 @@ STORAGES = {
 }
 
 cloudinary.config(
-    cloud_name=config("CLOUD_NAME", cast=str),
-    api_key=config("CLOUD_API_KEY"),
-    api_secret=config("CLOUD_API_SECRET"),
+    cloud_name=config("CLOUD_NAME", default="", cast=str),
+    api_key=config("CLOUD_API_KEY", default="", cast=str),
+    api_secret=config("CLOUD_API_SECRET", default="", cast=str),
 )
 
 

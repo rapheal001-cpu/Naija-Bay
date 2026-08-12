@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from decouple import config
 from datetime import timedelta
+import cloudinary
 
 # =============================================================================
 # ENVIRONMENT
@@ -128,6 +129,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "phonenumber_field",
     "django_filters",
+    "cloudinary",
+    "cloudinary_storage",
 ]
 
 SITE_ID = config("SITE_ID", default=1, cast=int)
@@ -288,12 +291,18 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+cloudinary.config(
+    cloud_name=config("CLOUD_NAME", cast=str),
+    api_key=config("CLOUD_API_KEY"),
+    api_secret=config("CLOUD_API_SECRET"),
+)
 
 
 # =============================================================================

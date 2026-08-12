@@ -289,20 +289,29 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
-cloudinary.config(
-    cloud_name=config("CLOUD_NAME", default="", cast=str),
-    api_key=config("CLOUD_API_KEY", default="", cast=str),
-    api_secret=config("CLOUD_API_SECRET", default="", cast=str),
-)
+if IS_PRODUCTION:
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": config("CLOUD_NAME"),
+        "API_KEY": config("CLOUD_API_KEY"),
+        "API_SECRET": config("CLOUD_API_SECRET"),
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 
 # =============================================================================

@@ -49,7 +49,6 @@ try:
         if not host:
             continue
         parsed = urlparse(host)
-        # If user pasted a full URL, extract hostname; otherwise use as-is
         hostname = parsed.hostname or host
         if hostname:
             ALLOWED_HOSTS.append(hostname)
@@ -73,7 +72,6 @@ if DEBUG:
         CSRF_TRUSTED_ORIGINS = [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
-            'https://naija-bay.vercel.app',
         ]
 else:
     CSRF_TRUSTED_ORIGINS = [
@@ -93,10 +91,14 @@ if IS_PRODUCTION:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
 else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
 
 
 # =============================================================================
@@ -144,6 +146,7 @@ AUTHENTICATION_BACKENDS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -167,7 +170,6 @@ if DEBUG:
         CORS_ALLOWED_ORIGINS = [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
-            'https://naija-bay.vercel.app',
         ]
 else:
     CORS_ALLOWED_ORIGINS = [
@@ -279,10 +281,19 @@ STATICFILES_DIRS = (
     if os.path.exists(os.path.join(BASE_DIR, "static"))
     else []
 )
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
+MEDIA_ROOT = BASE_DIR / "mediafiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 
 # =============================================================================
@@ -417,9 +428,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 AUTH_KIT = {
     "AUTH_TYPE": "jwt",
     "USE_AUTH_COOKIE": True,
-    "AUTH_COOKIE_SECURE": IS_PRODUCTION,  # 🔒 Was hardcoded False
+    "AUTH_COOKIE_SECURE": IS_PRODUCTION,
     "AUTH_COOKIE_HTTP_ONLY": True,
-    "AUTH_COOKIE_SAMESITE": "Lax",
+    "AUTH_COOKIE_SAMESITE": "None" if IS_PRODUCTION else "Lax",
     "AUTH_JWT_COOKIE_NAME": "access",
     "AUTH_JWT_REFRESH_COOKIE_NAME": "refresh",
     # Registration
@@ -499,7 +510,6 @@ PHONENUMBER_DEFAULT_REGION = "NG"
 # LOGGING
 # =============================================================================
 
-# Ensure logs directory exists (prevents crash on fresh deploy)
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOGS_DIR, exist_ok=True)
 
@@ -534,7 +544,7 @@ LOGGING = {
             "level": "INFO",
             "class": "logging.handlers.RotatingFileHandler",
             "filename": os.path.join(LOGS_DIR, "naijabay.log"),
-            "maxBytes": 1024 * 1024 * 10,  # 10MB
+            "maxBytes": 1024 * 1024 * 10,
             "backupCount": 5,
             "formatter": "verbose",
         },
@@ -583,5 +593,4 @@ CACHES = {
 }
 
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
-SESSION_COOKIE_SECURE = IS_PRODUCTION
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

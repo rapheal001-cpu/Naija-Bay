@@ -1,8 +1,11 @@
+import io
 import random
 from decimal import Decimal
 from django.core.management.base import BaseCommand, CommandError
+from django.core.files.base import ContentFile
+from PIL import Image, ImageDraw, ImageFont
 from accounts.models import User
-from products.models import Product
+from products.models import Product, ProductImage
 from NaijaBay.utils import (
     CATEGORY_CHOICES,
     SUBCATEGORY_MAP,
@@ -623,9 +626,7 @@ PRODUCT_CATALOG = {
 
 def generate_description(name, category, sub_category, condition):
     cond = condition or "used"
-    base = name.lower()
 
-    # Real estate specific
     if category == "real_estate":
         if "rent" in sub_category or "short_let" in sub_category:
             return f"Spacious {name} available for rent. Well maintained property in a secure neighborhood. Water and light available. Schedule a viewing today."
@@ -637,27 +638,22 @@ def generate_description(name, category, sub_category, condition):
             return f"Premium {name} available for sale. Genuine documentation, good location with access road. Serious buyers only."
         return f"Quality {name} in a desirable location. Good access road and secure environment. Contact for inspection."
 
-    # Jobs specific
     if category == "jobs":
         return f"{name}. Competitive salary and benefits. Qualified candidates should apply with CV. Immediate start available."
 
-    # Services specific
     if category == "services":
         return f"Professional {name}. Reliable and experienced team. Affordable rates with quality guaranteed. Book an appointment today."
 
-    # Animals specific
     if category == "animals_pets":
         if "livestock" in sub_category:
             return f"Healthy {name}. Well fed and vaccinated. Available for immediate pickup. Bulk purchase discount available."
         return f"Healthy and active {name}. Vaccinated and dewormed. Friendly temperament. Genuine buyers only."
 
-    # Food/Agriculture
     if category == "food_agriculture":
         if "equipment" in sub_category or "seeds" in sub_category:
             return f"Quality {name}. Durable and reliable for farming needs. Available at wholesale price. Nationwide delivery possible."
         return f"Fresh and quality {name}. Farm direct, no preservatives. Bulk orders available at discounted price. Fast delivery."
 
-    # Condition-based for physical products
     if cond == "new":
         return f"Brand new {name}, still sealed in original packaging with full warranty. Fast delivery available. Order now while stock lasts."
     elif cond == "refurbished":
@@ -701,7 +697,6 @@ def get_price(category, sub_category):
     else:
         min_p, max_p = PRICE_RANGES.get(category, (5000, 50000))
 
-    # Generate a "clean" price (rounded to nearest 500 or 1000)
     price = random.randint(min_p, max_p)
     if price > 50000:
         return round(price / 1000) * 1000
@@ -730,6 +725,88 @@ COLORS = [
     "navy",
     "cream",
 ]
+
+# =============================================================================
+# PRODUCT IMAGE GENERATOR
+# =============================================================================
+
+IMAGE_FORMATS = [
+    "JPEG",
+    "JPEG",
+    "JPEG",
+    "PNG",
+]  # weighted more toward jpg, like real uploads
+
+PLACEHOLDER_BG_COLORS = [
+    (241, 196, 15),
+    (231, 76, 60),
+    (52, 152, 219),
+    (46, 204, 113),
+    (155, 89, 182),
+    (52, 73, 94),
+    (230, 126, 34),
+    (26, 188, 156),
+    (149, 165, 166),
+    (44, 62, 80),
+]
+
+
+def generate_placeholder_image(product_name, image_format, width=800, height=800):
+    """Generates a simple colored image with the product name printed on it."""
+    bg_color = random.choice(PLACEHOLDER_BG_COLORS)
+    img = Image.new("RGB", (width, height), color=bg_color)
+    draw = ImageDraw.Draw(img)
+
+    try:
+        font = ImageFont.truetype("arial.ttf", 40)
+    except IOError:
+        font = ImageFont.load_default()
+
+    words = product_name.split()
+    lines = []
+    current_line = ""
+    for word in words:
+        test_line = f"{current_line} {word}".strip()
+        bbox = draw.textbbox((0, 0), test_line, font=font)
+        if bbox[2] - bbox[0] > width - 80:
+            lines.append(current_line)
+            current_line = word
+        else:
+            current_line = test_line
+    if current_line:
+        lines.append(current_line)
+
+    total_text_height = len(lines) * 55
+    y = (height - total_text_height) // 2
+
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=font)
+        text_width = bbox[2] - bbox[0]
+        x = (width - text_width) // 2
+        draw.text((x, y), line, fill="white", font=font)
+        y += 55
+
+    buffer = io.BytesIO()
+    img.save(
+        buffer, format=image_format, quality=85 if image_format == "JPEG" else None
+    )
+    buffer.seek(0)
+    return buffer
+
+
+def attach_images_to_product(product):
+    """Creates between 6 and 10 ProductImage objects for a product."""
+    count = random.randint(6, 10)
+    for i in range(count):
+        image_format = random.choice(IMAGE_FORMATS)
+        extension = "jpg" if image_format == "JPEG" else "png"
+
+        buffer = generate_placeholder_image(product.product_name, image_format)
+        filename = f"{product.product_slug}-{i + 1}.{extension}"
+
+        product_image = ProductImage(product=product)
+        product_image.image.save(filename, ContentFile(buffer.read()), save=True)
+
 
 # =============================================================================
 # COMMAND
@@ -771,7 +848,6 @@ class Command(BaseCommand):
         used_combinations = set()
 
         for i in range(count):
-            # Pick a category that has products defined
             category = random.choice(categories)
             while category not in PRODUCT_CATALOG:
                 category = random.choice(categories)
@@ -779,24 +855,19 @@ class Command(BaseCommand):
             subcats = list(PRODUCT_CATALOG[category].keys())
             sub_category = random.choice(subcats)
 
-            # Pick a realistic product name
             names = PRODUCT_CATALOG[category][sub_category]
             name = random.choice(names)
 
-            # Ensure some variety if we exceed unique names
             combo_key = (category, sub_category, name)
             if combo_key in used_combinations and len(used_combinations) < count * 2:
                 name = f"{name} - {random.choice(['Premium', 'Original', '2024 Model', 'Grade A', 'Direct UK'])}"
             used_combinations.add(combo_key)
 
-            # State and city
             state = random.choice(states)
             city = random.choice(STATE_CITY_MAP.get(state, [""]))
 
-            # Condition
             condition = random.choice(conditions)
 
-            # Contact methods (1-2 methods)
             contact_methods = [random.choice(contact_methods_all)]
             if random.random() < 0.4:
                 second = random.choice(contact_methods_all)
@@ -808,13 +879,11 @@ class Command(BaseCommand):
                 f"090{random.randint(10000000, 99999999)}" if needs_phone else ""
             )
 
-            # Generate realistic description
             description = generate_description(name, category, sub_category, condition)
 
-            # Realistic price
             price = get_price(category, sub_category)
 
-            Product.objects.create(
+            product = Product.objects.create(
                 product_user=user,
                 product_name=name,
                 description=description,
@@ -840,6 +909,10 @@ class Command(BaseCommand):
                 active=True,
                 sold=False,
             )
+
+            # Generate 6-10 placeholder images for this product
+            attach_images_to_product(product)
+
             created += 1
 
         self.stdout.write(

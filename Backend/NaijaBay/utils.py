@@ -2,6 +2,7 @@ import os
 import uuid
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 # ==============================
 # Api Version
@@ -26,7 +27,6 @@ CONDITION_CHOICES = [
 CONTACT_METHOD_CHOICES = [
     ('', 'Select Contact Method'),
     ('phone_call', 'Phone Call'),
-    ('message', 'Message'),          # FIXED: was 'messsage'
     ('whatsapp', 'WhatsApp'),
 ]
 

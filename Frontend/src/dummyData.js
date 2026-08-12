@@ -63,7 +63,6 @@ export const CONDITION_CHOICES = [
 export const CONTACT_METHOD_CHOICES = [
     { value: 'phone_call', label: 'Phone' },
     { value: 'whatsapp', label: 'WhatsApp' },
-    { value: 'message', label: 'Message' },
 ];
 
 

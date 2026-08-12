@@ -151,7 +151,7 @@ const Product = () => {
 
                         {/* Thumbnails */}
                         <div className="flex gap-2.5 mt-4 overflow-x-auto pb-1 scrollbar-hide">
-                            {product.images?.map((img, index) => (
+                            {product?.images?.map((img, index) => (
                                 <button
                                     key={index}
                                     type="button"

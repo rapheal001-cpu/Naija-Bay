@@ -101,7 +101,6 @@ export const useFetchProductDetailData = (productSlug) => {
         gcTime: 1000 * 60 * 30,
         refetchOnWindowFocus: false,
         retry: 1,
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
         meta: { hookName: 'useFetchProductDetailData' },
     });
 };

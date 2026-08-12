@@ -5,7 +5,7 @@ const StoreSlice = createSlice({
     name: 'store',
     initialState: {
         stores: [],
-        storeDetail: {},
+        storeDetail: null,
     },
     reducers: {
         setStores: (state, action) => {

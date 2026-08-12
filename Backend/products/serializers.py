@@ -1,7 +1,7 @@
 from decimal import Decimal
 from rest_framework import serializers
-from accounts.serializers.user import CustomUserSerializer
 from drf_spectacular.utils import extend_schema_field
+from accounts.models import User
 from core.models import Category, SubCategory, State, City
 from .models import Product, ProductImage
 from phonenumber_field.serializerfields import PhoneNumberField
@@ -19,8 +19,13 @@ from NaijaBay.utils import (
 # PRODUCT SERIALIZER
 # =============================================================================
 
+class ProductUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'avatar', 'full_name', 'username', 'is_active', 'verified', 'date_joined']
+
 class ProductSerializer(serializers.ModelSerializer):
-    product_user = CustomUserSerializer(read_only=True)
+    product_user = ProductUserSerializer(read_only=True)
     color = serializers.CharField(style={"input_type": "color"})
     price = serializers.DecimalField(decimal_places=2,max_digits=15, min_value=Decimal("1000.00"),max_value=Decimal("999999999.99"))
     quantity = serializers.IntegerField(default=1)

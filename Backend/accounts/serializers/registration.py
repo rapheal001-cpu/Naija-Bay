@@ -34,7 +34,7 @@ class CustomRegisterSerializer(serializers.Serializer):
         email = email.strip().lower()
 
         if email.endswith(tuple(NOT_ALLOWED_EMAIL_DOMAINS)):
-            raise serializers.ValidationError({"email": "Email domain is not allowed."})
+            raise serializers.ValidationError("Email domain is not allowed.")
 
         existing_user = User.objects.filter(email=email)
     

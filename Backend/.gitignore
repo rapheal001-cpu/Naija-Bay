@@ -7,3 +7,6 @@ staticfiles/
 db.sqlite3
 __pycache__/
 *.pyc
+
+# Django migrations
+**/migrations/0*.py

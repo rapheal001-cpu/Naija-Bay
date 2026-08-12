@@ -23,10 +23,11 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
     const followingCount = profile?.following_count ?? profile?.following?.length ?? 0;
     const listingsCount = profile?.products?.length ?? 0;
 
-    const avatarUrl = profile?.avatar || null;
+    const avatarUrl = profile?.avatar || '/default-avatar.png';
     const fullName = profile?.full_name || '';
     const username = profile?.username || '';
     const isVerified = profile?.verified ?? false;
+    const hasStore = profile?.has_store ?? false;
 
     return (
         <div className="relative bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
@@ -65,14 +66,25 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                     {/* Actions */}
                     {isOwnProfile ? (
                         <div className="flex items-center gap-2 sm:pb-1 flex-wrap justify-end">
+                            {/* Only verified users can create a store, and only if they don't already have one */}
                             {isVerified && (
-                                <Link
-                                    to="/create-store"
-                                    className="flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm active:scale-95 transition-all shadow-sm min-w-30 bg-brand text-white hover:opacity-90 shadow-brand/20"
-                                >
-                                    <FaStore size={14} />
-                                    Create Store
-                                </Link>
+                                hasStore ? (
+                                    <Link
+                                        to="/my-store"
+                                        className="flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm active:scale-95 transition-all shadow-sm min-w-30 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
+                                    >
+                                        <FaStore size={14} />
+                                        My Store
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        to="/create-store"
+                                        className="flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm active:scale-95 transition-all shadow-sm min-w-30 bg-brand text-white hover:opacity-90 shadow-brand/20"
+                                    >
+                                        <FaStore size={14} />
+                                        Create Store
+                                    </Link>
+                                )
                             )}
 
                             <Link

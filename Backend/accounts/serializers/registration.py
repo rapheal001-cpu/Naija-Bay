@@ -39,7 +39,7 @@ class CustomRegisterSerializer(serializers.Serializer):
         existing_user = User.objects.filter(email=email)
     
         if existing_user.exists():
-            raise serializers.ValidationError({"email": "Email already exists."})
+            raise serializers.ValidationError("Email already exists.")
 
         return email
 

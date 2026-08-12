@@ -9,13 +9,13 @@ import { useSignInMutation } from '../../hooks/UseMutation';
 const SignInForm = () => {
     const { register, handleSubmit, formState: { errors }, setError } = useForm();
 
-    const [serverError, setServerError] = useState([]);
+    const [serverError, setServerError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
     const signInUser = useSignInMutation(setError, setServerError);
 
     const onSubmit = (data) => {
-        setServerError([]);
+        setServerError('');
         signInUser.mutate(data);
     };
 
@@ -43,13 +43,13 @@ const SignInForm = () => {
                     </div>
 
                     {/* Server Errors */}
-                    {serverError.length > 0 && (
+                    {serverError && (
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                             <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
                             <div className="space-y-1">
-                                {serverError.map((errorMsg, i) => (
-                                    <p key={i} className="text-red-600 text-sm font-medium leading-snug">{errorMsg}</p>
-                                ))}
+                                <p  className="text-red-600 text-sm font-medium leading-snug">
+                                    {serverError}
+                                </p>
                             </div>
                         </div>
                     )}

@@ -8,11 +8,13 @@ import { categories, CATEGORY_SUBCATEGORY_MAP, CONDITION_CHOICES, CONTACT_METHOD
 import ProductImagePreview from "./ProductImagePreview.jsx";
 import { useCreateProductMutation, useCreateProductImagesMutation } from '../../hooks/UseMutation.js';
 
-// Matches backend: _normalize() and _city_slug()
+
 const toBackendSlug = (str) => {
     if (!str) return '';
     return str.toLowerCase().trim().replace(/[\s\-/]/g, '_');
 };
+
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
 const SellForm = () => {
     const navigate = useNavigate();
@@ -28,9 +30,8 @@ const SellForm = () => {
 
     const selectedMethods = watch('contact_methods') || [];
 
-    // Robust: handles both 'phone' (old frontend) and 'phone_call' (backend)
     const needsPhone = selectedMethods.some(m =>
-        ['phone', 'phone_call', 'whatsapp'].includes(m)
+        ['phone_call', 'whatsapp'].includes(m)
     );
     const hasPhoneCall = selectedMethods.includes('phone_call') || selectedMethods.includes('phone');
     const hasWhatsapp = selectedMethods.includes('whatsapp');
@@ -43,10 +44,24 @@ const SellForm = () => {
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
-        if (imageFiles.length + files.length > MAX_IMAGES) {
-            setImageError(`You can upload a maximum of ${MAX_IMAGES} images.`);
+        setImageError('');
+
+        // Reject any file that isn't jpg/jpeg/png, even if the OS file picker let it through
+        const invalidFiles = files.filter((f) => !SUPPORTED_IMAGE_TYPES.includes(f.type));
+        if (invalidFiles.length > 0) {
+            setImageError(
+                `Unsupported file type: ${invalidFiles.map((f) => f.name).join(', ')}. Only JPG, JPEG, and PNG images are allowed.`
+            );
+            e.target.value = '';
             return;
         }
+
+        if (imageFiles.length + files.length > MAX_IMAGES) {
+            setImageError(`You can upload a maximum of ${MAX_IMAGES} images.`);
+            e.target.value = '';
+            return;
+        }
+
         const newFiles = [...imageFiles, ...files];
         const newPreviews = [...imagePreviews, ...files.map((f) => URL.createObjectURL(f))];
         setImageFiles(newFiles);
@@ -66,6 +81,15 @@ const SellForm = () => {
     const onSubmit = async (data) => {
         if (imageFiles.length === 0) {
             setImageError('At least one product image is required.');
+            return;
+        }
+
+        // Final safety net: block submission if any selected file isn't jpg/jpeg/png
+        const invalidFiles = imageFiles.filter((f) => !SUPPORTED_IMAGE_TYPES.includes(f.type));
+        if (invalidFiles.length > 0) {
+            setImageError(
+                `Unsupported file type: ${invalidFiles.map((f) => f.name).join(', ')}. Only JPG, JPEG, and PNG images are allowed.`
+            );
             return;
         }
 

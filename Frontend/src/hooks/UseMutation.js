@@ -37,13 +37,26 @@ import { setUser, removeUserData } from '../slice/UserSlice.js';
 const handleFieldErrors = (error, setError, setServerError) => {
     const data = error.response?.data;
 
+    // Guard first — before touching Object.entries
     if (!data || typeof data !== 'object') {
         setServerError?.(error.message || 'An unexpected error occurred. Please try again.');
         return;
     }
 
-    Object.entries(data).forEach(([field, messages]) => {
-        const msg = Array.isArray(messages) ? messages[0] : messages;
+    Object.entries(data).forEach(([field, value]) => {
+        let msg;
+
+        if (typeof value === 'string') {
+            msg = value;
+        } else if (Array.isArray(value)) {
+            msg = value[0];
+        } else if (value && typeof value === 'object') {
+    
+            const nested = Object.values(value)[0];
+            msg = Array.isArray(nested) ? nested[0] : nested;
+        } else {
+            msg = String(value);
+        }
 
         if (field === 'detail' || field === 'non_field_errors') {
             setServerError(msg);
@@ -85,6 +98,7 @@ export const useRegisterMutation = (setError, setServerError) => {
             navigate('/email-verification-sent');
         },
         onError: (error) => {
+            console.log(error.response.data);
             handleFieldErrors(error, setError, setServerError);
         },
     });

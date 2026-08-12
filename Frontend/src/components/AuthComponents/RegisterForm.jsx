@@ -11,14 +11,14 @@ const RegisterForm = () => {
 
     const password1 = watch('password1');
 
-    const [serverError, setServerError] = useState([]);
+    const [serverError, setServerError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const registerUser = useRegisterMutation(setError, setServerError);
 
     const onSubmit = (data) => {
-        setServerError([]);
+        setServerError('');
         registerUser.mutate(data);
     };
 
@@ -61,13 +61,12 @@ const RegisterForm = () => {
                     </div>
 
                     {/* Server Errors */}
-                    {serverError.length > 0 && (
+                    {serverError && (
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                             <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
                             <div className="space-y-1">
-                                {serverError.map((errorMsg, i) => (
-                                    <p key={i} className="text-red-600 text-sm font-medium leading-snug">{errorMsg}</p>
-                                ))}
+                                <p className="text-red-600 text-sm font-medium leading-snug">       {serverError}
+                                </p>
                             </div>
                         </div>
                     )}

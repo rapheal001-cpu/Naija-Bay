@@ -5,7 +5,6 @@ import {
     HiOutlineUserCircle,
     HiOutlineLockClosed,
     HiOutlineBadgeCheck,
-    HiOutlineOfficeBuilding,
     HiChevronRight,
 } from 'react-icons/hi';
 import { HiOutlineArrowLeft } from 'react-icons/hi2';
@@ -43,16 +42,6 @@ const SETTINGS_ITEMS = [
         bg: 'bg-amber-50',
         border: 'border-amber-100',
     },
-    {
-        to: '/business-details',
-        icon: HiOutlineOfficeBuilding,
-        title: 'Business details',
-        description: 'Add your store or company information to sell as a business.',
-        highlight: false,
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
-        border: 'border-emerald-100',
-    },
 ];
 
 const Settings = () => {
@@ -84,13 +73,13 @@ const Settings = () => {
 
                     {/* Back link */}
                     <Link
-                        to="/"
+                        to="/profile"
                         className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors mb-6"
                     >
                         <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 group-hover:border-gray-300 group-hover:shadow-sm transition-all">
                             <HiOutlineArrowLeft size={16} />
                         </span>
-                        Back to home
+                        Back to profile
                     </Link>
 
                     {/* Header */}

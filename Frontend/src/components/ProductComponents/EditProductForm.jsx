@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { RiUploadCloud2Fill, RiLoader3Line, RiCheckLine, RiCloseLine } from "react-icons/ri";
+import { RiLoader3Line, RiCheckLine } from "react-icons/ri";
 import {
-    HiOutlinePhotograph, HiOutlineTag, HiOutlineDocumentText,
+    HiOutlineTag, HiOutlineDocumentText,
     HiOutlineCollection, HiOutlineColorSwatch, HiOutlineLocationMarker,
     HiOutlineChatAlt2, HiOutlineExclamationCircle, HiOutlineEye, HiOutlineCheckCircle
 } from 'react-icons/hi';
@@ -12,14 +12,9 @@ import {
 } from "react-icons/hi2";
 import {
     categories, CATEGORY_SUBCATEGORY_MAP, CONDITION_CHOICES,
-    CONTACT_METHOD_CHOICES, MAX_IMAGES, STATE_CHOICES, STATE_CITY_MAP
+    CONTACT_METHOD_CHOICES, STATE_CHOICES, STATE_CITY_MAP
 } from "../../dummyData.js";
-import ProductImagePreview from "./ProductImagePreview.jsx";
-import {
-    useUpdateProductImagesMutation,
-    useUpdateProductMutation,
-    useDeleteProductImageMutation,
-} from '../../hooks/UseMutation.js';
+import { useUpdateProductMutation } from '../../hooks/UseMutation.js';
 
 
 const toBackendSlug = (str) => {
@@ -48,20 +43,12 @@ const buildDefaultValues = (data) => ({
 const EditProductForm = ({ productSlug, initialData }) => {
     const navigate = useNavigate();
 
-    // --- Images state ---
-    const [imageFiles, setImageFiles] = useState([]);
-    const [imagePreviews, setImagePreviews] = useState([]);
-    const [existingImages, setExistingImages] = useState([]);
-    const [removedImageIds, setRemovedImageIds] = useState([]);
-    const [imageError, setImageError] = useState('');
-
     // --- Form & UI state ---
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
-    const [serverError, setServerError] = useState([]);
+    const [serverError, setServerError] = useState('');
     const [success, setSuccess] = useState(false);
 
-    // Initialize form WITH defaultValues
     const { register, handleSubmit, watch, reset, setValue, formState: { errors }, setError } = useForm({
         defaultValues: buildDefaultValues(initialData),
     });
@@ -70,18 +57,15 @@ const EditProductForm = ({ productSlug, initialData }) => {
     const isActive = watch('active');
     const isSold = watch('sold');
 
-    // Mutual exclusivity: sold ↔ active
+    // When Active is turned OFF → Sold becomes TRUE automatically
+    // When Active is turned ON  → Sold becomes FALSE automatically
     useEffect(() => {
-        if (isSold && isActive) {
-            setValue('active', false, { shouldValidate: false });
-        }
-    }, [isSold, isActive, setValue]);
-
-    useEffect(() => {
-        if (isActive && isSold) {
+        if (!isActive) {
+            setValue('sold', true, { shouldValidate: false });
+        } else {
             setValue('sold', false, { shouldValidate: false });
         }
-    }, [isActive, isSold, setValue]);
+    }, [isActive, setValue]);
 
     const needsPhone = selectedMethods.some(m =>
         ['phone_call', 'whatsapp'].includes(m)
@@ -95,65 +79,17 @@ const EditProductForm = ({ productSlug, initialData }) => {
     const selectedCategory = watch('category');
     const subCategories = selectedCategory ? CATEGORY_SUBCATEGORY_MAP[selectedCategory] : [];
 
-    const remainingExistingCount = existingImages.filter(img => !removedImageIds.includes(img.id)).length;
-    const totalImageCount = remainingExistingCount + imageFiles.length;
-
-    useEffect(() => {
-        if (initialData?.images && Array.isArray(initialData.images)) {
-            setExistingImages(initialData.images);
-        }
-    }, [initialData]);
-
     useEffect(() => {
         if (initialData) {
             reset(buildDefaultValues(initialData));
         }
     }, [initialData, reset]);
 
-    // --- Image handlers ---
-    const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        if (totalImageCount + files.length > MAX_IMAGES) {
-            setImageError(`You can have a maximum of ${MAX_IMAGES} images.`);
-            return;
-        }
-        const newFiles = [...imageFiles, ...files];
-        const newPreviews = [...imagePreviews, ...files.map((f) => URL.createObjectURL(f))];
-        setImageFiles(newFiles);
-        setImagePreviews(newPreviews);
-        setImageError('');
-        e.target.value = '';
-    };
-
-    const removeNewImage = (index) => {
-        URL.revokeObjectURL(imagePreviews[index]);
-        setImageFiles((prev) => prev.filter((_, i) => i !== index));
-        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const removeExistingImage = (imageId) => {
-        setRemovedImageIds((prev) => [...prev, imageId]);
-        setImageError('');
-    };
-
-    const restoreExistingImage = (imageId) => {
-        setRemovedImageIds((prev) => prev.filter(id => id !== imageId));
-    };
-
-    // --- Mutations ---
     const updateProductData = useUpdateProductMutation(setError, setServerError);
-    const updateProductImagesData = useUpdateProductImagesMutation(setServerError);
-    const deleteProductImageData = useDeleteProductImageMutation(setServerError);
 
     const onSubmit = async (data) => {
-        if (totalImageCount === 0) {
-            setImageError('At least one product image is required.');
-            return;
-        }
-
         try {
             setIsSubmitting(true);
-            setImageError('');
             setSubmitError('');
             setServerError([]);
 
@@ -175,25 +111,10 @@ const EditProductForm = ({ productSlug, initialData }) => {
                 ...(needsPhone && data.contact_number ? { contact_number: data.contact_number } : {}),
             };
 
-            const updatedProduct = await updateProductData.mutateAsync({
+            await updateProductData.mutateAsync({
                 productSlug: productSlug,
                 payload,
             });
-
-            if (removedImageIds.length > 0) {
-                await Promise.all(
-                    removedImageIds.map((imageId) => deleteProductImageData.mutateAsync(imageId))
-                );
-            }
-
-            if (imageFiles.length > 0) {
-                await updateProductImagesData.mutateAsync({
-                    product: {
-                        id: updatedProduct?.id ?? initialData?.id,
-                    },
-                    images: imageFiles,
-                });
-            }
 
             setSuccess(true);
 
@@ -211,6 +132,7 @@ const EditProductForm = ({ productSlug, initialData }) => {
     const inputBase = "w-full border rounded-xl pl-11 pr-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:ring-4 transition-all";
     const inputError = "border-red-300 focus:border-red-400 bg-red-50/30 focus:ring-red-100";
     const inputNormal = "border-gray-200 focus:border-brand focus:ring-brand/10";
+
 
     if (success) {
         return (
@@ -241,81 +163,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
 
-                {/* Section: Photos */}
-                <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                        <HiOutlinePhotograph size={18} className="text-brand" />
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Photos</h3>
-                        <span className="text-xs text-gray-400 font-medium">
-                            ({totalImageCount}/{MAX_IMAGES})
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                        {existingImages.map((img) => {
-                            const isRemoved = removedImageIds.includes(img.id);
-                            if (isRemoved) return null;
-                            return (
-                                <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden border border-gray-200 group">
-                                    <img
-                                        src={img.image || img.url || img.image_url}
-                                        alt="Product"
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeExistingImage(img.id)}
-                                        className="absolute top-1.5 right-1.5 w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-colors"
-                                        title="Remove image"
-                                    >
-                                        <RiCloseLine size={16} />
-                                    </button>
-                                </div>
-                            );
-                        })}
-
-                        {imagePreviews.map((src, index) => (
-                            <ProductImagePreview key={`new-${index}`} src={src} index={index} removeImage={removeNewImage} />
-                        ))}
-
-                        {totalImageCount < MAX_IMAGES && (
-                            <label className="group flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-brand hover:text-brand hover:bg-brand/3 cursor-pointer transition-all">
-                                <RiUploadCloud2Fill size={28} className="group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-bold">Add photo</span>
-                                <input
-                                    type="file"
-                                    accept="image/jpeg, image/jpg, image/png"
-                                    multiple
-                                    onChange={handleImageChange}
-                                    className="hidden"
-                                />
-                            </label>
-                        )}
-                    </div>
-
-                    {removedImageIds.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {existingImages
-                                .filter(img => removedImageIds.includes(img.id))
-                                .map(img => (
-                                    <button
-                                        key={img.id}
-                                        type="button"
-                                        onClick={() => restoreExistingImage(img.id)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand bg-brand/5 border border-brand/10 rounded-lg hover:bg-brand/10 transition-colors"
-                                    >
-                                        <RiUploadCloud2Fill size={12} />
-                                        Restore image
-                                    </button>
-                                ))}
-                        </div>
-                    )}
-
-                    {imageError && <p className="text-red-500 text-xs font-semibold">{imageError}</p>}
-                </div>
-
-                <div className="w-full h-px bg-gray-100" />
-
                 {/* Section: Status (Active / Sold) */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
@@ -345,24 +192,27 @@ const EditProductForm = ({ productSlug, initialData }) => {
                             </div>
                         </label>
 
-                        {/* Sold Switch */}
-                        <label className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors select-none">
+                        {/* Sold Switch (read-only, controlled by Active) */}
+                        <label className={`flex items-center justify-between p-4 rounded-2xl border transition-colors select-none ${isSold ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="flex items-center gap-3">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSold ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-200 text-gray-400'}`}>
                                     <HiOutlineCheckCircle size={20} />
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-gray-900">Sold</p>
-                                    <p className="text-xs text-gray-500">Mark this item as sold</p>
+                                    <p className="text-xs text-gray-500">
+                                        {isActive ? 'Mark as sold by deactivating' : 'Item is marked as sold'}
+                                    </p>
                                 </div>
                             </div>
-                            <div className="relative inline-flex items-center">
+                            <div className="relative inline-flex items-center opacity-50 cursor-not-allowed">
                                 <input
                                     type="checkbox"
                                     className="sr-only peer"
                                     {...register('sold')}
+                                    disabled
                                 />
-                                <div className="w-12 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500" />
+                                <div className={`w-12 h-7 rounded-full peer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all ${isSold ? 'bg-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white' : 'bg-gray-300'}`} />
                             </div>
                         </label>
                     </div>

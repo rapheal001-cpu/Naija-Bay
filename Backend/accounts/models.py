@@ -86,6 +86,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     @property
+    def has_store(self):
+        return True if hasattr(self, 'store_user') else False
+
+    @property
     def full_name(self):
         name = f"{self.first_name} {self.last_name}".strip()
         return name or self.username

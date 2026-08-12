@@ -76,7 +76,7 @@ const EditProduct = () => {
                     <div className="flex items-center justify-between mb-8">
                         <button
                             type="button"
-                            onClick={() => navigate(-1)}
+                            onClick={() => navigate(`/product/detail/${product_slug}`)}
                             className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors"
                         >
                             <span className="flex items-center justify-center w-9 h-9 rounded-full bg-white border border-gray-200 group-hover:border-gray-300 group-hover:shadow-md transition-all shadow-sm">

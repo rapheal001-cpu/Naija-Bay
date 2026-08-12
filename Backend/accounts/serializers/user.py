@@ -29,6 +29,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     followers_count = serializers.SerializerMethodField(read_only=True)
     following_count = serializers.SerializerMethodField(read_only=True)
     unread_notifications = serializers.SerializerMethodField(read_only=True)
+    has_store = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -54,6 +55,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "following",
             "products",
             "favorites",
+            'has_store',
         ]
         read_only_fields = (
             "id",
@@ -66,6 +68,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
         )
 
     # Computed read-only fields
+
+    @extend_schema_field(serializers.BooleanField(default=False))
+    def get_has_store(self, obj):
+        return obj.has_store
 
     @extend_schema_field(serializers.CharField())
     def get_full_name(self, obj):

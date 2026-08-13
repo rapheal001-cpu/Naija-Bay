@@ -121,7 +121,7 @@ const Footer = () => {
         </div>
 
         {/* Contact Bar */}
-        <div className="mt-12 pt-8 border-t border-gray-800 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mt-12 pt-8 border-t border-white grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-center space-x-3">
             <FaPhoneAlt size={18} className="text-white" />
             <div>

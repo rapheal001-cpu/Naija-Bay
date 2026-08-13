@@ -5,6 +5,7 @@ import ProductCard from "../ProductComponents/ProductCard.jsx";
 import ProfileHeaderCard from "./ProfileHeaderCard.jsx";
 import ProfileContactDetailCard from "./ProfileContactDetailCard.jsx";
 import ProfileStatCard from "./ProfileStatCard.jsx";
+import Footer from '../FooterComponents/Footer.jsx';
 
 
 const ProfileData = ({ profile, isOwnProfile }) => {
@@ -106,6 +107,9 @@ const ProfileData = ({ profile, isOwnProfile }) => {
                     )}
                 </div>
             </div>
+
+            <Spacer space={'mt-20'} />
+            <Footer />
         </>
     );
 };

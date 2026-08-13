@@ -11,6 +11,7 @@ import { useFetchFeaturedProductData, useFetchUserData } from '../hooks/UseQuery
 import { setUser } from '../slice/UserSlice.js';
 import { setFeaturedProducts } from '../slice/ProductSlice.js';
 import SkeletonProductCard from '../skeletons/SkeletonProductCard';
+import Footer from '../components/FooterComponents/Footer.jsx';
 
 
 const Home = () => {
@@ -103,6 +104,9 @@ const Home = () => {
                 )}
 
             </section>
+
+            <Spacer space={'mt-20'} />
+            <Footer />
         </>
     )
 }

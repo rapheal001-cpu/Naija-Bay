@@ -12,6 +12,7 @@ import { setProducts } from '../slice/ProductSlice.js';
 import { setCategories } from '../slice/CategorySlice.js';
 import { useSearchParams } from 'react-router-dom';
 import { categoryIconsMap } from '../dummyData.js';
+import Footer from '../components/FooterComponents/Footer.jsx';
 
 
 const Products = () => {
@@ -331,6 +332,9 @@ const Products = () => {
                     )}
                 </div>
             </div>
+
+            <Spacer space={'mt-20'} />
+            <Footer />
         </>
     );
 };

@@ -1,10 +1,22 @@
 import { FaBell, FaHeart, FaInfoCircle } from "react-icons/fa";
+import { GiWheat, GiBirdTwitter } from "react-icons/gi";
+import { IoMdTrendingUp } from "react-icons/io";
 import { LuPackagePlus } from "react-icons/lu";
 import { RiHandCoinLine } from "react-icons/ri";
-import { IoMdTrendingUp } from "react-icons/io";
-import { BiSolidCategory } from "react-icons/bi";
-import { TbBabyCarriage, TbBarbell, TbBook2, TbBriefcase, TbCar, TbCpu, TbDeviceMobile, TbHome, TbPaw, TbPlant2, TbShirt, TbStethoscope, TbTool } from "react-icons/tb";
-import {GiWheat} from "react-icons/gi";
+import { BiSolidCategory, BiChip } from "react-icons/bi";
+import { MdOutlineStroller, MdWatch } from "react-icons/md";
+import {
+    TbBolt, TbBackpack, TbShoppingBag, TbBallFootball, TbBabyCarriage, TbBarbell, TbBed, TbBike,
+    TbBone, TbBook, TbBook2, TbBox, TbBriefcase, TbBucket, TbBuilding, TbBuildingStore,
+    TbCalculator, TbCalendarEvent, TbCamera, TbCar, TbCarrot, TbCat, TbChefHat, TbCode,
+    TbCpu, TbDeviceDesktop, TbDeviceGamepad, TbDeviceGamepad2, TbDeviceLaptop,
+    TbDeviceMobile, TbDeviceTablet, TbDeviceTv, TbDeviceWatch, TbDog, TbDroplet, TbFish,
+    TbHeadphones, TbHeart, TbHeartPlus, TbHome, TbHomeMove, TbHomePlus, TbHorse, TbLamp,
+    TbMapPin, TbMoodKid, TbMotorbike, TbMovie, TbMusic, TbPaw, TbPill, TbPlant2, TbPrinter,
+    TbSailboat, TbSchool, TbSeedling, TbShirt, TbShoe, TbSnowflake,
+    TbSteeringWheel, TbStethoscope, TbTent, TbTool, TbTools, TbToolsKitchen2, TbTractor,
+    TbTrendingUp, TbTruck, TbTruckDelivery, TbUsb, TbArmchair
+} from "react-icons/tb";
 
 
 export const timeAgo = (isoString) => {
@@ -70,7 +82,7 @@ export const MAX_IMAGES = 10;
 
 
 export const categoryIconsMap = {
-    'default_icon': BiSolidCategory,
+    'default-icon': BiSolidCategory,
     'phones-tablets': TbDeviceMobile,
     'electronics': TbCpu,
     'vehicles': TbCar,
@@ -88,81 +100,194 @@ export const categoryIconsMap = {
 };
 
 
+export const subcategoryIconsMap = {
+  // Phones & Tablets
+  'mobile-phones': TbDeviceMobile,
+  'tablets': TbDeviceTablet,
+  'phone-accessories': TbHeadphones,
+  'smartwatches': TbDeviceWatch,
+  'phone-parts': BiChip,
+
+  // Electronics
+  'laptops-computers': TbDeviceLaptop,
+  'tvs': TbDeviceTv,
+  'audio-music': TbMusic,
+  'cameras': TbCamera,
+  'gaming': TbDeviceGamepad,
+  'printers': TbPrinter,
+  'computer-accessories': TbUsb,
+
+  // Vehicles
+  'cars': TbCar,
+  'motorcycles': TbMotorbike,
+  'trucks-buses': TbTruck,
+  'vehicle-parts': TbTools,
+  'boats': TbSailboat,
+  'bicycles': TbBike,
+
+  // Real Estate
+  'houses-rent': TbHome,
+  'houses-sale': TbHomePlus,
+  'flats-apartments': TbBuilding,
+  'land-plots': TbMapPin,
+  'commercial-property': TbBuildingStore,
+  'short-let': TbHomeMove,
+
+  // Fashion
+  'mens-clothing': TbShirt,
+  'womens-clothing': TbHeart,
+  'kids-clothing': TbMoodKid,
+  'shoes': TbShoe,
+  'bags': TbShoppingBag,
+  'watches-jewelry': MdWatch,
+  'traditional-wear': TbShirt,
+
+  // Home & Garden
+  'furniture': TbArmchair,
+  'kitchen-appliances': TbToolsKitchen2,
+  'bedding-linen': TbBed,
+  'garden-outdoor': TbPlant2,
+  'home-decor': TbLamp,
+  'generators': TbBolt,
+  'air-conditioners': TbSnowflake,
+
+  // Jobs
+  'accounting-finance': TbCalculator,
+  'admin-office': TbBuilding,
+  'engineering': TbTool,
+  'healthcare': TbHeartPlus,
+  'it-telecoms': TbDeviceDesktop,
+  'sales-marketing': TbTrendingUp,
+  'teaching': TbSchool,
+  'driving-logistics': TbSteeringWheel,
+
+  // Services
+  'repair-maintenance': TbTool,
+  'cleaning-services': TbBucket,
+  'catering': TbChefHat,
+  'event-planning': TbCalendarEvent,
+  'photography': TbCamera,
+  'web-dev': TbCode,
+  'tutoring': TbBook,
+  'moving-delivery': TbTruckDelivery,
+
+  // Animals & Pets
+  'dogs': TbDog,
+  'cats': TbCat,
+  'birds': GiBirdTwitter,
+  'fish-aquarium': TbFish,
+  'pet-accessories': TbBone,
+  'livestock': TbHorse,
+
+  // Food & Agriculture
+  'farm-produce': TbCarrot,
+  'processed-food': TbBox,
+  'farming-equipment': TbTractor,
+  'seeds-fertilizers': TbSeedling,
+
+  // Health & Beauty
+  'skincare': TbDroplet,
+  'hair-products': TbTool,
+  'vitamins': TbPill,
+  'medical-equipment': TbHeartPlus,
+  'gym-fitness': TbBarbell,
+  'perfumes': TbDroplet,
+
+  // Kids & Baby
+  'baby-clothing': TbMoodKid,
+  'toys-games': TbDeviceGamepad2,
+  'baby-gear': MdOutlineStroller,
+  'school-supplies': TbBackpack,
+
+  // Sports & Outdoor
+  'football': TbBallFootball,
+  'gym-equipment': TbBarbell,
+  'outdoor-camping': TbTent,
+  'cycling': TbBike,
+
+  // Books, Music & Movies
+  'books-textbooks': TbBook,
+  'music-instruments': TbMusic,
+  'movies-dvds': TbMovie,
+  'video-games': TbDeviceGamepad,
+};
+
+
 export const categories = [
-    { slug: 'phones_tablets', label: 'Phones & Tablets', icon: TbDeviceMobile },
+    { slug: 'phones-tablets', label: 'Phones & Tablets', icon: TbDeviceMobile },
     { slug: 'electronics', label: 'Electronics', icon: TbCpu },
     { slug: 'vehicles', label: 'Vehicles', icon: TbCar },
-    { slug: 'real_estate', label: 'Real Estate', icon: TbHome },
+    { slug: 'real-estate', label: 'Real Estate', icon: TbHome },
     { slug: 'fashion', label: 'Fashion', icon: TbShirt },
-    { slug: 'home_garden', label: 'Home & Garden', icon: TbPlant2 },
+    { slug: 'home-garden', label: 'Home & Garden', icon: TbPlant2 },
     { slug: 'jobs', label: 'Jobs', icon: TbBriefcase },
     { slug: 'services', label: 'Services', icon: TbTool },
-    { slug: 'animals_pets', label: 'Animals & Pets', icon: TbPaw },
-    { slug: 'food_agriculture', label: 'Food & Agriculture', icon: GiWheat },
-    { slug: 'health_beauty', label: 'Health & Beauty', icon: TbStethoscope },
-    { slug: 'kids_baby', label: 'Kids & Baby', icon: TbBabyCarriage },
-    { slug: 'sports_outdoor', label: 'Sports & Outdoor', icon: TbBarbell },
-    { slug: 'books_music_movies', label: 'Books, Music & Movies', icon: TbBook2 },
+    { slug: 'animals-pets', label: 'Animals & Pets', icon: TbPaw },
+    { slug: 'food-agriculture', label: 'Food & Agriculture', icon: GiWheat },
+    { slug: 'health-beauty', label: 'Health & Beauty', icon: TbStethoscope },
+    { slug: 'kids-baby', label: 'Kids & Baby', icon: TbBabyCarriage },
+    { slug: 'sports-outdoor', label: 'Sports & Outdoor', icon: TbBarbell },
+    { slug: 'books-music-movies', label: 'Books, Music & Movies', icon: TbBook2 },
 ];
 
 
 export const CATEGORY_SUBCATEGORY_MAP = {
-    phones_tablets: ['mobile_phones', 'tablets', 'phone_accessories', 'smartwatches', 'phone_parts'],
-    electronics: ['laptops_computers', 'tvs', 'audio_music', 'cameras', 'gaming', 'printers', 'computer_accessories'],
-    vehicles: ['cars', 'motorcycles', 'trucks_buses', 'vehicle_parts', 'boats', 'bicycles'],
-    real_estate: ['houses_rent', 'houses_sale', 'flats_apartments', 'land_plots', 'commercial_property', 'short_let'],
-    fashion: ['mens_clothing', 'womens_clothing', 'kids_clothing', 'shoes', 'bags', 'watches_jewelry', 'traditional_wear'],
-    home_garden: ['furniture', 'kitchen_appliances', 'bedding_linen', 'garden_outdoor', 'home_decor', 'generators', 'air_conditioners'],
-    jobs: ['accounting_finance', 'admin_office', 'engineering', 'healthcare', 'it_telecoms', 'sales_marketing', 'teaching', 'driving_logistics'],
-    services: ['repair_maintenance', 'cleaning_services', 'catering', 'event_planning', 'photography', 'web_dev', 'tutoring', 'moving_delivery'],
-    animals_pets: ['dogs', 'cats', 'birds', 'fish_aquarium', 'pet_accessories', 'livestock'],
-    food_agriculture: ['farm_produce', 'processed_food', 'farming_equipment', 'seeds_fertilizers'],
-    health_beauty: ['skincare', 'hair_products', 'vitamins', 'medical_equipment', 'gym_fitness', 'perfumes'],
-    kids_baby: ['baby_clothing', 'toys_games', 'baby_gear', 'school_supplies'],
-    sports_outdoor: ['football', 'gym_equipment', 'outdoor_camping', 'cycling'],
-    books_music_movies: ['books_textbooks', 'music_instruments', 'movies_dvds', 'video_games'],
-}
+    "phones-tablets": ['mobile-phones', 'tablets', 'phone-accessories', 'smartwatches', 'phone-parts'],
+    "electronics": ['laptops-computers', 'tvs', 'audio-music', 'cameras', 'gaming', 'printers', 'computer-accessories'],
+    "vehicles": ['cars', 'motorcycles', 'trucks-buses', 'vehicle-parts', 'boats', 'bicycles'],
+    "real-estate": ['houses-rent', 'houses-sale', 'flats-apartments', 'land-plots', 'commercial-property', 'short-let'],
+    "fashion": ['mens-clothing', 'womens-clothing', 'kids-clothing', 'shoes', 'bags', 'watches-jewelry', 'traditional-wear'],
+    "home-garden": ['furniture', 'kitchen-appliances', 'bedding-linen', 'garden-outdoor', 'home-decor', 'generators', 'air-conditioners'],
+    "jobs": ['accounting-finance', 'admin-office', 'engineering', 'healthcare', 'it-telecoms', 'sales-marketing', 'teaching', 'driving-logistics'],
+    "services": ['repair-maintenance', 'cleaning-services', 'catering', 'event-planning', 'photography', 'web-dev', 'tutoring', 'moving-delivery'],
+    "animals-pets": ['dogs', 'cats', 'birds', 'fish-aquarium', 'pet-accessories', 'livestock'],
+    "food-agriculture": ['farm-produce', 'processed-food', 'farming-equipment', 'seeds-fertilizers'],
+    "health-beauty": ['skincare', 'hair-products', 'vitamins', 'medical-equipment', 'gym-fitness', 'perfumes'],
+    "kids-baby": ['baby-clothing', 'toys-games', 'baby-gear', 'school-supplies'],
+    "sports-outdoor": ['football', 'gym-equipment', 'outdoor-camping', 'cycling'],
+    "books-music-movies": ['books-textbooks', 'music-instruments', 'movies-dvds', 'video-games'],
+};
 
 
 export const STATE_CITY_MAP = {
-    abia: ['Aba', 'Umuahia', 'Ohafia', 'Arochukwu', 'Isuikwuato', 'Osisioma', 'Ukwa'],
-    adamawa: ['Yola', 'Mubi', 'Numan', 'Jimeta', 'Ganye', 'Hong', 'Michika', 'Song'],
-    akwa_ibom: ['Uyo', 'Ikot Ekpene', 'Eket', 'Oron', 'Abak', 'Itu', 'Ikot Abasi', 'Etinan'],
-    anambra: ['Awka', 'Onitsha', 'Nnewi', 'Ekwulobia', 'Ihiala', 'Ogbaru', 'Aguata', 'Njikoka'],
-    bauchi: ['Bauchi', 'Azare', 'Misau', "Jama'are", 'Ningi', 'Katagum', 'Tafawa Balewa', 'Dass'],
-    bayelsa: ['Yenagoa', 'Brass', 'Nembe', 'Ogbia', 'Sagbama', 'Ekeremor', 'Kolokuma/Opokuma'],
-    benue: ['Makurdi', 'Gboko', 'Otukpo', 'Katsina-Ala', 'Vandeikya', 'Oju', 'Adikpo', 'Aliade'],
-    borno: ['Maiduguri', 'Biu', 'Bama', 'Dikwa', 'Gwoza', 'Monguno', 'Konduga', 'Kukawa'],
-    cross_river: ['Calabar', 'Ikom', 'Obudu', 'Ugep', 'Ogoja', 'Akpabuyo', 'Boki', 'Yala'],
-    delta: ['Asaba', 'Warri', 'Sapele', 'Agbor', 'Ughelli', 'Ozoro', 'Effurun', 'Kwale', 'Burutu'],
-    ebonyi: ['Abakaliki', 'Afikpo', 'Onueke', 'Izzi', 'Ezza', 'Ikwo', 'Ohaukwu', 'Ishielu'],
-    edo: ['Benin City', 'Ekpoma', 'Auchi', 'Iguobazuwa', 'Uromi', 'Sabongida-Ora', 'Igarra', 'Agenebode'],
-    ekiti: ['Ado-Ekiti', 'Ikere-Ekiti', 'Oye-Ekiti', 'Ijero-Ekiti', 'Emure-Ekiti', 'Ise-Ekiti', 'Ilawe-Ekiti', 'Aramoko'],
-    enugu: ['Enugu', 'Nsukka', 'Awgu', 'Udi', 'Oji River', 'Agbani', 'Nkanu', 'Enugu-Ezike'],
-    fct: ['Wuse', 'Garki', 'Maitama', 'Asokoro', 'Jabi', 'Kubwa', 'Gwagwalada', 'Kuje', 'Bwari', 'Abaji', 'Lugbe', 'Nyanya'],
-    gombe: ['Gombe', 'Kaltungo', 'Billiri', 'Dukku', 'Deba', 'Nafada', 'Bajoga', 'Funakaye'],
-    imo: ['Owerri', 'Orlu', 'Okigwe', 'Mgbidi', 'Oguta', 'Mbaise', 'Ehime Mbano', 'Ideato'],
-    jigawa: ['Dutse', 'Hadejia', 'Gumel', 'Ringim', 'Birnin Kudu', 'Kazaure', 'Babura', 'Gwaram'],
-    kaduna: ['Kaduna', 'Zaria', 'Kafanchan', 'Ikara', 'Saminaka', 'Kachia', 'Giwa', 'Birnin Gwari'],
-    kano: ['Kano', 'Wudil', 'Bichi', 'Gaya', 'Rano', 'Kibiya', 'Takai', 'Dawakin Tofa', 'Ungogo', 'Fagge'],
-    katsina: ['Katsina', 'Daura', 'Funtua', 'Malumfashi', 'Kankia', 'Dutsin-Ma', 'Bakori', 'Mani'],
-    kebbi: ['Birnin Kebbi', 'Argungu', 'Yelwa', 'Zuru', 'Jega', 'Kamba', 'Bunza', 'Bagudo'],
-    kogi: ['Lokoja', 'Okene', 'Idah', 'Kabba', 'Anyigba', 'Ankpa', 'Dekina', 'Ajaokuta'],
-    kwara: ['Ilorin', 'Offa', 'Omu-Aran', 'Patigi', 'Lafiagi', 'Jebba', 'Share', 'Erin-Ile'],
-    lagos: ['Ikeja', 'Lagos Island', 'Lagos Mainland', 'Yaba', 'Surulere', 'Ikorodu', 'Epe', 'Badagry', 'Ajah', 'Lekki', 'Victoria Island', 'Ikoyi', 'Apapa', 'Festac', 'Ojo', 'Alimosho', 'Agege', 'Ikotun', 'Egbeda', 'Isolo', 'Mushin', 'Oshodi', 'Maryland', 'Gbagada', 'Ogba', 'Magodo', 'Iju', 'Shomolu', 'Bariga'],
-    nasarawa: ['Lafia', 'Keffi', 'Akwanga', 'Nasarawa Eggon', 'Wamba', 'Doma', 'Karu', 'Toto'],
-    niger: ['Minna', 'Suleja', 'Kontagora', 'Bida', 'New Bussa', 'Lapai', 'Agaie', 'Wushishi'],
-    ogun: ['Abeokuta', 'Ijebu-Ode', 'Sagamu', 'Ilaro', 'Ota', 'Ifo', 'Sango-Ota', 'Ijebu-Igbo', 'Ayetoro', 'Owode'],
-    ondo: ['Akure', 'Ondo', 'Ore', 'Okitipupa', 'Ikare', 'Owo', 'Idanre', 'Ile-Oluji', 'Oka'],
-    osun: ['Osogbo', 'Ile-Ife', 'Ilesha', 'Ede', 'Ikirun', 'Iwo', 'Ejigbo', 'Ikire', 'Ila', 'Gbongan'],
-    oyo: ['Ibadan', 'Oyo', 'Ogbomosho', 'Saki', 'Iseyin', 'Eruwa', 'Kisi', 'Igbo-Ora', 'Lanlate', 'Moniya'],
-    plateau: ['Jos', 'Bukuru', 'Pankshin', 'Langtang', 'Shendam', 'Mangu', 'Bokkos', 'Bassa'],
-    rivers: ['Port Harcourt', 'Obio/Akpor', 'Bonny', 'Degema', 'Ikwerre', 'Oyigbo', 'Ahoada', 'Okrika', 'Eleme', 'Emuoha', 'Tai', 'Gokana', 'Khana'],
-    sokoto: ['Sokoto', 'Tambuwal', 'Gwadabawa', 'Wurno', 'Shagari', 'Binji', 'Bodinga', 'Goronyo'],
-    taraba: ['Jalingo', 'Wukari', 'Bali', 'Gembu', 'Zing', 'Sardauna', 'Takum', 'Ibi'],
-    yobe: ['Damaturu', 'Potiskum', 'Gashua', 'Nguru', 'Gujba', 'Buni Yadi', 'Geidam', 'Yunusari'],
-    zamfara: ['Gusau', 'Kaura-Namoda', 'Anka', 'Talata Mafara', 'Shinkafi', 'Maradun', 'Bakura', 'Bungudu'],
-}
+    "abia": ['Aba', 'Umuahia', 'Ohafia', 'Arochukwu', 'Isuikwuato', 'Osisioma', 'Ukwa'],
+    "adamawa": ['Yola', 'Mubi', 'Numan', 'Jimeta', 'Ganye', 'Hong', 'Michika', 'Song'],
+    "akwa-ibom": ['Uyo', 'Ikot Ekpene', 'Eket', 'Oron', 'Abak', 'Itu', 'Ikot Abasi', 'Etinan'],
+    "anambra": ['Awka', 'Onitsha', 'Nnewi', 'Ekwulobia', 'Ihiala', 'Ogbaru', 'Aguata', 'Njikoka'],
+    "bauchi": ['Bauchi', 'Azare', 'Misau', "Jama'are", 'Ningi', 'Katagum', 'Tafawa Balewa', 'Dass'],
+    "bayelsa": ['Yenagoa', 'Brass', 'Nembe', 'Ogbia', 'Sagbama', 'Ekeremor', 'Kolokuma/Opokuma'],
+    "benue": ['Makurdi', 'Gboko', 'Otukpo', 'Katsina-Ala', 'Vandeikya', 'Oju', 'Adikpo', 'Aliade'],
+    "borno": ['Maiduguri', 'Biu', 'Bama', 'Dikwa', 'Gwoza', 'Monguno', 'Konduga', 'Kukawa'],
+    "cross-river": ['Calabar', 'Ikom', 'Obudu', 'Ugep', 'Ogoja', 'Akpabuyo', 'Boki', 'Yala'],
+    "delta": ['Asaba', 'Warri', 'Sapele', 'Agbor', 'Ughelli', 'Ozoro', 'Effurun', 'Kwale', 'Burutu'],
+    "ebonyi": ['Abakaliki', 'Afikpo', 'Onueke', 'Izzi', 'Ezza', 'Ikwo', 'Ohaukwu', 'Ishielu'],
+    "edo": ['Benin City', 'Ekpoma', 'Auchi', 'Iguobazuwa', 'Uromi', 'Sabongida-Ora', 'Igarra', 'Agenebode'],
+    "ekiti": ['Ado-Ekiti', 'Ikere-Ekiti', 'Oye-Ekiti', 'Ijero-Ekiti', 'Emure-Ekiti', 'Ise-Ekiti', 'Ilawe-Ekiti', 'Aramoko'],
+    "enugu": ['Enugu', 'Nsukka', 'Awgu', 'Udi', 'Oji River', 'Agbani', 'Nkanu', 'Enugu-Ezike'],
+    "fct": ['Wuse', 'Garki', 'Maitama', 'Asokoro', 'Jabi', 'Kubwa', 'Gwagwalada', 'Kuje', 'Bwari', 'Abaji', 'Lugbe', 'Nyanya'],
+    "gombe": ['Gombe', 'Kaltungo', 'Billiri', 'Dukku', 'Deba', 'Nafada', 'Bajoga', 'Funakaye'],
+    "imo": ['Owerri', 'Orlu', 'Okigwe', 'Mgbidi', 'Oguta', 'Mbaise', 'Ehime Mbano', 'Ideato'],
+    "jigawa": ['Dutse', 'Hadejia', 'Gumel', 'Ringim', 'Birnin Kudu', 'Kazaure', 'Babura', 'Gwaram'],
+    "kaduna": ['Kaduna', 'Zaria', 'Kafanchan', 'Ikara', 'Saminaka', 'Kachia', 'Giwa', 'Birnin Gwari'],
+    "kano": ['Kano', 'Wudil', 'Bichi', 'Gaya', 'Rano', 'Kibiya', 'Takai', 'Dawakin Tofa', 'Ungogo', 'Fagge'],
+    "katsina": ['Katsina', 'Daura', 'Funtua', 'Malumfashi', 'Kankia', 'Dutsin-Ma', 'Bakori', 'Mani'],
+    "kebbi": ['Birnin Kebbi', 'Argungu', 'Yelwa', 'Zuru', 'Jega', 'Kamba', 'Bunza', 'Bagudo'],
+    "kogi": ['Lokoja', 'Okene', 'Idah', 'Kabba', 'Anyigba', 'Ankpa', 'Dekina', 'Ajaokuta'],
+    "kwara": ['Ilorin', 'Offa', 'Omu-Aran', 'Patigi', 'Lafiagi', 'Jebba', 'Share', 'Erin-Ile'],
+    "lagos": ['Ikeja', 'Lagos Island', 'Lagos Mainland', 'Yaba', 'Surulere', 'Ikorodu', 'Epe', 'Badagry', 'Ajah', 'Lekki', 'Victoria Island', 'Ikoyi', 'Apapa', 'Festac', 'Ojo', 'Alimosho', 'Agege', 'Ikotun', 'Egbeda', 'Isolo', 'Mushin', 'Oshodi', 'Maryland', 'Gbagada', 'Ogba', 'Magodo', 'Iju', 'Shomolu', 'Bariga'],
+    "nasarawa": ['Lafia', 'Keffi', 'Akwanga', 'Nasarawa Eggon', 'Wamba', 'Doma', 'Karu', 'Toto'],
+    "niger": ['Minna', 'Suleja', 'Kontagora', 'Bida', 'New Bussa', 'Lapai', 'Agaie', 'Wushishi'],
+    "ogun": ['Abeokuta', 'Ijebu-Ode', 'Sagamu', 'Ilaro', 'Ota', 'Ifo', 'Sango-Ota', 'Ijebu-Igbo', 'Ayetoro', 'Owode'],
+    "ondo": ['Akure', 'Ondo', 'Ore', 'Okitipupa', 'Ikare', 'Owo', 'Idanre', 'Ile-Oluji', 'Oka'],
+    "osun": ['Osogbo', 'Ile-Ife', 'Ilesha', 'Ede', 'Ikirun', 'Iwo', 'Ejigbo', 'Ikire', 'Ila', 'Gbongan'],
+    "oyo": ['Ibadan', 'Oyo', 'Ogbomosho', 'Saki', 'Iseyin', 'Eruwa', 'Kisi', 'Igbo-Ora', 'Lanlate', 'Moniya'],
+    "plateau": ['Jos', 'Bukuru', 'Pankshin', 'Langtang', 'Shendam', 'Mangu', 'Bokkos', 'Bassa'],
+    "rivers": ['Port Harcourt', 'Obio/Akpor', 'Bonny', 'Degema', 'Ikwerre', 'Oyigbo', 'Ahoada', 'Okrika', 'Eleme', 'Emuoha', 'Tai', 'Gokana', 'Khana'],
+    "sokoto": ['Sokoto', 'Tambuwal', 'Gwadabawa', 'Wurno', 'Shagari', 'Binji', 'Bodinga', 'Goronyo'],
+    "taraba": ['Jalingo', 'Wukari', 'Bali', 'Gembu', 'Zing', 'Sardauna', 'Takum', 'Ibi'],
+    "yobe": ['Damaturu', 'Potiskum', 'Gashua', 'Nguru', 'Gujba', 'Buni Yadi', 'Geidam', 'Yunusari'],
+    "zamfara": ['Gusau', 'Kaura-Namoda', 'Anka', 'Talata Mafara', 'Shinkafi', 'Maradun', 'Bakura', 'Bungudu'],
+};
 
 export const STORE_TYPE_CHOICES = [
     { value: 'individual', label: 'Individual seller' },
@@ -173,13 +298,13 @@ export const STORE_TYPE_CHOICES = [
 export const STATE_CHOICES = [
     { value: 'abia', label: 'Abia' },
     { value: 'adamawa', label: 'Adamawa' },
-    { value: 'akwa_ibom', label: 'Akwa Ibom' },
+    { value: 'akwa-ibom', label: 'Akwa Ibom' },
     { value: 'anambra', label: 'Anambra' },
     { value: 'bauchi', label: 'Bauchi' },
     { value: 'bayelsa', label: 'Bayelsa' },
     { value: 'benue', label: 'Benue' },
     { value: 'borno', label: 'Borno' },
-    { value: 'cross_river', label: 'Cross River' },
+    { value: 'cross-river', label: 'Cross River' },
     { value: 'delta', label: 'Delta' },
     { value: 'ebonyi', label: 'Ebonyi' },
     { value: 'edo', label: 'Edo' },
@@ -209,7 +334,6 @@ export const STATE_CHOICES = [
     { value: 'yobe', label: 'Yobe' },
     { value: 'zamfara', label: 'Zamfara' },
 ];
-
 
 export const formatJoinDate = (isoString) => {
     return new Date(isoString).toLocaleDateString('en-NG', {

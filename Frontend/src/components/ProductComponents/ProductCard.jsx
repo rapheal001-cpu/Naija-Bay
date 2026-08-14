@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { FaHeart, FaEye } from "react-icons/fa";
 import { LuMapPin } from "react-icons/lu";
-import { HiBadgeCheck } from "react-icons/hi";
 import { useSelector } from "react-redux";
 import { useToggleFavoriteMutation } from '../../hooks/UseMutation';
 
@@ -101,13 +100,6 @@ const ProductCard = ({
                     <p className="text-lg font-extrabold text-gray-900 tracking-tight">
                         ₦{Number(price).toLocaleString()}
                     </p>
-                    
-                    {product_user?.verified && (
-                        <span className="inline-flex items-center gap-0.5 text-emerald-600 text-[11px] font-bold bg-emerald-50 px-2 py-0.5 rounded-full shrink-0 mt-0.5">
-                            <HiBadgeCheck size={12} />
-                            Verified
-                        </span>
-                    )}
                 </div>
 
                 {/* Product Name */}
@@ -133,9 +125,6 @@ const ProductCard = ({
                         <span className="text-xs text-gray-500 font-medium truncate">
                             {product_user.full_name || product_user.username}
                         </span>
-                        {product_user.verified && (
-                            <HiBadgeCheck size={12} className="text-emerald-500 shrink-0" />
-                        )}
                     </div>
                 )}
 

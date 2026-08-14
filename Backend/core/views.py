@@ -4,13 +4,12 @@ from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from accounts.models import Notifications, User
+from accounts.models import Notifications
 from accounts.serializers.serializers import NotificationSerializer
 from products.models import Product
 from products.serializers import ProductSerializer
 from NaijaBay.throttling import (
     MarkAllNotificationsReadThrottling,
-    UserThrottling,
     FavoriteToggleThrottling,
 )
 from NaijaBay.permissions import IsOwnerOnly
@@ -109,47 +108,6 @@ class DeleteNotificationAPIView(APIView):
         )
 
 delete_notification_view = DeleteNotificationAPIView.as_view()
-
-
-# =============================================================================
-# SOCIAL
-# =============================================================================
-
-@extend_schema_view(post=extend_schema(tags=["Social"], operation_id="Toggle Follow"))
-class ToggleFollowUserAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    throttle_classes = [UserThrottling]
-
-    def post(self, request, user_id, *args, **kwargs):
-        target_user = get_object_or_404(User, pk=user_id, is_active=True)
-        current_user = request.user
-
-        if current_user.id == target_user.id:
-            return Response(
-                {"detail": "You cannot follow yourself."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Efficient membership check — no N+1, no loading all followers into memory
-        is_following = target_user.followers.filter(pk=current_user.pk).exists()
-
-        if is_following:
-            target_user.followers.remove(current_user)
-            following = False
-        else:
-            target_user.followers.add(current_user)
-            following = True
-
-        return Response(
-            {
-                "detail": "Follow status updated successfully.",
-                "following": following,
-                "followers_count": target_user.followers.count(),
-            },
-            status=status.HTTP_200_OK,
-        )
-
-toggle_follow_user_view = ToggleFollowUserAPIView.as_view()
 
 
 # =============================================================================

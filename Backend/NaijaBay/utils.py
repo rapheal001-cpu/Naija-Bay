@@ -204,9 +204,6 @@ NOTIFICATION_TYPES = [
     ('product_sold', 'Product Sold'),
     ('product_favorite', 'Product Favorite'),
     ('product_milestone_views', 'Product Milestone Views'),
-    ('store_members', 'Store Members'),
-    ('store_created', 'Store Created'),
-    ('store_milestone_members', 'Store Milestone Members'),
     ('other', 'Other'),
 ]
 
@@ -215,10 +212,6 @@ NOTIFICATION_TYPES = [
 # Notifications message templates
 # ==============================
 NOTIFICATION_TEMPLATES = {
-    "store_created": ['Your store "{store_name}" is now live and visible to buyers.'],
-    "store_milestone_members": [
-        "🎉 Congratulations! Your store '{store_name}' has reached {milestone} members."
-    ],
     "product_created": [
         'Your listing "{product_name}" was successfully published.',
         'Your product "{product_name}" is now live and visible to buyers.',
@@ -265,39 +258,10 @@ NULL_VALUES = [
 ]
 
 
-# ==============================
-# Boost Product Pricing
-# ==============================
-BOOSTED_PRODUCT_PRICE = {
-    1: 600,
-    3: 1500,
-    7: 3000,
-    15: 5000,
-    30: 8000,
-}
-
-STORE_TYPE_CHOICES = [
-    ("individual", "Individual Seller"),
-    ("registered", "Registered Business"),
-]
-
-
 def user_avatar_upload_path(instance, filename):
     ext = filename.split(".")[-1]
     filename = f"{uuid.uuid4().hex}.{ext}"
     return os.path.join("accounts", "avatars", filename)
-
-
-def store_logo_upload_path(instance, filename):
-    ext = filename.split(".")[-1]
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    return os.path.join("accounts", "store", "logos", filename)
-
-
-def store_banner_upload_path(instance, filename):
-    ext = filename.split(".")[-1]
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    return os.path.join("accounts", "store", "banners", filename)
 
 
 def product_images_upload_path(instance, filename):

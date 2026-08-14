@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from accounts.models import User, UserVerification
+from accounts.models import User
 from products.serializers import ProductSerializer
 from phonenumber_field.serializerfields import PhoneNumberField
 from NaijaBay.utils import (
@@ -11,25 +11,13 @@ from NaijaBay.utils import (
 )
 
 
-# User Follower and Following Serializer
-class UserFollowerAndFolloweringSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'avatar', 'full_name', 'username', 'date_joined']
-
-
 # User Serailizer
 class CustomUserSerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True, read_only=True)
     favorites = ProductSerializer(many=True, read_only=True, source='favorite_products')
     phone_number = PhoneNumberField()
-    followers = UserFollowerAndFolloweringSerializer(many=True, read_only=True)
-    following = UserFollowerAndFolloweringSerializer(many=True, read_only=True)
     full_name = serializers.SerializerMethodField(read_only=True)
-    followers_count = serializers.SerializerMethodField(read_only=True)
-    following_count = serializers.SerializerMethodField(read_only=True)
     unread_notifications = serializers.SerializerMethodField(read_only=True)
-    has_store = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -47,43 +35,22 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
             "is_active",
-            "verified",
             "unread_notifications",
-            "followers_count",
-            "following_count",
-            "followers",
-            "following",
             "products",
             "favorites",
-            'has_store',
         ]
         read_only_fields = (
             "id",
             "is_active",
-            "verified",
             "date_joined",
             "last_login",
-            "followers",
-            "following",
         )
 
     # Computed read-only fields
 
-    @extend_schema_field(serializers.BooleanField(default=False))
-    def get_has_store(self, obj):
-        return obj.has_store
-
     @extend_schema_field(serializers.CharField())
     def get_full_name(self, obj):
         return obj.full_name
-
-    @extend_schema_field(serializers.IntegerField(default=0))
-    def get_followers_count(self, obj):
-        return obj.followers_count
-
-    @extend_schema_field(serializers.IntegerField(default=0))
-    def get_following_count(self, obj):
-        return obj.following_count
 
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_unread_notifications(self, obj):
@@ -176,51 +143,4 @@ class CustomUserSerializer(serializers.ModelSerializer):
         for key, value in validated_data.items():
             setattr(instance, key, value)
         instance.save()
-        return instance
-
-
-# =============================================================================
-# USER VERIFICATION SERIALIZER
-# =============================================================================
-class UserVerificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserVerification
-        fields = [
-            "id",
-            "user",
-            "is_verified",
-            "verified_at",
-            "amount_paid",
-            "transaction_reference",
-            "payment_gateway",
-            "paid_at",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = [
-            "id",
-            "user",
-            "is_verified",
-            "verified_at",
-            "paid_at",
-            "created_at",
-            "updated_at",
-        ]
-
-
-# =============================================================================
-# USER VERIFICATION PAYMENT SERIALIZER
-# Use this in your payment webhook / callback view to record payment details.
-# =============================================================================
-class UserVerificationPaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserVerification
-        fields = ["amount_paid", "transaction_reference", "payment_gateway"]
-
-    def update(self, instance, validated_data):
-        instance.confirm_payment(
-            reference=validated_data["transaction_reference"],
-            gateway=validated_data["payment_gateway"],
-            amount=validated_data["amount_paid"],
-        )
         return instance

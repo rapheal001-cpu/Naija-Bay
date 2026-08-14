@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import {
     HiOutlineUserCircle,
     HiOutlineLockClosed,
-    HiOutlineBadgeCheck,
     HiChevronRight,
 } from 'react-icons/hi';
 import { HiOutlineArrowLeft } from 'react-icons/hi2';
@@ -31,16 +30,6 @@ const SETTINGS_ITEMS = [
         color: 'text-gray-600',
         bg: 'bg-gray-100',
         border: 'border-gray-200',
-    },
-    {
-        to: '/get-verified',
-        icon: HiOutlineBadgeCheck,
-        title: 'Get verified',
-        description: 'Verify your account so your listings appear at the top of search results.',
-        highlight: true,
-        color: 'text-amber-600',
-        bg: 'bg-amber-50',
-        border: 'border-amber-100',
     },
 ];
 

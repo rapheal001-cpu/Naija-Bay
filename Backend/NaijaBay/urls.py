@@ -15,7 +15,7 @@ from NaijaBay.utils import API_VERSION
 
 urlpatterns = [
     # Admin urls
-    path(f'{API_VERSION}admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
     # Accounts urls
     path(f'{API_VERSION}accounts/auth/', include('accounts.urls')),
     # Products urls

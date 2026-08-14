@@ -1,15 +1,9 @@
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.generics import (
-    get_object_or_404,
     ListAPIView,
     RetrieveAPIView,
-    CreateAPIView,
-    RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema_view, extend_schema
 from auth_kit.views import (
     LogoutView,
@@ -22,12 +16,10 @@ from auth_kit.views import (
     VerifyEmailView,
     ResendEmailVerificationView,
 )
-from accounts.models import Notifications, User, Store, UserVerification
-from accounts.serializers.serializers import NotificationSerializer, StoreSerializer
+from accounts.models import Notifications, User
+from accounts.serializers.serializers import NotificationSerializer
 from accounts.serializers.user import (
     CustomUserSerializer,
-    UserVerificationSerializer,
-    UserVerificationPaymentSerializer,
 )
 from NaijaBay.throttling import (
     LogoutThrottling,
@@ -41,7 +33,8 @@ from NaijaBay.throttling import (
     UserThrottling,
     VerifyEmailThrottling,
 )
-from NaijaBay.permissions import IsOnlyVerifiedUser, IsStoreOwnerOrReadOnly, IsOwnerOnly
+from NaijaBay.permissions import IsOwnerOnly
+
 
 # =============================================================================
 # AUTH VIEWS
@@ -143,8 +136,6 @@ class CustomUserView(UserView):
             "products__images",
             'favorite_products',
             "favorite_products__images",
-            "followers",
-            "following",
             "notifications",
         ).get(pk=self.request.user.pk)
 
@@ -155,7 +146,7 @@ class CustomUserView(UserView):
 
 @extend_schema_view(get=extend_schema(tags=["User"], operation_id="Other User Profile"))
 class OtherUserProfileAPIView(RetrieveAPIView):
-    queryset = User.objects.filter(is_active=True).prefetch_related("products", "products__images", "favorite_products", "favorite_products__images", "followers", "following")
+    queryset = User.objects.filter(is_active=True).prefetch_related("products", "products__images", "favorite_products", "favorite_products__images")
     serializer_class = CustomUserSerializer
     throttle_classes = [UserDetailThrottling]
     lookup_field = "pk"
@@ -182,94 +173,3 @@ class NotificationAPIView(ListAPIView):
         )
 
 notification_view = NotificationAPIView.as_view()
-
-
-# =============================================================================
-# STORE
-# =============================================================================
-
-@extend_schema_view(get=extend_schema(tags=['Store'], operation_id="Store List"))
-class StoreListAPIView(ListAPIView):
-    queryset = (
-        Store.objects.select_related("store_user")
-        .prefetch_related("store_members")
-        .order_by("-created_at")
-    )
-    serializer_class = StoreSerializer
-    permission_classes = [AllowAny]
-
-store_list_view = StoreListAPIView.as_view()
-
-
-@extend_schema_view(
-    get=extend_schema(tags=["Store"], operation_id="Current Store Detail"),
-    put=extend_schema(tags=["Store"], operation_id="Update Store Detail"),
-    patch=extend_schema(tags=["Store"], operation_id="Partially Update Store Detail"),
-    delete=extend_schema(tags=["Store"], operation_id="Delete Store"),
-)
-class StoreDetailAPIView(RetrieveUpdateDestroyAPIView):
-    serializer_class = StoreSerializer
-    permission_classes = [IsStoreOwnerOrReadOnly | IsAdminUser]
-    throttle_classes = [UserThrottling]
-    lookup_field = 'store_slug'
-    lookup_url_kwarg = 'store_slug'
-
-store_detail_view = StoreDetailAPIView.as_view()
-
-
-@extend_schema_view(post=extend_schema(tags=["Store"], operation_id="Create Store"))
-class CreateStoreAPIView(CreateAPIView):
-    queryset = Store.objects.all()
-    serializer_class = StoreSerializer
-    permission_classes = [IsOnlyVerifiedUser | IsAdminUser]
-    parser_classes = [MultiPartParser, FormParser]
-    throttle_classes = [UserThrottling]
-
-    def perform_create(self, serializer):
-        serializer.save(store_user=self.request.user)
-
-create_store_view = CreateStoreAPIView.as_view()
-
-
-# =============================================================================
-# USER VERIFICATION (PAID BADGE)
-# =============================================================================
-
-@extend_schema_view(get=extend_schema(tags=["Verification"], operation_id="Verification Status"))
-class UserVerificationStatusView(RetrieveAPIView):
-    serializer_class = UserVerificationSerializer
-    throttle_classes = [UserThrottling]
-
-    def get_object(self):
-        verification, _ = UserVerification.objects.get_or_create(user=self.request.user)
-
-        return verification
-
-verification_status_view = UserVerificationStatusView.as_view()
-
-
-@extend_schema_view(post=extend_schema(tags=["Verification"], operation_id="Confirm Payment"))
-class ConfirmVerificationPaymentView(APIView):
-    serializer_class = UserVerification
-    throttle_classes = [UserThrottling]
-
-    def post(self, request, *args, **kwargs):
-        verification = get_object_or_404(UserVerification, user=request.user)
-        serializer = UserVerificationPaymentSerializer(
-            verification,
-            data=request.data,
-            partial=True,
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(
-            {
-                "detail": "Payment confirmed. Your account is now verified.",
-                "verified": verification.is_verified,
-                "verified_at": verification.verified_at,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-confirm_payment_view = ConfirmVerificationPaymentView.as_view()

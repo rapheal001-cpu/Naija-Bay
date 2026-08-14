@@ -47,7 +47,7 @@ class ProductsListAPIView(ListAPIView):
             Product.objects.filter(active=True, sold=False)
             .select_related("product_user")
             .prefetch_related("views", "favorites", "images")
-            .order_by("-product_user__verified", "-created_at")
+            .order_by("-created_at")
         )
 
 products_list_view = ProductsListAPIView.as_view()
@@ -65,7 +65,6 @@ class FeaturedProductsListAPIView(ListAPIView):
     def get_queryset(self):
         return (
             Product.objects.filter(
-                product_user__verified=True,
                 active=True,
                 sold=False,
             )
@@ -195,75 +194,3 @@ class ProductImageCreateAPIView(CreateAPIView):
         return Response(created, status=status.HTTP_201_CREATED)
 
 create_product_images_view = ProductImageCreateAPIView.as_view()
-
-
-@extend_schema_view(
-    post=extend_schema(tags=["Products"], operation_id="Update Product Images")
-)
-class UpdateProductImageCreateAPIView(UpdateAPIView):
-    serializer_class = ProductImageSerializer
-    permission_classes = [IsOwnerOnly | IsAdminUser]
-    parser_classes = [MultiPartParser, FormParser]
-    lookup_field = 'pk'
-    lookup_url_kwarg = 'pk'
-
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
-        product_id = request.data.get("product")
-        images = request.FILES.getlist("images")
-
-        if not product_id:
-            return Response(
-                {"product": ["This field is required."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not images:
-            return Response(
-                {"images": ["At least one image is required."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Verify product exists and belongs to the current user
-        product = get_object_or_404(Product, id=product_id)
-        if product.product_user.id != request.user.id:
-            return Response(
-                {"detail": "You can only upload images to your own products."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        created = []
-        for image in images:
-            serializer = self.get_serializer(
-                data={"product": product.id, "image": image}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            created.append(serializer.data)
-
-        return Response(created, status=status.HTTP_201_CREATED)
-
-update_product_images_view = UpdateProductImageCreateAPIView.as_view()
-
-
-@extend_schema_view(
-    delete=extend_schema(tags=["Products"], operation_id="Delete Product Image")
-)
-class DeleteProductImageAPIView(DestroyAPIView):
-    serializer_class = ProductImageSerializer
-    permission_classes = [IsOwnerOnly | IsAdminUser]
-    queryset = ProductImage.objects.select_related('product')
-    lookup_field = 'pk'
-    lookup_url_kwarg = 'pk'
-
-    def delete(self, request, *args, **kwargs):
-        image = get_object_or_404(ProductImage, pk=kwargs.get('pk'))
-        if image.product.product_user.id != request.user.id:
-            return Response(
-                {"detail": "You can only delete your own product images."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        image.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-delete_product_image_view = DeleteProductImageAPIView.as_view()

@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
-import { HiBadgeCheck } from "react-icons/hi";
-import { FaBell, FaUserPlus, FaUserCheck, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaStore } from "react-icons/fa";
+import { FaBell, FaUserPlus, FaUserCheck, FaMapMarkerAlt, FaCalendarAlt, FaClock } from "react-icons/fa";
 import { IoSettingsOutline } from "react-icons/io5";
 import { useToggleFollowUserMutation } from '../../hooks/UseMutation';
 import { formatJoinDate, formatLastLogin } from "../../dummyData";
+
 
 const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
     const currentUser = useSelector((state) => state.user.user);
@@ -26,8 +26,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
     const avatarUrl = profile?.avatar || '/default-avatar.png';
     const fullName = profile?.full_name || '';
     const username = profile?.username || '';
-    const isVerified = profile?.verified ?? false;
-    const hasStore = profile?.has_store ?? false;
 
     return (
         <div className="relative bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
@@ -46,11 +44,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                             alt={fullName}
                             className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white shadow-lg bg-gray-100"
                         />
-                        {isVerified && (
-                            <span className="absolute -bottom-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow-sm">
-                                <HiBadgeCheck size={16} />
-                            </span>
-                        )}
                     </div>
 
                     {/* Name & Username */}
@@ -66,27 +59,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                     {/* Actions */}
                     {isOwnProfile ? (
                         <div className="flex items-center gap-2 sm:pb-1 flex-wrap justify-end">
-                            {/* Only verified users can create a store, and only if they don't already have one */}
-                            {isVerified && (
-                                hasStore ? (
-                                    <Link
-                                        to="/my-store"
-                                        className="flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm active:scale-95 transition-all shadow-sm min-w-30 bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
-                                    >
-                                        <FaStore size={14} />
-                                        My Store
-                                    </Link>
-                                ) : (
-                                    <Link
-                                        to="/create-store"
-                                        className="flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm active:scale-95 transition-all shadow-sm min-w-30 bg-brand text-white hover:opacity-90 shadow-brand/20"
-                                    >
-                                        <FaStore size={14} />
-                                        Create Store
-                                    </Link>
-                                )
-                            )}
-
                             <Link
                                 to="/notifications"
                                 aria-label="Notifications"

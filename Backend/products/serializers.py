@@ -22,7 +22,7 @@ from NaijaBay.utils import (
 class ProductUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'avatar', 'full_name', 'username', 'is_active', 'verified', 'date_joined']
+        fields = ['id', 'avatar', 'full_name', 'username', 'is_active', 'date_joined']
 
 class ProductSerializer(serializers.ModelSerializer):
     product_user = ProductUserSerializer(read_only=True)

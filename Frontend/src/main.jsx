@@ -23,7 +23,6 @@ import Settings from '@/pages/Settings.jsx';
 import UpdateProfile from '@/pages/UpdateProfile.jsx';
 import ForgotPassword from '@/pages/ForgotPassword.jsx';
 import ChangePassword from '@/pages/ChangePassword';
-import CreateStore from '@/pages/CreateStore';
 import Products from './pages/Products';
 import NetworkError from "@/pages/NetworkError";
 import EditProduct from './pages/EditProduct';
@@ -109,10 +108,6 @@ const router = createBrowserRouter([
     {
         path: '/change-password',
         element: <ChangePassword />
-    },
-    {
-        path: '/create-store',
-        element: <CreateStore />
     },
 ])
 

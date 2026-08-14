@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from decouple import config
 from datetime import timedelta
-import cloudinary
+
 
 # =============================================================================
 # ENVIRONMENT
@@ -355,7 +355,7 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "NaijaBay API",
-    "DESCRIPTION": "NaijaBay Marketplace API — endpoints for accounts, products, chat, and verification.",
+    "DESCRIPTION": "NaijaBay Marketplace API — endpoints for accounts, products and verification.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
@@ -383,7 +383,6 @@ SPECTACULAR_SETTINGS = {
         },
         {"name": "Store", "description": "Store creation and management endpoints."},
         {"name": "Core", "description": "Favorites, follows, and utility endpoints."},
-        {"name": "Chat", "description": "Chat message endpoints."},
         {"name": "Verification", "description": "Paid user verification endpoints."},
         {
             "name": "Documentation",

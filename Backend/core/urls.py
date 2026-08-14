@@ -4,7 +4,6 @@ from .views import (
     mark_notification_as_read_view,
     delete_all_notifications_view,
     delete_notification_view,
-    toggle_follow_user_view,
     toggle_favorite_product_view,
 )
 
@@ -29,12 +28,6 @@ urlpatterns = [
         "delete-notification/<int:notification_id>/",
         delete_notification_view,
         name="delete-notification",
-    ),
-    # Social
-    path(
-        "toggle-follow-user/<int:user_id>/",
-        toggle_follow_user_view,
-        name="toggle-follow-user",
     ),
     # Favorites
     path(

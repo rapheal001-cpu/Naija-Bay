@@ -204,6 +204,10 @@ NOTIFICATION_TYPES = [
     ('product_sold', 'Product Sold'),
     ('product_favorite', 'Product Favorite'),
     ('product_milestone_views', 'Product Milestone Views'),
+    ('new_message', 'New Message'),
+    ('new_follower', 'New Follower'),
+    ('store_created', 'Store Created'),
+    ('product_reported', 'Product Reported'),
     ('other', 'Other'),
 ]
 
@@ -234,6 +238,18 @@ NOTIFICATION_TEMPLATES = {
         "Your account security settings were updated.",
         "Scheduled maintenance will occur tonight from 12am to 2am.",
         "We've updated our terms of service. Please review the changes.",
+    ],
+    "new_message": [
+        'You have a new message regarding "{product_name}".',
+    ],
+    "new_follower": [
+        "{username} started following you.",
+    ],
+    "store_created": [
+        'Your store "{store_name}" is now live.',
+    ],
+    "product_reported": [
+        'A report was submitted for "{product_name}". Our team will review it.',
     ],
     "other": [
         "Reminder: complete your profile to boost visibility.",

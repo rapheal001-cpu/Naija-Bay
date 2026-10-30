@@ -19,6 +19,10 @@ const ProductCard = ({
     favorites_count,
     is_favorited, 
     color, 
+    promoted,
+    delivery_available,
+    sold,
+    listing_status,
 }) => {
 
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);

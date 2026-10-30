@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import validate_email
 from NaijaBay.utils import (
@@ -63,6 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Status flags
     is_active = models.BooleanField(_("Active"), default=True, db_index=True)
     is_staff = models.BooleanField(_("Staff"), default=False, db_index=True)
+    verified = models.BooleanField(_("Verified Seller"), default=False, db_index=True)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -78,6 +80,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def unread_notifications(self):
         return self.notifications.filter(read=False).count() if hasattr(self, 'notifications') else 0
+
+    @property
+    def followers_count(self):
+        return self.followers.count()
+
+    @property
+    def following_count(self):
+        return self.following.count()
+
+    @property
+    def has_store(self):
+        return hasattr(self, 'store')
 
     def __str__(self):
         return f"User: {self.username} <-> Status: {'✅' if self.is_active else '❌'}"
@@ -123,4 +137,104 @@ class Notifications(models.Model):
         verbose_name_plural = _('Notifications')
         indexes = [
             models.Index(fields=['user', 'read', '-timestamp']),
+        ]
+
+# =============================================================================
+# SELLER STORE
+# =============================================================================
+
+class Store(models.Model):
+    """A public shop page that a seller can attach to their account."""
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="store",
+        verbose_name=_("Store Owner"),
+    )
+    name = models.CharField(_("Store Name"), max_length=60, unique=True)
+    slug = models.SlugField(_("Store Slug"), max_length=80, unique=True, db_index=True)
+    description = models.TextField(_("Store Description"), blank=True)
+    logo = models.ImageField(
+        _("Store Logo"), upload_to="stores/logos/", blank=True, null=True
+    )
+    banner = models.ImageField(
+        _("Store Banner"), upload_to="stores/banners/", blank=True, null=True
+    )
+    verified = models.BooleanField(_("Verified Store"), default=False, db_index=True)
+    state = models.CharField(
+        _("Store State"), max_length=20, choices=STATE_CHOICES, blank=True
+    )
+    address = models.TextField(_("Store Address"), blank=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            while Store.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def products_count(self):
+        return self.user.products.filter(active=True, sold=False).count()
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = _("Store")
+        verbose_name_plural = _("Stores")
+        indexes = [
+            models.Index(fields=["slug"]),
+            models.Index(fields=["verified", "name"]),
+        ]
+
+
+# =============================================================================
+# FOLLOW (SELLER SUBSCRIPTIONS)
+# =============================================================================
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="following",
+        verbose_name=_("Follower"),
+        db_index=True,
+    )
+    following = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="followers",
+        verbose_name=_("Following"),
+        db_index=True,
+    )
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.follower.username} -> {self.following.username}"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Follow")
+        verbose_name_plural = _("Follows")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["follower", "following"], name="unique_follow"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(follower=models.F("following")),
+                name="prevent_self_follow",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["follower", "following"]),
+            models.Index(fields=["following", "follower"]),
         ]

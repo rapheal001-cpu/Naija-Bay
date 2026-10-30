@@ -5,6 +5,7 @@ from .views import (
     delete_all_notifications_view,
     delete_notification_view,
     toggle_favorite_product_view,
+    toggle_follow_user_view,
 )
 
 urlpatterns = [
@@ -34,5 +35,11 @@ urlpatterns = [
         "toggle-favorite-product/<slug:product_slug>/",
         toggle_favorite_product_view,
         name="toggle-favorite-product",
+    ),
+    # Follows
+    path(
+        "toggle-follow-user/<int:user_id>/",
+        toggle_follow_user_view,
+        name="toggle-follow-user",
     ),
 ]

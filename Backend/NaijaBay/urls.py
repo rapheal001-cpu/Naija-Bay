@@ -22,6 +22,8 @@ urlpatterns = [
     path(f'{API_VERSION}products/', include('products.urls')),
     # Core urls
     path(f'{API_VERSION}core/', include('core.urls')),
+    # Messaging urls
+    path(f'{API_VERSION}messaging/', include('messaging.urls')),
     # Drf spectacular urls
     path(f'{API_VERSION}schema/', SpectacularAPIView.as_view(), name='schema'),
     path(f'{API_VERSION}docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

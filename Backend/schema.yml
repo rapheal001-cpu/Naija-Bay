@@ -1,0 +1,3910 @@
+openapi: 3.0.3
+info:
+  title: NaijaBay API
+  version: 1.0.0
+  description: NaijaBay Marketplace API — endpoints for accounts, products and verification.
+  contact:
+    name: NaijaBay Support
+    email: support@naijabay.local
+  license:
+    name: Proprietary
+paths:
+  /api/v1/accounts/auth/create-store/:
+    post:
+      operationId: Create Or Update Store
+      description: Create the authenticated user's store, or update it when it exists.
+      tags:
+      - Store
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+  /api/v1/accounts/auth/followers/{id}/:
+    get:
+      operationId: accounts_auth_followers_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - accounts
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFollowUserList'
+          description: ''
+  /api/v1/accounts/auth/following/{id}/:
+    get:
+      operationId: accounts_auth_following_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - accounts
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFollowUserList'
+          description: ''
+  /api/v1/accounts/auth/login/:
+    post:
+      operationId: Login
+      description: Authenticate with username/email and password to obtain access
+        tokens. Returns user details along with JWT access and refresh tokens with
+        expiration times. Authentication cookies are set automatically for secure
+        token storage.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/v1/accounts/auth/logout/:
+    post:
+      operationId: Logout
+      description: Logout user and invalidate authentication tokens. Blacklists JWT
+        refresh tokens to prevent further use. Clears authentication cookies from
+        the browser. Requires authentication to ensure only valid sessions can be
+        logged out.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JWTLogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JWTLogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JWTLogoutRequest'
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWTLogout'
+          description: ''
+  /api/v1/accounts/auth/my-store/:
+    get:
+      operationId: My Store
+      tags:
+      - Store
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+  /api/v1/accounts/auth/notifications/:
+    get:
+      operationId: User Notifications
+      tags:
+      - User
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/accounts/auth/password/change/:
+    post:
+      operationId: Password Change
+      description: 'Change the current user''s password. Requires authentication. '
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordChange'
+          description: ''
+  /api/v1/accounts/auth/password/reset/:
+    post:
+      operationId: Password Reset
+      description: Send password reset instructions to the provided email address.
+        If the email is registered, a secure reset link will be sent. The link expires
+        after a limited time for security.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordReset'
+          description: ''
+  /api/v1/accounts/auth/password/reset/confirm/:
+    post:
+      operationId: Password Reset Confirm
+      description: Complete the password reset process using the token from the reset
+        email. Requires the UID and token from the email along with the new password.
+        The token is single-use and expires for security.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConfirm'
+          description: ''
+  /api/v1/accounts/auth/registration/:
+    post:
+      operationId: Register
+      description: Register a new user account. Users must verify their email address
+        before the account is fully activated.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomRegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomRegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomRegisterRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          description: No response body
+  /api/v1/accounts/auth/registration/resend-email/:
+    post:
+      operationId: Resend Email
+      description: |-
+        Send new email verification message.
+
+        Args:
+            request: The DRF request object
+            *args: Variable length argument list
+            **kwargs: Arbitrary keyword arguments
+
+        Returns:
+            DRF response with success message
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendEmailVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendEmailVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResendEmailVerificationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendEmailVerification'
+          description: ''
+  /api/v1/accounts/auth/registration/verify-email/:
+    get:
+      operationId: accounts_auth_registration_verify_email_retrieve
+      description: GET method not allowed for email verification.
+      tags:
+      - accounts
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '405':
+          description: Method not allowed
+    post:
+      operationId: Verify Email
+      description: |-
+        Verify email address using confirmation key.
+
+        Args:
+            request: The DRF request object
+            *args: Variable length argument list
+            **kwargs: Arbitrary keyword arguments
+
+        Returns:
+            DRF response with verification result
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmail'
+          description: ''
+  /api/v1/accounts/auth/store-detail/{slug}/:
+    get:
+      operationId: Store Detail
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Store
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+    put:
+      operationId: Update Store_2
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Store
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreCreate'
+          description: ''
+    patch:
+      operationId: Update Store
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Store
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreCreateRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreCreateRequest'
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreCreate'
+          description: ''
+    delete:
+      operationId: Delete Store
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Store
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/accounts/auth/token/refresh/:
+    post:
+      operationId: accounts_auth_token_refresh_create
+      description: Generate new JWT access tokens using refresh tokens. Refresh tokens
+        can be provided in request data or extracted automatically from HTTP cookies.
+        Returns new access tokens with updated expiration times. New tokens are automatically
+        set in HTTP cookies for secure storage.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieTokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CookieTokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CookieTokenRefreshRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieTokenRefresh'
+          description: ''
+  /api/v1/accounts/auth/token/verify/:
+    post:
+      operationId: accounts_auth_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/accounts/auth/user/:
+    get:
+      operationId: Current User Profile
+      description: Retrieve the authenticated user's profile information including
+        username, email, first name, and last name. Password fields are excluded.
+      tags:
+      - User
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomUser'
+          description: ''
+    put:
+      operationId: Update Current User_2
+      description: Update the authenticated user's profile information. Allows modification
+        of username, first name, and last name. Email field is read-only for security.
+      tags:
+      - User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomUserRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomUser'
+          description: ''
+    patch:
+      operationId: Update Current User
+      description: Partially update the authenticated user's profile information.
+        Only provided fields will be updated. Email field is read-only.
+      tags:
+      - User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomUserRequest'
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomUser'
+          description: ''
+  /api/v1/accounts/auth/user/{id}/:
+    get:
+      operationId: Other User Profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - User
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomUser'
+          description: ''
+  /api/v1/core/delete-all-notifications/:
+    delete:
+      operationId: Delete All
+      tags:
+      - Notifications
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/core/delete-notification/{notification_id}/:
+    delete:
+      operationId: Delete One Notification
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Notifications
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/core/mark-all-notifications-as-read/:
+    post:
+      operationId: Mark All Read
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/core/mark-notification-as-read/{notification_id}/:
+    post:
+      operationId: Mark One Read
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/core/toggle-favorite-product/{product_slug}/:
+    post:
+      operationId: Toggle Favorite
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/core/toggle-follow-user/{user_id}/:
+    post:
+      operationId: Toggle Follow User
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - User
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUser'
+          description: ''
+  /api/v1/messaging/:
+    get:
+      operationId: List Conversations
+      tags:
+      - Messaging
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+          description: ''
+    post:
+      operationId: Start Conversation
+      tags:
+      - Messaging
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationStartRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConversationStartRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConversationStartRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          description: ''
+  /api/v1/messaging/{id}/:
+    get:
+      operationId: Conversation Detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Messaging
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          description: ''
+  /api/v1/messaging/{id}/messages/:
+    get:
+      operationId: List Messages
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Messaging
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+          description: ''
+    post:
+      operationId: Send Message
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Messaging
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/messaging/{id}/read/:
+    post:
+      operationId: Mark Conversation Read
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Messaging
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/messaging/unread-count/:
+    get:
+      operationId: Unread Messages Count
+      tags:
+      - Messaging
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/products/:
+    get:
+      operationId: Products
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: city
+        schema:
+          type: string
+      - in: query
+        name: condition
+        schema:
+          type: string
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: delivery_available
+        schema:
+          type: boolean
+      - in: query
+        name: has_images
+        schema:
+          type: boolean
+      - in: query
+        name: max_price
+        schema:
+          type: number
+      - in: query
+        name: min_price
+        schema:
+          type: number
+      - in: query
+        name: negotiable
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: promoted
+        schema:
+          type: boolean
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: state
+        schema:
+          type: string
+      - in: query
+        name: sub_category
+        schema:
+          type: string
+      - in: query
+        name: verified_seller
+        schema:
+          type: boolean
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+  /api/v1/products/categories/:
+    get:
+      operationId: Categories
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/products/create/:
+    post:
+      operationId: Create Product
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/create/images/:
+    post:
+      operationId: Upload Product Images
+      tags:
+      - Products
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+  /api/v1/products/detail/{product_slug}/:
+    get:
+      operationId: Product Detail
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: Update Product_2
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: Update Product
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    delete:
+      operationId: Delete Product
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/favorites/:
+    get:
+      operationId: Favorite Products
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+  /api/v1/products/featured/:
+    get:
+      operationId: Featured Products
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/image/delete/{image_id}/:
+    post:
+      operationId: Delete Product Image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+  /api/v1/products/my-listings/:
+    get:
+      operationId: My Listings
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+  /api/v1/products/recently-viewed/:
+    get:
+      operationId: Recently Viewed Products
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Products
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+  /api/v1/products/report/{product_slug}/:
+    post:
+      operationId: Report Product
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductReportRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductReport'
+          description: ''
+  /api/v1/products/update/images/{product_id}/:
+    post:
+      operationId: Replace Product Images
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+        required: true
+      security:
+      - JWTAuthentication: []
+        JWTCookieAuthentication: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+components:
+  schemas:
+    BlankEnum:
+      enum:
+      - ''
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Category Name
+        slug:
+          type: string
+          readOnly: true
+          title: Category Slug
+          pattern: ^[-a-zA-Z0-9_]+$
+        sub_categories:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - slug
+      - sub_categories
+    CategoryEnum:
+      enum:
+      - phones_tablets
+      - electronics
+      - vehicles
+      - real_estate
+      - fashion
+      - home_garden
+      - jobs
+      - services
+      - animals_pets
+      - food_agriculture
+      - health_beauty
+      - kids_baby
+      - sports_outdoor
+      - books_music_movies
+      type: string
+      description: |-
+        * `` - Select Category
+        * `phones_tablets` - Phones & Tablets
+        * `electronics` - Electronics
+        * `vehicles` - Vehicles
+        * `real_estate` - Real Estate
+        * `fashion` - Fashion
+        * `home_garden` - Home & Garden
+        * `jobs` - Jobs
+        * `services` - Services
+        * `animals_pets` - Animals & Pets
+        * `food_agriculture` - Food & Agriculture
+        * `health_beauty` - Health & Beauty
+        * `kids_baby` - Kids & Baby
+        * `sports_outdoor` - Sports & Outdoor
+        * `books_music_movies` - Books, Music & Movies
+    ChatProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        product_slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Product Price
+        state:
+          readOnly: true
+          title: Product State
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        city:
+          readOnly: true
+          title: Product City
+          oneOf:
+          - $ref: '#/components/schemas/CityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        image:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - city
+      - id
+      - image
+      - price
+      - product_name
+      - product_slug
+      - state
+    ChatUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Active
+        store:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+          readOnly: true
+      required:
+      - avatar
+      - full_name
+      - id
+      - is_active
+      - store
+      - username
+    CityEnum:
+      enum:
+      - aba
+      - umuahia
+      - ohafia
+      - arochukwu
+      - isuikwuato
+      - osisioma
+      - ukwa
+      - yola
+      - mubi
+      - numan
+      - jimeta
+      - ganye
+      - hong
+      - michika
+      - song
+      - uyo
+      - ikot_ekpene
+      - eket
+      - oron
+      - abak
+      - itu
+      - ikot_abasi
+      - etinan
+      - awka
+      - onitsha
+      - nnewi
+      - ekwulobia
+      - ihiala
+      - ogbaru
+      - aguata
+      - njikoka
+      - bauchi
+      - azare
+      - misau
+      - jama'are
+      - ningi
+      - katagum
+      - tafawa_balewa
+      - dass
+      - yenagoa
+      - brass
+      - nembe
+      - ogbia
+      - sagbama
+      - ekeremor
+      - kolokuma_opokuma
+      - makurdi
+      - gboko
+      - otukpo
+      - katsina_ala
+      - vandeikya
+      - oju
+      - adikpo
+      - aliade
+      - maiduguri
+      - biu
+      - bama
+      - dikwa
+      - gwoza
+      - monguno
+      - konduga
+      - kukawa
+      - calabar
+      - ikom
+      - obudu
+      - ugep
+      - ogoja
+      - akpabuyo
+      - boki
+      - yala
+      - asaba
+      - warri
+      - sapele
+      - agbor
+      - ughelli
+      - ozoro
+      - effurun
+      - kwale
+      - burutu
+      - abakaliki
+      - afikpo
+      - onueke
+      - izzi
+      - ezza
+      - ikwo
+      - ohaukwu
+      - ishielu
+      - benin_city
+      - ekpoma
+      - auchi
+      - iguobazuwa
+      - uromi
+      - sabongida_ora
+      - igarra
+      - agenebode
+      - ado_ekiti
+      - ikere_ekiti
+      - oye_ekiti
+      - ijero_ekiti
+      - emure_ekiti
+      - ise_ekiti
+      - ilawe_ekiti
+      - aramoko
+      - enugu
+      - nsukka
+      - awgu
+      - udi
+      - oji_river
+      - agbani
+      - nkanu
+      - enugu_ezike
+      - wuse
+      - garki
+      - maitama
+      - asokoro
+      - jabi
+      - kubwa
+      - gwagwalada
+      - kuje
+      - bwari
+      - abaji
+      - lugbe
+      - nyanya
+      - gombe
+      - kaltungo
+      - billiri
+      - dukku
+      - deba
+      - nafada
+      - bajoga
+      - funakaye
+      - owerri
+      - orlu
+      - okigwe
+      - mgbidi
+      - oguta
+      - mbaise
+      - ehime_mbano
+      - ideato
+      - dutse
+      - hadejia
+      - gumel
+      - ringim
+      - birnin_kudu
+      - kazaure
+      - babura
+      - gwaram
+      - kaduna
+      - zaria
+      - kafanchan
+      - ikara
+      - saminaka
+      - kachia
+      - giwa
+      - birnin_gwari
+      - kano
+      - wudil
+      - bichi
+      - gaya
+      - rano
+      - kibiya
+      - takai
+      - dawakin_tofa
+      - ungogo
+      - fagge
+      - katsina
+      - daura
+      - funtua
+      - malumfashi
+      - kankia
+      - dutsin_ma
+      - bakori
+      - mani
+      - birnin_kebbi
+      - argungu
+      - yelwa
+      - zuru
+      - jega
+      - kamba
+      - bunza
+      - bagudo
+      - lokoja
+      - okene
+      - idah
+      - kabba
+      - anyigba
+      - ankpa
+      - dekina
+      - ajaokuta
+      - ilorin
+      - offa
+      - omu_aran
+      - patigi
+      - lafiagi
+      - jebba
+      - share
+      - erin_ile
+      - ikeja
+      - lagos_island
+      - lagos_mainland
+      - yaba
+      - surulere
+      - ikorodu
+      - epe
+      - badagry
+      - ajah
+      - lekki
+      - victoria_island
+      - ikoyi
+      - apapa
+      - festac
+      - ojo
+      - alimosho
+      - agege
+      - ikotun
+      - egbeda
+      - isolo
+      - mushin
+      - oshodi
+      - maryland
+      - gbagada
+      - ogba
+      - magodo
+      - iju
+      - shomolu
+      - bariga
+      - lafia
+      - keffi
+      - akwanga
+      - nasarawa_eggon
+      - wamba
+      - doma
+      - karu
+      - toto
+      - minna
+      - suleja
+      - kontagora
+      - bida
+      - new_bussa
+      - lapai
+      - agaie
+      - wushishi
+      - abeokuta
+      - ijebu_ode
+      - sagamu
+      - ilaro
+      - ota
+      - ifo
+      - sango_ota
+      - ijebu_igbo
+      - ayetoro
+      - owode
+      - akure
+      - ondo
+      - ore
+      - okitipupa
+      - ikare
+      - owo
+      - idanre
+      - ile_oluji
+      - oka
+      - osogbo
+      - ile_ife
+      - ilesha
+      - ede
+      - ikirun
+      - iwo
+      - ejigbo
+      - ikire
+      - ila
+      - gbongan
+      - ibadan
+      - oyo
+      - ogbomosho
+      - saki
+      - iseyin
+      - eruwa
+      - kisi
+      - igbo_ora
+      - lanlate
+      - moniya
+      - jos
+      - bukuru
+      - pankshin
+      - langtang
+      - shendam
+      - mangu
+      - bokkos
+      - bassa
+      - port_harcourt
+      - obio_akpor
+      - bonny
+      - degema
+      - ikwerre
+      - oyigbo
+      - ahoada
+      - okrika
+      - eleme
+      - emuoha
+      - tai
+      - gokana
+      - khana
+      - sokoto
+      - tambuwal
+      - gwadabawa
+      - wurno
+      - shagari
+      - binji
+      - bodinga
+      - goronyo
+      - jalingo
+      - wukari
+      - bali
+      - gembu
+      - zing
+      - sardauna
+      - takum
+      - ibi
+      - damaturu
+      - potiskum
+      - gashua
+      - nguru
+      - gujba
+      - buni_yadi
+      - geidam
+      - yunusari
+      - gusau
+      - kaura_namoda
+      - anka
+      - talata_mafara
+      - shinkafi
+      - maradun
+      - bakura
+      - bungudu
+      type: string
+      description: |-
+        * `` - Select City
+        * `aba` - Aba
+        * `umuahia` - Umuahia
+        * `ohafia` - Ohafia
+        * `arochukwu` - Arochukwu
+        * `isuikwuato` - Isuikwuato
+        * `osisioma` - Osisioma
+        * `ukwa` - Ukwa
+        * `yola` - Yola
+        * `mubi` - Mubi
+        * `numan` - Numan
+        * `jimeta` - Jimeta
+        * `ganye` - Ganye
+        * `hong` - Hong
+        * `michika` - Michika
+        * `song` - Song
+        * `uyo` - Uyo
+        * `ikot_ekpene` - Ikot Ekpene
+        * `eket` - Eket
+        * `oron` - Oron
+        * `abak` - Abak
+        * `itu` - Itu
+        * `ikot_abasi` - Ikot Abasi
+        * `etinan` - Etinan
+        * `awka` - Awka
+        * `onitsha` - Onitsha
+        * `nnewi` - Nnewi
+        * `ekwulobia` - Ekwulobia
+        * `ihiala` - Ihiala
+        * `ogbaru` - Ogbaru
+        * `aguata` - Aguata
+        * `njikoka` - Njikoka
+        * `bauchi` - Bauchi
+        * `azare` - Azare
+        * `misau` - Misau
+        * `jama'are` - Jama'Are
+        * `ningi` - Ningi
+        * `katagum` - Katagum
+        * `tafawa_balewa` - Tafawa Balewa
+        * `dass` - Dass
+        * `yenagoa` - Yenagoa
+        * `brass` - Brass
+        * `nembe` - Nembe
+        * `ogbia` - Ogbia
+        * `sagbama` - Sagbama
+        * `ekeremor` - Ekeremor
+        * `kolokuma_opokuma` - Kolokuma/Opokuma
+        * `makurdi` - Makurdi
+        * `gboko` - Gboko
+        * `otukpo` - Otukpo
+        * `katsina_ala` - Katsina-Ala
+        * `vandeikya` - Vandeikya
+        * `oju` - Oju
+        * `adikpo` - Adikpo
+        * `aliade` - Aliade
+        * `maiduguri` - Maiduguri
+        * `biu` - Biu
+        * `bama` - Bama
+        * `dikwa` - Dikwa
+        * `gwoza` - Gwoza
+        * `monguno` - Monguno
+        * `konduga` - Konduga
+        * `kukawa` - Kukawa
+        * `calabar` - Calabar
+        * `ikom` - Ikom
+        * `obudu` - Obudu
+        * `ugep` - Ugep
+        * `ogoja` - Ogoja
+        * `akpabuyo` - Akpabuyo
+        * `boki` - Boki
+        * `yala` - Yala
+        * `asaba` - Asaba
+        * `warri` - Warri
+        * `sapele` - Sapele
+        * `agbor` - Agbor
+        * `ughelli` - Ughelli
+        * `ozoro` - Ozoro
+        * `effurun` - Effurun
+        * `kwale` - Kwale
+        * `burutu` - Burutu
+        * `abakaliki` - Abakaliki
+        * `afikpo` - Afikpo
+        * `onueke` - Onueke
+        * `izzi` - Izzi
+        * `ezza` - Ezza
+        * `ikwo` - Ikwo
+        * `ohaukwu` - Ohaukwu
+        * `ishielu` - Ishielu
+        * `benin_city` - Benin City
+        * `ekpoma` - Ekpoma
+        * `auchi` - Auchi
+        * `iguobazuwa` - Iguobazuwa
+        * `uromi` - Uromi
+        * `sabongida_ora` - Sabongida-Ora
+        * `igarra` - Igarra
+        * `agenebode` - Agenebode
+        * `ado_ekiti` - Ado-Ekiti
+        * `ikere_ekiti` - Ikere-Ekiti
+        * `oye_ekiti` - Oye-Ekiti
+        * `ijero_ekiti` - Ijero-Ekiti
+        * `emure_ekiti` - Emure-Ekiti
+        * `ise_ekiti` - Ise-Ekiti
+        * `ilawe_ekiti` - Ilawe-Ekiti
+        * `aramoko` - Aramoko
+        * `enugu` - Enugu
+        * `nsukka` - Nsukka
+        * `awgu` - Awgu
+        * `udi` - Udi
+        * `oji_river` - Oji River
+        * `agbani` - Agbani
+        * `nkanu` - Nkanu
+        * `enugu_ezike` - Enugu-Ezike
+        * `wuse` - Wuse
+        * `garki` - Garki
+        * `maitama` - Maitama
+        * `asokoro` - Asokoro
+        * `jabi` - Jabi
+        * `kubwa` - Kubwa
+        * `gwagwalada` - Gwagwalada
+        * `kuje` - Kuje
+        * `bwari` - Bwari
+        * `abaji` - Abaji
+        * `lugbe` - Lugbe
+        * `nyanya` - Nyanya
+        * `gombe` - Gombe
+        * `kaltungo` - Kaltungo
+        * `billiri` - Billiri
+        * `dukku` - Dukku
+        * `deba` - Deba
+        * `nafada` - Nafada
+        * `bajoga` - Bajoga
+        * `funakaye` - Funakaye
+        * `owerri` - Owerri
+        * `orlu` - Orlu
+        * `okigwe` - Okigwe
+        * `mgbidi` - Mgbidi
+        * `oguta` - Oguta
+        * `mbaise` - Mbaise
+        * `ehime_mbano` - Ehime Mbano
+        * `ideato` - Ideato
+        * `dutse` - Dutse
+        * `hadejia` - Hadejia
+        * `gumel` - Gumel
+        * `ringim` - Ringim
+        * `birnin_kudu` - Birnin Kudu
+        * `kazaure` - Kazaure
+        * `babura` - Babura
+        * `gwaram` - Gwaram
+        * `kaduna` - Kaduna
+        * `zaria` - Zaria
+        * `kafanchan` - Kafanchan
+        * `ikara` - Ikara
+        * `saminaka` - Saminaka
+        * `kachia` - Kachia
+        * `giwa` - Giwa
+        * `birnin_gwari` - Birnin Gwari
+        * `kano` - Kano
+        * `wudil` - Wudil
+        * `bichi` - Bichi
+        * `gaya` - Gaya
+        * `rano` - Rano
+        * `kibiya` - Kibiya
+        * `takai` - Takai
+        * `dawakin_tofa` - Dawakin Tofa
+        * `ungogo` - Ungogo
+        * `fagge` - Fagge
+        * `katsina` - Katsina
+        * `daura` - Daura
+        * `funtua` - Funtua
+        * `malumfashi` - Malumfashi
+        * `kankia` - Kankia
+        * `dutsin_ma` - Dutsin-Ma
+        * `bakori` - Bakori
+        * `mani` - Mani
+        * `birnin_kebbi` - Birnin Kebbi
+        * `argungu` - Argungu
+        * `yelwa` - Yelwa
+        * `zuru` - Zuru
+        * `jega` - Jega
+        * `kamba` - Kamba
+        * `bunza` - Bunza
+        * `bagudo` - Bagudo
+        * `lokoja` - Lokoja
+        * `okene` - Okene
+        * `idah` - Idah
+        * `kabba` - Kabba
+        * `anyigba` - Anyigba
+        * `ankpa` - Ankpa
+        * `dekina` - Dekina
+        * `ajaokuta` - Ajaokuta
+        * `ilorin` - Ilorin
+        * `offa` - Offa
+        * `omu_aran` - Omu-Aran
+        * `patigi` - Patigi
+        * `lafiagi` - Lafiagi
+        * `jebba` - Jebba
+        * `share` - Share
+        * `erin_ile` - Erin-Ile
+        * `ikeja` - Ikeja
+        * `lagos_island` - Lagos Island
+        * `lagos_mainland` - Lagos Mainland
+        * `yaba` - Yaba
+        * `surulere` - Surulere
+        * `ikorodu` - Ikorodu
+        * `epe` - Epe
+        * `badagry` - Badagry
+        * `ajah` - Ajah
+        * `lekki` - Lekki
+        * `victoria_island` - Victoria Island
+        * `ikoyi` - Ikoyi
+        * `apapa` - Apapa
+        * `festac` - Festac
+        * `ojo` - Ojo
+        * `alimosho` - Alimosho
+        * `agege` - Agege
+        * `ikotun` - Ikotun
+        * `egbeda` - Egbeda
+        * `isolo` - Isolo
+        * `mushin` - Mushin
+        * `oshodi` - Oshodi
+        * `maryland` - Maryland
+        * `gbagada` - Gbagada
+        * `ogba` - Ogba
+        * `magodo` - Magodo
+        * `iju` - Iju
+        * `shomolu` - Shomolu
+        * `bariga` - Bariga
+        * `lafia` - Lafia
+        * `keffi` - Keffi
+        * `akwanga` - Akwanga
+        * `nasarawa_eggon` - Nasarawa Eggon
+        * `wamba` - Wamba
+        * `doma` - Doma
+        * `karu` - Karu
+        * `toto` - Toto
+        * `minna` - Minna
+        * `suleja` - Suleja
+        * `kontagora` - Kontagora
+        * `bida` - Bida
+        * `new_bussa` - New Bussa
+        * `lapai` - Lapai
+        * `agaie` - Agaie
+        * `wushishi` - Wushishi
+        * `abeokuta` - Abeokuta
+        * `ijebu_ode` - Ijebu-Ode
+        * `sagamu` - Sagamu
+        * `ilaro` - Ilaro
+        * `ota` - Ota
+        * `ifo` - Ifo
+        * `sango_ota` - Sango-Ota
+        * `ijebu_igbo` - Ijebu-Igbo
+        * `ayetoro` - Ayetoro
+        * `owode` - Owode
+        * `akure` - Akure
+        * `ondo` - Ondo
+        * `ore` - Ore
+        * `okitipupa` - Okitipupa
+        * `ikare` - Ikare
+        * `owo` - Owo
+        * `idanre` - Idanre
+        * `ile_oluji` - Ile-Oluji
+        * `oka` - Oka
+        * `osogbo` - Osogbo
+        * `ile_ife` - Ile-Ife
+        * `ilesha` - Ilesha
+        * `ede` - Ede
+        * `ikirun` - Ikirun
+        * `iwo` - Iwo
+        * `ejigbo` - Ejigbo
+        * `ikire` - Ikire
+        * `ila` - Ila
+        * `gbongan` - Gbongan
+        * `ibadan` - Ibadan
+        * `oyo` - Oyo
+        * `ogbomosho` - Ogbomosho
+        * `saki` - Saki
+        * `iseyin` - Iseyin
+        * `eruwa` - Eruwa
+        * `kisi` - Kisi
+        * `igbo_ora` - Igbo-Ora
+        * `lanlate` - Lanlate
+        * `moniya` - Moniya
+        * `jos` - Jos
+        * `bukuru` - Bukuru
+        * `pankshin` - Pankshin
+        * `langtang` - Langtang
+        * `shendam` - Shendam
+        * `mangu` - Mangu
+        * `bokkos` - Bokkos
+        * `bassa` - Bassa
+        * `port_harcourt` - Port Harcourt
+        * `obio_akpor` - Obio/Akpor
+        * `bonny` - Bonny
+        * `degema` - Degema
+        * `ikwerre` - Ikwerre
+        * `oyigbo` - Oyigbo
+        * `ahoada` - Ahoada
+        * `okrika` - Okrika
+        * `eleme` - Eleme
+        * `emuoha` - Emuoha
+        * `tai` - Tai
+        * `gokana` - Gokana
+        * `khana` - Khana
+        * `sokoto` - Sokoto
+        * `tambuwal` - Tambuwal
+        * `gwadabawa` - Gwadabawa
+        * `wurno` - Wurno
+        * `shagari` - Shagari
+        * `binji` - Binji
+        * `bodinga` - Bodinga
+        * `goronyo` - Goronyo
+        * `jalingo` - Jalingo
+        * `wukari` - Wukari
+        * `bali` - Bali
+        * `gembu` - Gembu
+        * `zing` - Zing
+        * `sardauna` - Sardauna
+        * `takum` - Takum
+        * `ibi` - Ibi
+        * `damaturu` - Damaturu
+        * `potiskum` - Potiskum
+        * `gashua` - Gashua
+        * `nguru` - Nguru
+        * `gujba` - Gujba
+        * `buni_yadi` - Buni Yadi
+        * `geidam` - Geidam
+        * `yunusari` - Yunusari
+        * `gusau` - Gusau
+        * `kaura_namoda` - Kaura-Namoda
+        * `anka` - Anka
+        * `talata_mafara` - Talata Mafara
+        * `shinkafi` - Shinkafi
+        * `maradun` - Maradun
+        * `bakura` - Bakura
+        * `bungudu` - Bungudu
+    ConditionEnum:
+      enum:
+      - new
+      - used
+      - refurbished
+      type: string
+      description: |-
+        * `` - No Condition
+        * `new` - New
+        * `used` - Used
+        * `refurbished` - Refurbished
+    ContactMethodsEnum:
+      enum:
+      - phone_call
+      - whatsapp
+      type: string
+      description: |-
+        * `` - Select Contact Method
+        * `phone_call` - Phone Call
+        * `whatsapp` - WhatsApp
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ChatProduct'
+          readOnly: true
+        buyer:
+          allOf:
+          - $ref: '#/components/schemas/ChatUser'
+          readOnly: true
+        seller:
+          allOf:
+          - $ref: '#/components/schemas/ChatUser'
+          readOnly: true
+        counterpart:
+          allOf:
+          - $ref: '#/components/schemas/ChatUser'
+          nullable: true
+          readOnly: true
+        last_message:
+          allOf:
+          - $ref: '#/components/schemas/Message'
+          nullable: true
+          readOnly: true
+        unread_count:
+          type: integer
+          default: 0
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - buyer
+      - counterpart
+      - created_at
+      - id
+      - last_message
+      - product
+      - seller
+      - unread_count
+      - updated_at
+    ConversationStartRequest:
+      type: object
+      description: Alias kept for schema clarity on the start-chat endpoint.
+      properties:
+        product:
+          type: integer
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+      required:
+      - message
+      - product
+    CookieTokenRefresh:
+      type: object
+      description: JWT token refresh with cookie and request data support.
+      properties:
+        refresh:
+          type: string
+          description: Will override cookie.
+        access:
+          type: string
+          readOnly: true
+        access_expiration:
+          type: string
+          format: date-time
+          readOnly: true
+        refresh_expiration:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - access
+      - access_expiration
+      - refresh_expiration
+    CookieTokenRefreshRequest:
+      type: object
+      description: JWT token refresh with cookie and request data support.
+      properties:
+        refresh:
+          type: string
+          description: Will override cookie.
+    CustomRegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          minLength: 1
+          maxLength: 254
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 15
+        password1:
+          type: string
+          writeOnly: true
+          minLength: 8
+          maxLength: 16
+        password2:
+          type: string
+          writeOnly: true
+          minLength: 8
+          maxLength: 16
+      required:
+      - email
+      - password1
+      - password2
+      - username
+    CustomUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        full_name:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        username:
+          type: string
+          maxLength: 15
+        email:
+          type: string
+          format: email
+          title: Email Address
+          maxLength: 254
+        phone_number:
+          type: string
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Active
+        verified:
+          type: boolean
+          readOnly: true
+          title: Verified Seller
+        unread_notifications:
+          type: integer
+          default: 0
+          readOnly: true
+        store:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+          readOnly: true
+        followers_count:
+          type: integer
+          default: 0
+          readOnly: true
+        following_count:
+          type: integer
+          default: 0
+          readOnly: true
+        is_following:
+          type: boolean
+          default: false
+          readOnly: true
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+          readOnly: true
+        favorites:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+          readOnly: true
+      required:
+      - date_joined
+      - email
+      - favorites
+      - followers_count
+      - following_count
+      - full_name
+      - id
+      - is_active
+      - is_following
+      - last_login
+      - phone_number
+      - products
+      - store
+      - unread_notifications
+      - username
+      - verified
+    CustomUserRequest:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: binary
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        username:
+          type: string
+          minLength: 1
+          maxLength: 15
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email Address
+          maxLength: 254
+        phone_number:
+          type: string
+          minLength: 1
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+      required:
+      - email
+      - phone_number
+      - username
+    FollowUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        verified:
+          type: boolean
+          readOnly: true
+          title: Verified Seller
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - avatar
+      - date_joined
+      - full_name
+      - id
+      - username
+      - verified
+    JWTLogout:
+      type: object
+      description: JWT logout with refresh token blacklisting.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    JWTLogoutRequest:
+      type: object
+      description: JWT logout with refresh token blacklisting.
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+    Login:
+      type: object
+      description: User authentication with credentials response.
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+        access_expiration:
+          type: string
+          format: date-time
+          readOnly: true
+        refresh_expiration:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/CustomUser'
+          readOnly: true
+      required:
+      - access
+      - access_expiration
+      - refresh
+      - refresh_expiration
+      - user
+    LoginRequest:
+      type: object
+      description: User authentication with credentials response.
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        conversation:
+          type: integer
+          readOnly: true
+        sender:
+          allOf:
+          - $ref: '#/components/schemas/ChatUser'
+          readOnly: true
+        body:
+          type: string
+          title: Message
+        read:
+          type: boolean
+          readOnly: true
+        is_mine:
+          type: boolean
+          default: false
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - conversation
+      - created_at
+      - id
+      - is_mine
+      - read
+      - sender
+    MessageRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          title: Message
+      required:
+      - body
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        notification_type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        message:
+          type: string
+        read:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Time Stamp
+        user:
+          type: integer
+      required:
+      - id
+      - message
+      - timestamp
+      - user
+    NotificationRequest:
+      type: object
+      properties:
+        notification_type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        message:
+          type: string
+          minLength: 1
+        read:
+          type: boolean
+        user:
+          type: integer
+      required:
+      - message
+      - user
+    NotificationTypeEnum:
+      enum:
+      - system_notification
+      - product_created
+      - product_sold
+      - product_favorite
+      - product_milestone_views
+      - new_message
+      - new_follower
+      - store_created
+      - product_reported
+      - other
+      type: string
+      description: |-
+        * `system_notification` - System Notifications
+        * `product_created` - Product Created
+        * `product_sold` - Product Sold
+        * `product_favorite` - Product Favorite
+        * `product_milestone_views` - Product Milestone Views
+        * `new_message` - New Message
+        * `new_follower` - New Follower
+        * `store_created` - Store Created
+        * `product_reported` - Product Reported
+        * `other` - Other
+    PaginatedFollowUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUser'
+    PaginatedProductList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PasswordChange:
+      type: object
+      description: Password change for authenticated users.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    PasswordChangeRequest:
+      type: object
+      description: Password change for authenticated users.
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        new_password1:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        new_password2:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - new_password1
+      - new_password2
+      - old_password
+    PasswordReset:
+      type: object
+      description: Password reset request with email verification.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    PasswordResetConfirm:
+      type: object
+      description: Password reset confirmation with new password.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    PasswordResetConfirmRequest:
+      type: object
+      description: Password reset confirmation with new password.
+      properties:
+        new_password1:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        new_password2:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        uid:
+          type: string
+          writeOnly: true
+          minLength: 1
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - new_password1
+      - new_password2
+      - token
+      - uid
+    PasswordResetRequest:
+      type: object
+      description: Password reset request with email verification.
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+    PatchedCustomUserRequest:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: binary
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        username:
+          type: string
+          minLength: 1
+          maxLength: 15
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email Address
+          maxLength: 254
+        phone_number:
+          type: string
+          minLength: 1
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+    PatchedProductRequest:
+      type: object
+      properties:
+        product_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+          title: Product Description
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        category:
+          oneOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        sub_category:
+          oneOf:
+          - $ref: '#/components/schemas/SubCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        condition:
+          title: Product Condition
+          oneOf:
+          - $ref: '#/components/schemas/ConditionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        color:
+          type: string
+          minLength: 1
+        quantity:
+          type: integer
+          default: 1
+        negotiable:
+          type: boolean
+          default: false
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        city:
+          oneOf:
+          - $ref: '#/components/schemas/CityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_methods:
+          type: array
+          items:
+            oneOf:
+            - $ref: '#/components/schemas/ContactMethodsEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        contact_number:
+          type: string
+          minLength: 1
+        sold:
+          type: boolean
+          default: false
+        delivery_available:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    PatchedStoreCreateRequest:
+      type: object
+      description: Create or update the store owned by the authenticated user.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Store Name
+          maxLength: 60
+        description:
+          type: string
+          title: Store Description
+        logo:
+          type: string
+          format: binary
+          nullable: true
+          title: Store Logo
+        banner:
+          type: string
+          format: binary
+          nullable: true
+          title: Store Banner
+        state:
+          title: Store State
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+          title: Store Address
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_user:
+          allOf:
+          - $ref: '#/components/schemas/ProductUser'
+          readOnly: true
+        product_name:
+          type: string
+          maxLength: 200
+        product_slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Product Description
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        category:
+          oneOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        sub_category:
+          oneOf:
+          - $ref: '#/components/schemas/SubCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        condition:
+          title: Product Condition
+          oneOf:
+          - $ref: '#/components/schemas/ConditionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        color:
+          type: string
+        quantity:
+          type: integer
+          default: 1
+        negotiable:
+          type: boolean
+          default: false
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        city:
+          oneOf:
+          - $ref: '#/components/schemas/CityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_methods:
+          type: array
+          items:
+            oneOf:
+            - $ref: '#/components/schemas/ContactMethodsEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        contact_number:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        favorites_count:
+          type: integer
+          default: 0
+          readOnly: true
+        views_count:
+          type: integer
+          default: 0
+          readOnly: true
+        images_count:
+          type: integer
+          default: 0
+          readOnly: true
+        active:
+          type: boolean
+          readOnly: true
+        sold:
+          type: boolean
+          default: false
+        promoted:
+          type: boolean
+          readOnly: true
+        delivery_available:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        listing_status:
+          type: string
+          readOnly: true
+        is_owner:
+          type: boolean
+          default: false
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_favorited:
+          type: boolean
+          default: false
+          readOnly: true
+      required:
+      - active
+      - category
+      - city
+      - color
+      - condition
+      - contact_methods
+      - contact_number
+      - created_at
+      - description
+      - favorites_count
+      - id
+      - images
+      - images_count
+      - is_favorited
+      - is_owner
+      - listing_status
+      - price
+      - product_name
+      - product_slug
+      - product_user
+      - promoted
+      - state
+      - sub_category
+      - updated_at
+      - views_count
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+        image:
+          type: string
+          format: uri
+          title: Product Image
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - image
+      - product
+    ProductImageRequest:
+      type: object
+      properties:
+        product:
+          type: integer
+        image:
+          type: string
+          format: binary
+          title: Product Image
+      required:
+      - image
+      - product
+    ProductReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+          readOnly: true
+        reporter:
+          allOf:
+          - $ref: '#/components/schemas/ProductUser'
+          readOnly: true
+        reason:
+          $ref: '#/components/schemas/ReasonEnum'
+        details:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - product
+      - reason
+      - reporter
+      - status
+    ProductReportRequest:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReasonEnum'
+        details:
+          type: string
+      required:
+      - reason
+    ProductRequest:
+      type: object
+      properties:
+        product_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+          title: Product Description
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        category:
+          oneOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        sub_category:
+          oneOf:
+          - $ref: '#/components/schemas/SubCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        condition:
+          title: Product Condition
+          oneOf:
+          - $ref: '#/components/schemas/ConditionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        color:
+          type: string
+          minLength: 1
+        quantity:
+          type: integer
+          default: 1
+        negotiable:
+          type: boolean
+          default: false
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        city:
+          oneOf:
+          - $ref: '#/components/schemas/CityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        contact_methods:
+          type: array
+          items:
+            oneOf:
+            - $ref: '#/components/schemas/ContactMethodsEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        contact_number:
+          type: string
+          minLength: 1
+        sold:
+          type: boolean
+          default: false
+        delivery_available:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - category
+      - city
+      - color
+      - condition
+      - contact_methods
+      - contact_number
+      - description
+      - price
+      - product_name
+      - state
+      - sub_category
+    ProductUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        full_name:
+          type: string
+          readOnly: true
+        username:
+          type: string
+          maxLength: 15
+        is_active:
+          type: boolean
+          title: Active
+        verified:
+          type: boolean
+          title: Verified Seller
+        store:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - full_name
+      - id
+      - store
+      - username
+    ProductUserRequest:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: binary
+        username:
+          type: string
+          minLength: 1
+          maxLength: 15
+        is_active:
+          type: boolean
+          title: Active
+        verified:
+          type: boolean
+          title: Verified Seller
+      required:
+      - username
+    ReasonEnum:
+      enum:
+      - scam
+      - prohibited
+      - wrong_category
+      - counterfeit
+      - offensive
+      - duplicate
+      - other
+      type: string
+      description: |-
+        * `scam` - Scam or fraud
+        * `prohibited` - Prohibited item
+        * `wrong_category` - Wrong category
+        * `counterfeit` - Counterfeit product
+        * `offensive` - Offensive content
+        * `duplicate` - Duplicate listing
+        * `other` - Other
+    ResendEmailVerification:
+      type: object
+      description: Request new email verification message.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    ResendEmailVerificationRequest:
+      type: object
+      description: Request new email verification message.
+      properties:
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+    StateEnum:
+      enum:
+      - abia
+      - adamawa
+      - akwa_ibom
+      - anambra
+      - bauchi
+      - bayelsa
+      - benue
+      - borno
+      - cross_river
+      - delta
+      - ebonyi
+      - edo
+      - ekiti
+      - enugu
+      - fct
+      - gombe
+      - imo
+      - jigawa
+      - kaduna
+      - kano
+      - katsina
+      - kebbi
+      - kogi
+      - kwara
+      - lagos
+      - nasarawa
+      - niger
+      - ogun
+      - ondo
+      - osun
+      - oyo
+      - plateau
+      - rivers
+      - sokoto
+      - taraba
+      - yobe
+      - zamfara
+      type: string
+      description: |-
+        * `` - Select State
+        * `abia` - Abia
+        * `adamawa` - Adamawa
+        * `akwa_ibom` - Akwa Ibom
+        * `anambra` - Anambra
+        * `bauchi` - Bauchi
+        * `bayelsa` - Bayelsa
+        * `benue` - Benue
+        * `borno` - Borno
+        * `cross_river` - Cross River
+        * `delta` - Delta
+        * `ebonyi` - Ebonyi
+        * `edo` - Edo
+        * `ekiti` - Ekiti
+        * `enugu` - Enugu
+        * `fct` - Federal Capital Territory (Abuja)
+        * `gombe` - Gombe
+        * `imo` - Imo
+        * `jigawa` - Jigawa
+        * `kaduna` - Kaduna
+        * `kano` - Kano
+        * `katsina` - Katsina
+        * `kebbi` - Kebbi
+        * `kogi` - Kogi
+        * `kwara` - Kwara
+        * `lagos` - Lagos
+        * `nasarawa` - Nasarawa
+        * `niger` - Niger
+        * `ogun` - Ogun
+        * `ondo` - Ondo
+        * `osun` - Osun
+        * `oyo` - Oyo
+        * `plateau` - Plateau
+        * `rivers` - Rivers
+        * `sokoto` - Sokoto
+        * `taraba` - Taraba
+        * `yobe` - Yobe
+        * `zamfara` - Zamfara
+    StatusEnum:
+      enum:
+      - pending
+      - reviewing
+      - resolved
+      - dismissed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `reviewing` - Reviewing
+        * `resolved` - Resolved
+        * `dismissed` - Dismissed
+    StoreCreate:
+      type: object
+      description: Create or update the store owned by the authenticated user.
+      properties:
+        name:
+          type: string
+          title: Store Name
+          maxLength: 60
+        description:
+          type: string
+          title: Store Description
+        logo:
+          type: string
+          format: uri
+          nullable: true
+          title: Store Logo
+        banner:
+          type: string
+          format: uri
+          nullable: true
+          title: Store Banner
+        state:
+          title: Store State
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+          title: Store Address
+      required:
+      - name
+    StoreCreateRequest:
+      type: object
+      description: Create or update the store owned by the authenticated user.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Store Name
+          maxLength: 60
+        description:
+          type: string
+          title: Store Description
+        logo:
+          type: string
+          format: binary
+          nullable: true
+          title: Store Logo
+        banner:
+          type: string
+          format: binary
+          nullable: true
+          title: Store Banner
+        state:
+          title: Store State
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+          title: Store Address
+      required:
+      - name
+    StoreDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Store Name
+          maxLength: 60
+        slug:
+          type: string
+          readOnly: true
+          title: Store Slug
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Store Description
+        logo:
+          type: string
+          format: uri
+          nullable: true
+          title: Store Logo
+        banner:
+          type: string
+          format: uri
+          nullable: true
+          title: Store Banner
+        verified:
+          type: boolean
+          readOnly: true
+          title: Verified Store
+        state:
+          title: Store State
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        address:
+          type: string
+          title: Store Address
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/StoreOwner'
+          readOnly: true
+        products_count:
+          type: integer
+          default: 0
+          readOnly: true
+        followers_count:
+          type: integer
+          default: 0
+          readOnly: true
+        is_following:
+          type: boolean
+          default: false
+          readOnly: true
+        is_owner:
+          type: boolean
+          default: false
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        products:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - created_at
+      - followers_count
+      - id
+      - is_following
+      - is_owner
+      - name
+      - owner
+      - products
+      - products_count
+      - slug
+      - updated_at
+      - verified
+    StoreOwner:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        verified:
+          type: boolean
+          readOnly: true
+          title: Verified Seller
+        state:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        followers_count:
+          type: integer
+          default: 0
+          readOnly: true
+        products_count:
+          type: integer
+          default: 0
+          readOnly: true
+      required:
+      - avatar
+      - date_joined
+      - followers_count
+      - full_name
+      - id
+      - products_count
+      - state
+      - username
+      - verified
+    SubCategoryEnum:
+      enum:
+      - mobile_phones
+      - tablets
+      - phone_accessories
+      - smartwatches
+      - phone_parts
+      - laptops_computers
+      - tvs
+      - audio_music
+      - cameras
+      - gaming
+      - printers
+      - computer_accessories
+      - cars
+      - motorcycles
+      - trucks_buses
+      - vehicle_parts
+      - boats
+      - bicycles
+      - houses_rent
+      - houses_sale
+      - flats_apartments
+      - land_plots
+      - commercial_property
+      - short_let
+      - mens_clothing
+      - womens_clothing
+      - kids_clothing
+      - shoes
+      - bags
+      - watches_jewelry
+      - traditional_wear
+      - furniture
+      - kitchen_appliances
+      - bedding_linen
+      - garden_outdoor
+      - home_decor
+      - generators
+      - air_conditioners
+      - accounting_finance
+      - admin_office
+      - engineering
+      - healthcare
+      - it_telecoms
+      - sales_marketing
+      - teaching
+      - driving_logistics
+      - repair_maintenance
+      - cleaning_services
+      - catering
+      - event_planning
+      - photography
+      - web_dev
+      - tutoring
+      - moving_delivery
+      - dogs
+      - cats
+      - birds
+      - fish_aquarium
+      - pet_accessories
+      - livestock
+      - farm_produce
+      - processed_food
+      - farming_equipment
+      - seeds_fertilizers
+      - skincare
+      - hair_products
+      - vitamins
+      - medical_equipment
+      - gym_fitness
+      - perfumes
+      - baby_clothing
+      - toys_games
+      - baby_gear
+      - school_supplies
+      - football
+      - gym_equipment
+      - outdoor_camping
+      - cycling
+      - books_textbooks
+      - music_instruments
+      - movies_dvds
+      - video_games
+      type: string
+      description: |-
+        * `` - Select Sub Category
+        * `mobile_phones` - Mobile Phones
+        * `tablets` - Tablets
+        * `phone_accessories` - Phone Accessories
+        * `smartwatches` - Smartwatches
+        * `phone_parts` - Phone Parts
+        * `laptops_computers` - Laptops Computers
+        * `tvs` - TVs
+        * `audio_music` - Audio Music
+        * `cameras` - Cameras
+        * `gaming` - Gaming
+        * `printers` - Printers
+        * `computer_accessories` - Computer Accessories
+        * `cars` - Cars
+        * `motorcycles` - Motorcycles
+        * `trucks_buses` - Trucks Buses
+        * `vehicle_parts` - Vehicle Parts
+        * `boats` - Boats
+        * `bicycles` - Bicycles
+        * `houses_rent` - Houses Rent
+        * `houses_sale` - Houses Sale
+        * `flats_apartments` - Flats Apartments
+        * `land_plots` - Land Plots
+        * `commercial_property` - Commercial Property
+        * `short_let` - Short Let
+        * `mens_clothing` - Mens Clothing
+        * `womens_clothing` - Womens Clothing
+        * `kids_clothing` - Kids Clothing
+        * `shoes` - Shoes
+        * `bags` - Bags
+        * `watches_jewelry` - Watches Jewelry
+        * `traditional_wear` - Traditional Wear
+        * `furniture` - Furniture
+        * `kitchen_appliances` - Kitchen Appliances
+        * `bedding_linen` - Bedding Linen
+        * `garden_outdoor` - Garden Outdoor
+        * `home_decor` - Home Decor
+        * `generators` - Generators
+        * `air_conditioners` - Air Conditioners
+        * `accounting_finance` - Accounting Finance
+        * `admin_office` - Admin Office
+        * `engineering` - Engineering
+        * `healthcare` - Healthcare
+        * `it_telecoms` - IT & Telecoms
+        * `sales_marketing` - Sales Marketing
+        * `teaching` - Teaching
+        * `driving_logistics` - Driving Logistics
+        * `repair_maintenance` - Repair Maintenance
+        * `cleaning_services` - Cleaning Services
+        * `catering` - Catering
+        * `event_planning` - Event Planning
+        * `photography` - Photography
+        * `web_dev` - Web Dev
+        * `tutoring` - Tutoring
+        * `moving_delivery` - Moving Delivery
+        * `dogs` - Dogs
+        * `cats` - Cats
+        * `birds` - Birds
+        * `fish_aquarium` - Fish Aquarium
+        * `pet_accessories` - Pet Accessories
+        * `livestock` - Livestock
+        * `farm_produce` - Farm Produce
+        * `processed_food` - Processed Food
+        * `farming_equipment` - Farming Equipment
+        * `seeds_fertilizers` - Seeds Fertilizers
+        * `skincare` - Skincare
+        * `hair_products` - Hair Products
+        * `vitamins` - Vitamins
+        * `medical_equipment` - Medical Equipment
+        * `gym_fitness` - Gym Fitness
+        * `perfumes` - Perfumes
+        * `baby_clothing` - Baby Clothing
+        * `toys_games` - Toys Games
+        * `baby_gear` - Baby Gear
+        * `school_supplies` - School Supplies
+        * `football` - Football
+        * `gym_equipment` - Gym Equipment
+        * `outdoor_camping` - Outdoor Camping
+        * `cycling` - Cycling
+        * `books_textbooks` - Books Textbooks
+        * `music_instruments` - Music Instruments
+        * `movies_dvds` - Movies Dvds
+        * `video_games` - Video Games
+    TokenVerifyRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - token
+    VerifyEmail:
+      type: object
+      description: Email address verification with confirmation key.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    VerifyEmailRequest:
+      type: object
+      description: Email address verification with confirmation key.
+      properties:
+        key:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - key
+  securitySchemes:
+    JWTAuthentication:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    JWTCookieAuthentication:
+      type: apiKey
+      in: cookie
+      name: access
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access
+tags:
+- name: Authentication
+  description: Register, login, password and verification endpoints.
+- name: User
+  description: Profile, notifications, and social endpoints.
+- name: Products
+  description: Product and category management endpoints.
+- name: Store
+  description: Store creation and management endpoints.
+- name: Core
+  description: Favorites, follows, and utility endpoints.
+- name: Messaging
+  description: Buyer and seller conversations and messages.
+- name: Verification
+  description: Paid user verification endpoints.
+- name: Documentation
+  description: Schema and interactive docs (Swagger / ReDoc).

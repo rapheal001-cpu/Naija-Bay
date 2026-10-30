@@ -73,6 +73,9 @@ class Product(models.Model):
     contact_number = PhoneNumberField(_("Contact Number"))
     active = models.BooleanField(_("Active"), default=True, db_index=True)
     sold = models.BooleanField(_("Sold"), default=False, db_index=True)
+    promoted = models.BooleanField(_("Promoted"), default=False, db_index=True)
+    delivery_available = models.BooleanField(_("Delivery Available"), default=False)
+    expires_at = models.DateTimeField(_("Expires At"), null=True, blank=True)
 
     # Social
     favorites = models.ManyToManyField(
@@ -113,6 +116,23 @@ class Product(models.Model):
         return any(
             method in self.contact_methods for method in ("phone_call", "whatsapp")
         )
+
+    @property
+    def listing_status(self):
+        """Marketplace-facing status: active, sold, expired or inactive."""
+        from django.utils import timezone
+
+        if self.sold:
+            return "sold"
+        if not self.active:
+            return "inactive"
+        if self.expires_at and self.expires_at <= timezone.now():
+            return "expired"
+        return "active"
+
+    @property
+    def is_expired(self):
+        return self.listing_status == "expired"
 
     # -------------------------------------------------------------------------
     # Methods
@@ -184,4 +204,64 @@ class ProductImage(models.Model):
             models.Index(fields=["created_at"]),
             models.Index(fields=["product"]),
             models.Index(fields=["product", "created_at"]),
+        ]
+
+
+# =============================================================================
+# PRODUCT REPORT (ABUSE)
+# =============================================================================
+
+class ProductReport(models.Model):
+    REASON_CHOICES = [
+        ("scam", "Scam or fraud"),
+        ("prohibited", "Prohibited item"),
+        ("wrong_category", "Wrong category"),
+        ("counterfeit", "Counterfeit product"),
+        ("offensive", "Offensive content"),
+        ("duplicate", "Duplicate listing"),
+        ("other", "Other"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("reviewing", "Reviewing"),
+        ("resolved", "Resolved"),
+        ("dismissed", "Dismissed"),
+    ]
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="reports",
+        verbose_name=_("Product"),
+        db_index=True,
+    )
+    reporter = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="product_reports",
+        verbose_name=_("Reporter"),
+        db_index=True,
+    )
+    reason = models.CharField(_("Reason"), max_length=20, choices=REASON_CHOICES)
+    details = models.TextField(_("Details"), blank=True)
+    status = models.CharField(
+        _("Status"), max_length=12, choices=STATUS_CHOICES, default="pending", db_index=True
+    )
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
+
+    def __str__(self):
+        return f"{self.product.product_name} reported by {self.reporter.username}"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Product Report")
+        verbose_name_plural = _("Product Reports")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "reporter"], name="unique_report_per_user"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["product", "reporter"]),
+            models.Index(fields=["status", "-created_at"]),
         ]

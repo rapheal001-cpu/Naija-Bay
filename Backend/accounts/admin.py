@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import User, Notifications
+from .models import User, Notifications, Store, Follow
 from django.utils.translation import gettext_lazy as _
 
 
@@ -17,12 +17,14 @@ class UserAdmin(admin.ModelAdmin):
         "full_name",
         "is_staff",
         "is_active",
+        "verified",
         "date_joined",
         "last_login",
     )
     list_filter = (
         "is_active",
         "is_staff",
+        "verified",
         "state",
         "date_joined",
     )
@@ -53,6 +55,7 @@ class UserAdmin(admin.ModelAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
+                    "verified",
                     "date_joined",
                     "last_login",
                 )
@@ -96,3 +99,41 @@ class NotificationsAdmin(admin.ModelAdmin):
     def mark_as_unread(self, request, queryset):
         updated = queryset.update(read=False)
         self.message_user(request, f"{updated} notification(s) marked as unread.")
+
+# =============================================================================
+# STORE ADMIN
+# =============================================================================
+
+
+@admin.register(Store)
+class StoreAdmin(admin.ModelAdmin):
+    list_display = ("name", "owner", "verified", "state", "products_count", "created_at")
+    list_filter = ("verified", "state", "created_at")
+    search_fields = ("name", "slug", "user__username", "user__email")
+    readonly_fields = ("slug", "created_at", "updated_at")
+    autocomplete_fields = ("user",)
+    list_select_related = ("user",)
+    date_hierarchy = "created_at"
+
+    @admin.display(description=_("Owner"))
+    def owner(self, obj):
+        return obj.user.username
+
+    @admin.display(description=_("Products"))
+    def products_count(self, obj):
+        return obj.products_count
+
+
+# =============================================================================
+# FOLLOW ADMIN
+# =============================================================================
+
+
+@admin.register(Follow)
+class FollowAdmin(admin.ModelAdmin):
+    list_display = ("follower", "following", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("follower__username", "following__username")
+    autocomplete_fields = ("follower", "following")
+    list_select_related = ("follower", "following")
+    date_hierarchy = "created_at"

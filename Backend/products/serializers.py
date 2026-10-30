@@ -3,7 +3,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from accounts.models import User
 from core.models import Category, SubCategory, State, City
-from .models import Product, ProductImage
+from .models import Product, ProductImage, ProductReport
 from phonenumber_field.serializerfields import PhoneNumberField
 from NaijaBay.utils import (
     CONTACT_METHOD_CHOICES,
@@ -20,9 +20,34 @@ from NaijaBay.utils import (
 # =============================================================================
 
 class ProductUserSerializer(serializers.ModelSerializer):
+    store = serializers.SerializerMethodField(read_only=True)
+    full_name = serializers.CharField(read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'avatar', 'full_name', 'username', 'is_active', 'date_joined']
+        fields = [
+            'id',
+            'avatar',
+            'full_name',
+            'username',
+            'is_active',
+            'verified',
+            'store',
+            'date_joined',
+        ]
+
+    @extend_schema_field(
+        serializers.DictField(child=serializers.CharField(), allow_null=True)
+    )
+    def get_store(self, obj):
+        store = getattr(obj, "store", None)
+        if not store:
+            return None
+        return {
+            "name": store.name,
+            "slug": store.slug,
+            "verified": store.verified,
+        }
 
 class ProductSerializer(serializers.ModelSerializer):
     product_user = ProductUserSerializer(read_only=True)
@@ -31,10 +56,10 @@ class ProductSerializer(serializers.ModelSerializer):
     quantity = serializers.IntegerField(default=1)
     negotiable = serializers.BooleanField(default=False)
     sold = serializers.BooleanField(default=False)
-    state = serializers.ChoiceField(choices=STATE_CHOICES)
-    city = serializers.ChoiceField(choices=CITY_CHOICES)
-    category = serializers.ChoiceField(choices=CATEGORY_CHOICES)
-    sub_category = serializers.ChoiceField(choices=SUBCATEGORY_CHOICES)
+    state = serializers.CharField()
+    city = serializers.CharField()
+    category = serializers.CharField()
+    sub_category = serializers.CharField()
     contact_methods = serializers.ListField(child=serializers.ChoiceField(choices=CONTACT_METHOD_CHOICES))
     contact_number = PhoneNumberField()
     images = serializers.SerializerMethodField(read_only=True)
@@ -42,6 +67,8 @@ class ProductSerializer(serializers.ModelSerializer):
     favorites_count = serializers.SerializerMethodField(read_only=True)
     views_count = serializers.SerializerMethodField(read_only=True)
     images_count = serializers.SerializerMethodField(read_only=True)
+    listing_status = serializers.CharField(read_only=True)
+    is_owner = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Product
@@ -68,6 +95,11 @@ class ProductSerializer(serializers.ModelSerializer):
             "images_count",
             "active",
             "sold",
+            "promoted",
+            "delivery_available",
+            "expires_at",
+            "listing_status",
+            "is_owner",
             "created_at",
             "updated_at",
             "is_favorited",
@@ -78,6 +110,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "views",
             "favorites",
             "active",
+            "promoted",
             "created_at",
             "updated_at",
         )
@@ -104,6 +137,15 @@ class ProductSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_images_count(self, obj):
         return obj.images_count
+
+    @extend_schema_field(serializers.BooleanField(default=False))
+    def get_is_owner(self, obj):
+        request = self.context.get("request")
+        return bool(
+            request
+            and request.user.is_authenticated
+            and obj.product_user_id == request.user.id
+        )
 
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_images(self, obj):
@@ -135,26 +177,32 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def validate_category(self, value):
-        if not Category.objects.filter(slug=_normalize(value)).exists():
+        normalized = _normalize(value)
+        if not Category.objects.filter(slug=normalized).exists():
             raise serializers.ValidationError(
                 "This category does not exist in our database."
             )
-        return value
+        # Store the canonical choice key (e.g. ``phones_tablets``) even when
+        # the client sends the hyphenated public slug (``phones-tablets``).
+        return normalized.replace("-", "_")
 
     def validate_sub_category(self, value):
-        if not SubCategory.objects.filter(slug=_normalize(value)).exists():
+        normalized = _normalize(value)
+        if not SubCategory.objects.filter(slug=normalized).exists():
             raise serializers.ValidationError("This sub category is not valid.")
-        return value
+        return normalized.replace("-", "_")
 
     def validate_state(self, value):
-        if not State.objects.filter(slug=_normalize(value)).exists():
+        normalized = _normalize(value)
+        if not State.objects.filter(slug=normalized).exists():
             raise serializers.ValidationError("Invalid state.")
-        return value
+        return normalized.replace("-", "_")
 
     def validate_city(self, value):
-        if not City.objects.filter(slug=_normalize(value)).exists():
+        normalized = _normalize(value)
+        if not City.objects.filter(slug=normalized).exists():
             raise serializers.ValidationError("Invalid city.")
-        return value
+        return normalized.replace("-", "_")
 
     def validate_color(self, value):
         if not value:
@@ -323,3 +371,70 @@ class CategorySerializer(serializers.ModelSerializer):
             }
             for sub in obj.sub_categories.all()
         ]
+
+
+# =============================================================================
+# PRODUCT REPORT (ABUSE)
+# =============================================================================
+
+class ProductReportSerializer(serializers.ModelSerializer):
+    reporter = ProductUserSerializer(read_only=True)
+
+    class Meta:
+        model = ProductReport
+        fields = [
+            "id",
+            "product",
+            "reporter",
+            "reason",
+            "details",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ("id", "product", "reporter", "status", "created_at")
+
+    def validate_details(self, details):
+        details = (details or "").strip()
+        if details and len(details) > 2000:
+            raise serializers.ValidationError(
+                "Details are too long (maximum 2000 characters)."
+            )
+        return details
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        product = self.context.get("product")
+
+        if request and product:
+            if product.product_user_id == request.user.id:
+                raise serializers.ValidationError(
+                    "You cannot report your own listing."
+                )
+            if ProductReport.objects.filter(
+                product=product, reporter=request.user
+            ).exists():
+                raise serializers.ValidationError(
+                    "You have already reported this listing."
+                )
+        return attrs
+
+
+# =============================================================================
+# SELLER / STORE SUMMARY
+# =============================================================================
+
+class ProductSellerSerializer(serializers.Serializer):
+    """Lightweight seller payload used by the public seller profile page."""
+
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    full_name = serializers.CharField()
+    avatar = serializers.CharField(allow_null=True)
+    verified = serializers.BooleanField()
+    state = serializers.CharField()
+    bio = serializers.CharField(allow_blank=True)
+    store = serializers.DictField(allow_null=True)
+    products_count = serializers.IntegerField()
+    followers_count = serializers.IntegerField()
+    following_count = serializers.IntegerField()
+    is_following = serializers.BooleanField()

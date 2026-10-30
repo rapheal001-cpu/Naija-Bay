@@ -22,6 +22,11 @@ import {
     updateProductImagesFn,
     deleteProductImageFn,
     createStoreFn,
+    updateStoreFn,
+    reportProductFn,
+    startConversationFn,
+    sendMessageFn,
+    markConversationReadFn,
 } from '../service/Endpoints';
 import { removeIsAuthenticated, setIsAuthenticated } from '../slice/AuthSlice';
 import { setUser, removeUserData } from '../slice/UserSlice.js';
@@ -695,6 +700,96 @@ export const useCreateStoreMutation = (setError, setServerErrors, setServerMessa
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
+        },
+    });
+};
+
+
+// =============================================================================
+// REPORT ABUSE
+// =============================================================================
+
+export const useReportProductMutation = (setError, setServerError) => {
+    return useMutation({
+        mutationKey: ['report-product'],
+        mutationFn: (payload) => reportProductFn(payload),
+        onSuccess: () => {
+            setServerError?.('');
+        },
+        onError: (error) => {
+            handleFieldErrors(error, setError, setServerError);
+        },
+    });
+};
+
+
+// =============================================================================
+// MESSAGING
+// =============================================================================
+
+export const useStartConversationMutation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ['start-conversation'],
+        mutationFn: (payload) => startConversationFn(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            queryClient.invalidateQueries({ queryKey: ['unread-counts'] });
+        },
+    });
+};
+
+export const useSendMessageMutation = (conversationId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ['send-message', conversationId],
+        mutationFn: (payload) => sendMessageFn(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+            queryClient.invalidateQueries({ queryKey: ['unread-counts'] });
+        },
+    });
+};
+
+export const useMarkConversationReadMutation = (conversationId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ['mark-conversation-read', conversationId],
+        mutationFn: () => markConversationReadFn(conversationId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+            queryClient.invalidateQueries({ queryKey: ['unread-counts'] });
+        },
+    });
+};
+
+
+// =============================================================================
+// STORE (UPDATE)
+// =============================================================================
+
+export const useUpdateStoreMutation = (storeSlug, setError, setServerError, setServerMessage) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ['update-store', storeSlug],
+        mutationFn: (payload) => updateStoreFn({ storeSlug, payload }),
+        onSuccess: () => {
+            setServerMessage?.('Store updated successfully.');
+            setServerError?.('');
+            queryClient.invalidateQueries({ queryKey: ['my-store'] });
+            queryClient.invalidateQueries({ queryKey: ['store-detail', storeSlug] });
+            queryClient.invalidateQueries({ queryKey: ['user'] });
+        },
+        onError: (error) => {
+            handleFieldErrors(error, setError, setServerError);
         },
     });
 };

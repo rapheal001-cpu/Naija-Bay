@@ -8,6 +8,16 @@ import {
     productDetailFn,
     fetchProductsFn,
     fetchStoreDetailFn,
+    fetchMyStoreFn,
+    fetchMyListingsFn,
+    fetchFavoriteProductsFn,
+    fetchRecentlyViewedFn,
+    fetchConversationsFn,
+    fetchConversationFn,
+    fetchMessagesFn,
+    fetchUnreadCountsFn,
+    fetchFollowersFn,
+    fetchFollowingFn,
 } from '../service/Endpoints.js';
 
 // =============================================================================
@@ -66,10 +76,10 @@ export const useFetchUserNotifications = (isAuthenticated) => {
 // PRODUCTS
 // =============================================================================
 
-export const useFetchProducts = (searchQuery, activeCategory, activeSubCategory) => {
+export const useFetchProducts = (params = {}) => {
     return useQuery({
-        queryKey: ['products', { searchQuery, activeCategory, activeSubCategory }],
-        queryFn: () => fetchProductsFn(searchQuery, activeCategory, activeSubCategory),
+        queryKey: ['products', params],
+        queryFn: () => fetchProductsFn(params),
         staleTime: 1000 * 60 * 5,       // 5 min
         gcTime: 1000 * 60 * 10,
         refetchOnWindowFocus: false,    // heavy endpoint — don't refetch on tab switch
@@ -135,5 +145,142 @@ export const useFetchStoreDetail = (store_slug) => {
         refetchOnWindowFocus: false,
         retry: 1,
         meta: { hookName: 'useFetchStoreDetail' },
+    });
+};
+
+export const useFetchMyStore = (isAuthenticated) => {
+    return useQuery({
+        queryKey: ['my-store'],
+        queryFn: fetchMyStoreFn,
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 60 * 30,
+        gcTime: 1000 * 60 * 60,
+        refetchOnWindowFocus: false,
+        retry: false,
+        meta: { hookName: 'useFetchMyStore' },
+    });
+};
+
+// =============================================================================
+// SELLER LISTS
+// =============================================================================
+
+export const useFetchFollowers = (userId, page = 1) => {
+    return useQuery({
+        queryKey: ['followers', userId, page],
+        queryFn: () => fetchFollowersFn(userId, { page }),
+        enabled: Boolean(userId),
+        staleTime: 1000 * 60 * 5,
+        placeholderData: keepPreviousData,
+        retry: 1,
+        meta: { hookName: 'useFetchFollowers' },
+    });
+};
+
+export const useFetchFollowing = (userId, page = 1) => {
+    return useQuery({
+        queryKey: ['following', userId, page],
+        queryFn: () => fetchFollowingFn(userId, { page }),
+        enabled: Boolean(userId),
+        staleTime: 1000 * 60 * 5,
+        placeholderData: keepPreviousData,
+        retry: 1,
+        meta: { hookName: 'useFetchFollowing' },
+    });
+};
+
+// =============================================================================
+// MY LISTINGS / FAVORITES / HISTORY
+// =============================================================================
+
+export const useFetchMyListings = (isAuthenticated, status = '', page = 1) => {
+    return useQuery({
+        queryKey: ['my-listings', status, page],
+        queryFn: () => fetchMyListingsFn({ status, page }),
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 60,
+        placeholderData: keepPreviousData,
+        retry: 1,
+        meta: { hookName: 'useFetchMyListings' },
+    });
+};
+
+export const useFetchFavoriteProducts = (isAuthenticated, page = 1) => {
+    return useQuery({
+        queryKey: ['favorite-products', page],
+        queryFn: () => fetchFavoriteProductsFn({ page }),
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 60,
+        placeholderData: keepPreviousData,
+        retry: 1,
+        meta: { hookName: 'useFetchFavoriteProducts' },
+    });
+};
+
+export const useFetchRecentlyViewed = (isAuthenticated, page = 1) => {
+    return useQuery({
+        queryKey: ['recently-viewed', page],
+        queryFn: () => fetchRecentlyViewedFn({ page }),
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 60,
+        placeholderData: keepPreviousData,
+        retry: 1,
+        meta: { hookName: 'useFetchRecentlyViewed' },
+    });
+};
+
+// =============================================================================
+// MESSAGING
+// =============================================================================
+
+export const useFetchConversations = (isAuthenticated, page = 1) => {
+    return useQuery({
+        queryKey: ['conversations', page],
+        queryFn: () => fetchConversationsFn({ page }),
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 10,
+        gcTime: 1000 * 60 * 10,
+        refetchInterval: 15000,
+        refetchOnWindowFocus: true,
+        placeholderData: keepPreviousData,
+        retry: 1,
+        meta: { hookName: 'useFetchConversations' },
+    });
+};
+
+export const useFetchConversation = (conversationId) => {
+    return useQuery({
+        queryKey: ['conversation', conversationId],
+        queryFn: () => fetchConversationFn(conversationId),
+        enabled: Boolean(conversationId),
+        staleTime: 1000 * 10,
+        refetchInterval: 15000,
+        retry: 1,
+        meta: { hookName: 'useFetchConversation' },
+    });
+};
+
+export const useFetchMessages = (conversationId, page = 1) => {
+    return useQuery({
+        queryKey: ['messages', conversationId, page],
+        queryFn: () => fetchMessagesFn({ conversationId, page }),
+        enabled: Boolean(conversationId),
+        staleTime: 1000 * 5,
+        refetchInterval: 8000,
+        retry: 1,
+        meta: { hookName: 'useFetchMessages' },
+    });
+};
+
+export const useFetchUnreadCounts = (isAuthenticated) => {
+    return useQuery({
+        queryKey: ['unread-counts'],
+        queryFn: fetchUnreadCountsFn,
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 15,
+        refetchInterval: 30000,
+        refetchOnWindowFocus: true,
+        retry: 1,
+        meta: { hookName: 'useFetchUnreadCounts' },
     });
 };

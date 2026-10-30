@@ -67,3 +67,27 @@ class CreateProductThrottling(UserRateThrottle):
 # Favorite toggle throttling
 class FavoriteToggleThrottling(UserRateThrottle):
     scope = 'favorite_toggle'
+
+
+# Follow toggle throttling
+class FollowToggleThrottling(UserRateThrottle):
+    scope = 'follow_toggle'
+
+
+# Store write throttling
+class StoreThrottling(UserRateThrottle):
+    scope = 'store'
+
+
+# Messaging throttling
+class MessageThrottling(UserRateThrottle):
+    scope = 'message'
+
+
+class ConversationThrottling(UserRateThrottle):
+    scope = 'conversation'
+
+
+# Abuse report throttling
+class ReportThrottling(UserRateThrottle):
+    scope = 'report'

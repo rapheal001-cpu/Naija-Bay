@@ -18,6 +18,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
     phone_number = PhoneNumberField()
     full_name = serializers.SerializerMethodField(read_only=True)
     unread_notifications = serializers.SerializerMethodField(read_only=True)
+    store = serializers.SerializerMethodField(read_only=True)
+    followers_count = serializers.SerializerMethodField(read_only=True)
+    following_count = serializers.SerializerMethodField(read_only=True)
+    is_following = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -35,13 +39,19 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
             "is_active",
+            "verified",
             "unread_notifications",
+            "store",
+            "followers_count",
+            "following_count",
+            "is_following",
             "products",
             "favorites",
         ]
         read_only_fields = (
             "id",
             "is_active",
+            "verified",
             "date_joined",
             "last_login",
         )
@@ -55,6 +65,38 @@ class CustomUserSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_unread_notifications(self, obj):
         return obj.unread_notifications
+
+    @extend_schema_field(
+        serializers.DictField(child=serializers.CharField(), allow_null=True)
+    )
+    def get_store(self, obj):
+        store = getattr(obj, "store", None)
+        if not store:
+            return None
+        return {
+            "id": store.id,
+            "name": store.name,
+            "slug": store.slug,
+            "verified": store.verified,
+            "logo": store.logo.url if store.logo else None,
+        }
+
+    @extend_schema_field(serializers.IntegerField(default=0))
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+    @extend_schema_field(serializers.IntegerField(default=0))
+    def get_following_count(self, obj):
+        return obj.following.count()
+
+    @extend_schema_field(serializers.BooleanField(default=False))
+    def get_is_following(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        if request.user.id == obj.id:
+            return False
+        return obj.followers.filter(follower=request.user).exists()
 
     # Field validators
 

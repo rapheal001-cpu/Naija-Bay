@@ -4,13 +4,15 @@ from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from accounts.models import Notifications
+from accounts.models import Follow, Notifications, User
 from accounts.serializers.serializers import NotificationSerializer
+from accounts.serializers.store import FollowUserSerializer
 from products.models import Product
 from products.serializers import ProductSerializer
 from NaijaBay.throttling import (
     MarkAllNotificationsReadThrottling,
     FavoriteToggleThrottling,
+    FollowToggleThrottling,
 )
 from NaijaBay.permissions import IsOwnerOnly
 
@@ -143,3 +145,53 @@ class ToggleFavoriteProductAPIView(APIView):
         )
 
 toggle_favorite_product_view = ToggleFavoriteProductAPIView.as_view()
+
+
+# =============================================================================
+# FOLLOW
+# =============================================================================
+
+@extend_schema_view(post=extend_schema(tags=["User"], operation_id="Toggle Follow User"))
+class ToggleFollowUserAPIView(APIView):
+    serializer_class = FollowUserSerializer
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [FollowToggleThrottling]
+
+    def post(self, request, user_id, *args, **kwargs):
+        if str(request.user.id) == str(user_id):
+            return Response(
+                {"detail": "You cannot follow yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        target = get_object_or_404(User, id=user_id, is_active=True)
+        follow, created = Follow.objects.get_or_create(
+            follower=request.user, following=target
+        )
+
+        if created:
+            Notifications.objects.create(
+                user=target,
+                notification_type="new_follower",
+                message=f"{request.user.username} started following you.",
+            )
+            following = True
+        else:
+            follow.delete()
+            following = False
+
+        return Response(
+            {
+                "detail": (
+                    f"You are now following {target.username}."
+                    if following
+                    else f"You unfollowed {target.username}."
+                ),
+                "following": following,
+                "followers_count": target.followers.count(),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+toggle_follow_user_view = ToggleFollowUserAPIView.as_view()

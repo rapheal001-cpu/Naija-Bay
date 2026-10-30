@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Product, ProductImage
+from .models import Product, ProductImage, ProductReport
 
 # =============================================================================
 # PRODUCT ADMIN
@@ -20,14 +20,19 @@ class ProductAdmin(admin.ModelAdmin):
         "quantity",
         "favorites_count_display",
         "views_count_display",
+        "promoted",
+        "delivery_available",
         "active",
         "sold",
+        "expires_at",
         "created_at",
         "updated_at",
     )
     list_filter = (
         "active",
         "sold",
+        "promoted",
+        "delivery_available",
         "category",
         "sub_category",
         "condition",
@@ -90,3 +95,34 @@ class ProductImageAdmin(admin.ModelAdmin):
                 '<img src="{}" style="max-height: 60px; max-width: 120px; border-radius: 4px;" />',
                 obj.image.url,
             )
+
+
+# =============================================================================
+# PRODUCT REPORT ADMIN
+# =============================================================================
+
+
+@admin.register(ProductReport)
+class ProductReportAdmin(admin.ModelAdmin):
+    list_display = ("product", "reporter", "reason", "status", "created_at")
+    list_filter = ("reason", "status", "created_at")
+    search_fields = (
+        "product__product_name",
+        "reporter__username",
+        "details",
+    )
+    readonly_fields = ("created_at",)
+    autocomplete_fields = ("product", "reporter")
+    list_select_related = ("product", "reporter")
+    date_hierarchy = "created_at"
+    actions = ["mark_resolved", "mark_dismissed"]
+
+    @admin.action(description=_("Mark selected reports as resolved"))
+    def mark_resolved(self, request, queryset):
+        updated = queryset.update(status="resolved")
+        self.message_user(request, f"{updated} report(s) resolved.")
+
+    @admin.action(description=_("Dismiss selected reports"))
+    def mark_dismissed(self, request, queryset):
+        updated = queryset.update(status="dismissed")
+        self.message_user(request, f"{updated} report(s) dismissed.")

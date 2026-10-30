@@ -118,6 +118,7 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "products.apps.ProductsConfig",
     "core.apps.CoreConfig",
+    "messaging.apps.MessagingConfig",
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
@@ -345,6 +346,11 @@ REST_FRAMEWORK = {
         "product": "100/hour",
         "create_product": "100/day",
         "favorite_toggle": "500/hour",
+        "follow_toggle": "500/hour",
+        "store": "100/day",
+        "message": "1000/hour",
+        "conversation": "300/hour",
+        "report": "50/day",
     },
 }
 
@@ -383,6 +389,10 @@ SPECTACULAR_SETTINGS = {
         },
         {"name": "Store", "description": "Store creation and management endpoints."},
         {"name": "Core", "description": "Favorites, follows, and utility endpoints."},
+        {
+            "name": "Messaging",
+            "description": "Buyer and seller conversations and messages.",
+        },
         {"name": "Verification", "description": "Paid user verification endpoints."},
         {
             "name": "Documentation",
@@ -579,6 +589,11 @@ LOGGING = {
             "propagate": False,
         },
         "chat": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "messaging": {
             "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,

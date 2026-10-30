@@ -3,7 +3,11 @@ from rest_framework.response import Response
 from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
+    RetrieveUpdateDestroyAPIView,
+    CreateAPIView,
 )
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema_view, extend_schema
 from auth_kit.views import (
     LogoutView,
@@ -16,10 +20,16 @@ from auth_kit.views import (
     VerifyEmailView,
     ResendEmailVerificationView,
 )
-from accounts.models import Notifications, User
+from accounts.models import Notifications, Store, User
 from accounts.serializers.serializers import NotificationSerializer
 from accounts.serializers.user import (
     CustomUserSerializer,
+)
+from accounts.serializers.store import (
+    FollowUserSerializer,
+    StoreCreateSerializer,
+    StoreDetailSerializer,
+    StoreSerializer,
 )
 from NaijaBay.throttling import (
     LogoutThrottling,
@@ -29,10 +39,12 @@ from NaijaBay.throttling import (
     RegisterThrottling,
     LoginThrottling,
     ResendEmailVerificationThrottling,
+    StoreThrottling,
     UserDetailThrottling,
     UserThrottling,
     VerifyEmailThrottling,
 )
+from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOnly
 
 
@@ -124,7 +136,7 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 @extend_schema_view(
     get=extend_schema(tags=["User"], operation_id="Current User Profile"),
     patch=extend_schema(tags=["User"], operation_id="Update Current User"),
-    put=extend_schema(tags=["User"], operation_id="Update Current User"),
+    put=extend_schema(tags=["User"], operation_id="Replace Current User"),
 )
 class CustomUserView(UserView):
     serializer_class = CustomUserSerializer
@@ -173,3 +185,156 @@ class NotificationAPIView(ListAPIView):
         )
 
 notification_view = NotificationAPIView.as_view()
+
+# =============================================================================
+# STORE
+# =============================================================================
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Store"],
+        operation_id="Create Or Update Store",
+        request=StoreCreateSerializer,
+        responses={200: StoreDetailSerializer, 201: StoreDetailSerializer},
+    )
+)
+class StoreCreateAPIView(CreateAPIView):
+    """Create the authenticated user's store, or update it when it exists."""
+
+    serializer_class = StoreCreateSerializer
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [StoreThrottling]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request, *args, **kwargs):
+        instance = getattr(request.user, "store", None)
+        serializer = self.get_serializer(instance=instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        name_changed = bool(
+            instance and "name" in serializer.validated_data
+            and serializer.validated_data["name"] != instance.name
+        )
+        store = serializer.save(user=request.user)
+
+        if name_changed:
+            # Regenerate the slug so public URLs follow the new name.
+            store.slug = ""
+            store.save(update_fields=["slug"])
+
+        output = StoreDetailSerializer(store, context={"request": request})
+        return Response(
+            output.data,
+            status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
+        )
+
+
+create_store_view = StoreCreateAPIView.as_view()
+
+
+@extend_schema_view(
+    get=extend_schema(tags=["Store"], operation_id="Store Detail"),
+    put=extend_schema(
+        tags=["Store"], operation_id="Replace Store", request=StoreCreateSerializer
+    ),
+    patch=extend_schema(
+        tags=["Store"], operation_id="Update Store", request=StoreCreateSerializer
+    ),
+    delete=extend_schema(tags=["Store"], operation_id="Delete Store"),
+)
+class StoreDetailAPIView(RetrieveUpdateDestroyAPIView):
+    queryset = Store.objects.select_related("user").all()
+    serializer_class = StoreDetailSerializer
+    lookup_field = "slug"
+    throttle_classes = [StoreThrottling]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return StoreCreateSerializer
+        return StoreDetailSerializer
+
+    def perform_update(self, serializer):
+        if serializer.instance.user_id != self.request.user.id:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("You can only update your own store.")
+
+        name_changed = "name" in serializer.validated_data
+        store = serializer.save()
+        if name_changed:
+            store.slug = ""
+            store.save(update_fields=["slug"])
+
+    def perform_destroy(self, instance):
+        if instance.user_id != self.request.user.id:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("You can only delete your own store.")
+        instance.delete()
+
+
+store_detail_view = StoreDetailAPIView.as_view()
+
+
+@extend_schema_view(get=extend_schema(tags=["Store"], operation_id="My Store"))
+class MyStoreAPIView(RetrieveAPIView):
+    serializer_class = StoreDetailSerializer
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [StoreThrottling]
+
+    def get_object(self):
+        store = getattr(self.request.user, "store", None)
+        if not store:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound("You have not created a store yet.")
+        return store
+
+
+my_store_view = MyStoreAPIView.as_view()
+
+
+# =============================================================================
+# FOLLOWERS / FOLLOWING
+# =============================================================================
+
+class FollowersListAPIView(ListAPIView):
+    serializer_class = FollowUserSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [UserDetailThrottling]
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        from accounts.models import Follow
+
+        ids = Follow.objects.filter(following_id=self.kwargs["pk"]).values_list(
+            "follower_id", flat=True
+        )
+        return User.objects.filter(id__in=ids, is_active=True).order_by("username")
+
+
+followers_list_view = FollowersListAPIView.as_view()
+
+
+class FollowingListAPIView(ListAPIView):
+    serializer_class = FollowUserSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [UserDetailThrottling]
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        from accounts.models import Follow
+
+        ids = Follow.objects.filter(follower_id=self.kwargs["pk"]).values_list(
+            "following_id", flat=True
+        )
+        return User.objects.filter(id__in=ids, is_active=True).order_by("username")
+
+
+following_list_view = FollowingListAPIView.as_view()

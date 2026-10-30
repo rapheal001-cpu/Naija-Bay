@@ -219,6 +219,24 @@ export const toggleFollowUserFn = async (userId) => {
     return data;
 };
 
+/**
+ * @param {string|number} userId
+ * @param {{ page?: number }} [params]
+ */
+export const fetchFollowersFn = async (userId, params = {}) => {
+    const { data } = await axiosInstance.get(`/api/v1/accounts/auth/followers/${userId}/`, { params });
+    return data;
+};
+
+/**
+ * @param {string|number} userId
+ * @param {{ page?: number }} [params]
+ */
+export const fetchFollowingFn = async (userId, params = {}) => {
+    const { data } = await axiosInstance.get(`/api/v1/accounts/auth/following/${userId}/`, { params });
+    return data;
+};
+
 
 // =============================================================================
 // STORE
@@ -233,15 +251,15 @@ export const createStoreFn = async (payload) => {
  * @param {string} storeSlug
  */
 export const fetchStoreDetailFn = async (storeSlug) => {
-    const { data } = await axiosInstance.get(`/api/v1/accounts/auth/store-detail/${storeSlug}`);
+    const { data } = await axiosInstance.get(`/api/v1/accounts/auth/store-detail/${storeSlug}/`);
     return data;
 };
 
 /**
- * @param {string} storeSlug
+ * @param {{ storeSlug: string, payload: Object|FormData }} params
  */
-export const updateStoreFn = async (storeSlug) => {
-    const { data } = await axiosInstance.put(`/api/v1/accounts/auth/store-detail/${storeSlug}`);
+export const updateStoreFn = async ({ storeSlug, payload }) => {
+    const { data } = await axiosInstance.patch(`/api/v1/accounts/auth/store-detail/${storeSlug}/`, payload);
     return data;
 };
 
@@ -249,31 +267,151 @@ export const updateStoreFn = async (storeSlug) => {
  * @param {string} storeSlug
  */
 export const deleteStoreFn = async (storeSlug) => {
-    const { data } = await axiosInstance.delete(`/api/v1/accounts/auth/store-detail/${storeSlug}`);
+    const { data } = await axiosInstance.delete(`/api/v1/accounts/auth/store-detail/${storeSlug}/`);
+    return data;
+};
+
+export const fetchMyStoreFn = async () => {
+    const { data } = await axiosInstance.get('/api/v1/accounts/auth/my-store/');
     return data;
 };
 
 
 // =============================================================================
-// PRODUCTS LIST / SEARCH / FILTER
+// PRODUCTS LIST / SEARCH / FILTER / PAGINATION
 // =============================================================================
 
 /**
- * @param {string} [searchQuery]
- * @param {string} [activeCategory]
- * @param {string} [activeSubCategory]
+ * @param {{
+ *   search?: string,
+ *   category?: string,
+ *   sub_category?: string,
+ *   condition?: string,
+ *   state?: string,
+ *   city?: string,
+ *   min_price?: number|string,
+ *   max_price?: number|string,
+ *   delivery_available?: boolean,
+ *   verified_seller?: boolean,
+ *   negotiable?: boolean,
+ *   sort?: string,
+ *   page?: number,
+ *   page_size?: number,
+ * }} [params]
  */
-export const fetchProductsFn = async (searchQuery, activeCategory, activeSubCategory) => {
-    const params = {};
+export const fetchProductsFn = async (params = {}) => {
+    const query = {};
 
-    if (searchQuery) params.search = searchQuery;
-    if (activeCategory && typeof activeCategory === 'string') {
-        params.category = activeCategory.replace(/_/g, '-');
-    }
-    if (activeSubCategory && typeof activeSubCategory === 'string') {
-        params.sub_category = activeSubCategory.replace(/_/g, '-');
-    }
+    Object.entries(params).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        if (value === false) return; // booleans are opt-in filters
+        query[key] = value === true ? 'true' : value;
+    });
 
-    const { data } = await axiosInstance.get('/api/v1/products/', { params });
+    const { data } = await axiosInstance.get('/api/v1/products/', { params: query });
+    return data;
+};
+
+/**
+ * @param {{ status?: string, page?: number }} [params]
+ */
+export const fetchMyListingsFn = async (params = {}) => {
+    const query = {};
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== false) {
+            query[key] = value;
+        }
+    });
+    const { data } = await axiosInstance.get('/api/v1/products/my-listings/', { params: query });
+    return data;
+};
+
+/**
+ * @param {{ page?: number }} [params]
+ */
+export const fetchFavoriteProductsFn = async (params = {}) => {
+    const { data } = await axiosInstance.get('/api/v1/products/favorites/', { params });
+    return data;
+};
+
+/**
+ * @param {{ page?: number }} [params]
+ */
+export const fetchRecentlyViewedFn = async (params = {}) => {
+    const { data } = await axiosInstance.get('/api/v1/products/recently-viewed/', { params });
+    return data;
+};
+
+/**
+ * @param {{ productSlug: string, reason: string, details?: string }} payload
+ */
+export const reportProductFn = async ({ productSlug, reason, details }) => {
+    const { data } = await axiosInstance.post(`/api/v1/products/report/${productSlug}/`, {
+        reason,
+        details: details || '',
+    });
+    return data;
+};
+
+
+// =============================================================================
+// MESSAGING
+// =============================================================================
+
+/**
+ * @param {{ page?: number }} [params]
+ */
+export const fetchConversationsFn = async (params = {}) => {
+    const { data } = await axiosInstance.get('/api/v1/messaging/', { params });
+    return data;
+};
+
+/**
+ * @param {string|number} conversationId
+ */
+export const fetchConversationFn = async (conversationId) => {
+    const { data } = await axiosInstance.get(`/api/v1/messaging/${conversationId}/`);
+    return data;
+};
+
+/**
+ * @param {{ conversationId: string|number, page?: number }} params
+ */
+export const fetchMessagesFn = async ({ conversationId, page }) => {
+    const params = page ? { page } : {};
+    const { data } = await axiosInstance.get(`/api/v1/messaging/${conversationId}/messages/`, { params });
+    return data;
+};
+
+/**
+ * Start (or reuse) a conversation about a product and post the first message.
+ * @param {{ productId: string|number, message: string }} payload
+ */
+export const startConversationFn = async ({ productId, message }) => {
+    const { data } = await axiosInstance.post('/api/v1/messaging/', {
+        product: productId,
+        message,
+    });
+    return data;
+};
+
+/**
+ * @param {{ conversationId: string|number, body: string }} payload
+ */
+export const sendMessageFn = async ({ conversationId, body }) => {
+    const { data } = await axiosInstance.post(`/api/v1/messaging/${conversationId}/messages/`, { body });
+    return data;
+};
+
+/**
+ * @param {string|number} conversationId
+ */
+export const markConversationReadFn = async (conversationId) => {
+    const { data } = await axiosInstance.post(`/api/v1/messaging/${conversationId}/read/`);
+    return data;
+};
+
+export const fetchUnreadCountsFn = async () => {
+    const { data } = await axiosInstance.get('/api/v1/messaging/unread-count/');
     return data;
 };

@@ -27,6 +27,7 @@ import {
     startConversationFn,
     sendMessageFn,
     markConversationReadFn,
+    rateProductFn,
 } from '../service/Endpoints';
 import { removeIsAuthenticated, setIsAuthenticated } from '../slice/AuthSlice';
 import { setUser, removeUserData } from '../slice/UserSlice.js';
@@ -790,6 +791,26 @@ export const useUpdateStoreMutation = (storeSlug, setError, setServerError, setS
         },
         onError: (error) => {
             handleFieldErrors(error, setError, setServerError);
+        },
+    });
+};
+
+
+// =============================================================================
+// PRODUCT RATING
+// =============================================================================
+
+export const useRateProductMutation = (productSlug) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ['rate-product', productSlug],
+        mutationFn: (value) => rateProductFn({ productSlug, value }),
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['product-detail', productSlug] });
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+            queryClient.invalidateQueries({ queryKey: ['flash-deals'] });
         },
     });
 };

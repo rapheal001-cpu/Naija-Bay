@@ -6,6 +6,8 @@ from .views import (
     create_product_view,
     create_product_images_view,
     featured_products_view,
+    flash_deals_view,
+    rate_product_view,
     my_products_view,
     favorite_products_view,
     recently_viewed_products_view,
@@ -23,6 +25,8 @@ urlpatterns = [
     path('update/images/<int:product_id>/', update_product_images_view, name='update-product-images'),  # replace product images
     path('image/delete/<int:image_id>/', delete_product_image_view, name='delete-product-image'),  # delete one image
     path('featured/', featured_products_view, name='featured-products'),  # featured products
+    path('deals/flash/', flash_deals_view, name='flash-deals'),  # discounted flash deals
+    path('rate/<slug:product_slug>/', rate_product_view, name='rate-product'),  # rate a product
     path('my-listings/', my_products_view, name='my-listings'),  # current user's listings
     path('favorites/', favorite_products_view, name='favorite-products'),  # current user's favorites
     path('recently-viewed/', recently_viewed_products_view, name='recently-viewed-products'),  # view history

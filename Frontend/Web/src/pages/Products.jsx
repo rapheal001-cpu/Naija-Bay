@@ -37,6 +37,7 @@ const FILTER_PARAM_KEYS = [
     'delivery_available',
     'verified_seller',
     'negotiable',
+    'discounted',
 ];
 
 const buildFilters = (params) => {
@@ -47,7 +48,7 @@ const buildFilters = (params) => {
         if (value) filters[key] = value;
     });
 
-    ['delivery_available', 'verified_seller', 'negotiable'].forEach((key) => {
+    ['delivery_available', 'verified_seller', 'negotiable', 'discounted'].forEach((key) => {
         if (params.get(key) === 'true') filters[key] = true;
     });
 
@@ -74,6 +75,7 @@ const Products = () => {
         delivery: Boolean(filters.delivery_available),
         verified: Boolean(filters.verified_seller),
         negotiable: Boolean(filters.negotiable),
+        discounted: Boolean(filters.discounted),
     });
 
     const searchQuery = filters.search || '';
@@ -99,6 +101,7 @@ const Products = () => {
             delivery: Boolean(filters.delivery_available),
             verified: Boolean(filters.verified_seller),
             negotiable: Boolean(filters.negotiable),
+            discounted: Boolean(filters.discounted),
         });
     }, [
         searchQuery,
@@ -110,6 +113,7 @@ const Products = () => {
         filters.delivery_available,
         filters.verified_seller,
         filters.negotiable,
+        filters.discounted,
     ]);
 
     useEffect(() => {
@@ -182,6 +186,7 @@ const Products = () => {
             delivery_available: draft.delivery,
             verified_seller: draft.verified,
             negotiable: draft.negotiable,
+            discounted: draft.discounted,
         });
     };
 
@@ -483,6 +488,15 @@ const Products = () => {
                                         />
                                         Negotiable
                                     </label>
+                                    <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
+                                        <input
+                                            type="checkbox"
+                                            checked={draft.discounted}
+                                            onChange={(e) => setDraft({ ...draft, discounted: e.target.checked })}
+                                            className="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand"
+                                        />
+                                        On discount
+                                    </label>
                                 </div>
                             </div>
 
@@ -600,6 +614,15 @@ const Products = () => {
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold">
                                     Negotiable
                                     <button onClick={() => removeParam('negotiable')} className="hover:text-gray-900">
+                                        <HiOutlineX size={12} />
+                                    </button>
+                                </span>
+                            )}
+
+                            {filters.discounted && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 border border-red-100 text-xs font-bold">
+                                    On discount
+                                    <button onClick={() => removeParam('discounted')} className="hover:text-red-800">
                                         <HiOutlineX size={12} />
                                     </button>
                                 </span>

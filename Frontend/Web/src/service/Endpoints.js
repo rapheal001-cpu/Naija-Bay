@@ -125,6 +125,19 @@ export const fetchFeaturedProductDataFn = async () => {
     return data;
 };
 
+export const fetchFlashDealsFn = async () => {
+    const { data } = await axiosInstance.get('/api/v1/products/deals/flash/');
+    return data;
+};
+
+/**
+ * @param {{ productSlug: string, value: number }} payload
+ */
+export const rateProductFn = async ({ productSlug, value }) => {
+    const { data } = await axiosInstance.post(`/api/v1/products/rate/${productSlug}/`, { value });
+    return data;
+};
+
 export const fetchCategoriesFn = async () => {
     const { data } = await axiosInstance.get('/api/v1/products/categories/');
     return data;

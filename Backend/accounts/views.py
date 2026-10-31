@@ -21,15 +21,13 @@ from auth_kit.views import (
     ResendEmailVerificationView,
 )
 from accounts.models import Notifications, Store, User
-from accounts.serializers.serializers import NotificationSerializer
-from accounts.serializers.user import (
-    CustomUserSerializer,
-)
-from accounts.serializers.store import (
+from .serializers import (
     FollowUserSerializer,
     StoreCreateSerializer,
     StoreDetailSerializer,
     StoreSerializer,
+    CustomUserSerializer,
+    NotificationSerializer,
 )
 from NaijaBay.throttling import (
     LogoutThrottling,

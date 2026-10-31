@@ -1,5 +1,7 @@
 import django_filters
 
+from django.db import models
+
 from .models import Product
 
 
@@ -30,6 +32,7 @@ class ProductFilter(django_filters.FilterSet):
     delivery_available = django_filters.BooleanFilter(field_name="delivery_available")
     promoted = django_filters.BooleanFilter(field_name="promoted")
     verified_seller = django_filters.BooleanFilter(field_name="product_user__verified")
+    discounted = django_filters.BooleanFilter(method="filter_discounted")
     has_images = django_filters.BooleanFilter(method="filter_has_images")
     created_after = django_filters.IsoDateTimeFilter(
         field_name="created_at", lookup_expr="gte"
@@ -49,6 +52,7 @@ class ProductFilter(django_filters.FilterSet):
             "delivery_available",
             "promoted",
             "verified_seller",
+            "discounted",
             "has_images",
             "created_after",
         ]
@@ -64,6 +68,15 @@ class ProductFilter(django_filters.FilterSet):
 
     def filter_city(self, queryset, name, value):
         return queryset.filter(city__iexact=_slug(value))
+
+    def filter_discounted(self, queryset, name, value):
+        if value is True:
+            return queryset.filter(original_price__gt=models.F("price"))
+        if value is False:
+            return queryset.filter(
+                models.Q(original_price__isnull=True) | models.Q(original_price__lte=models.F("price"))
+            )
+        return queryset
 
     def filter_has_images(self, queryset, name, value):
         if value is True:

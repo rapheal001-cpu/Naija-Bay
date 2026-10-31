@@ -1,9 +1,10 @@
 from decimal import Decimal
+from django.db import models
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from accounts.models import User
 from core.models import Category, SubCategory, State, City
-from .models import Product, ProductImage, ProductReport
+from .models import Product, ProductImage, ProductReport, ProductRating
 from phonenumber_field.serializerfields import PhoneNumberField
 from NaijaBay.utils import (
     CONTACT_METHOD_CHOICES,
@@ -69,6 +70,10 @@ class ProductSerializer(serializers.ModelSerializer):
     images_count = serializers.SerializerMethodField(read_only=True)
     listing_status = serializers.CharField(read_only=True)
     is_owner = serializers.SerializerMethodField(read_only=True)
+    discount_percent = serializers.IntegerField(read_only=True)
+    average_rating = serializers.SerializerMethodField(read_only=True)
+    total_ratings = serializers.SerializerMethodField(read_only=True)
+    user_rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Product
@@ -85,6 +90,12 @@ class ProductSerializer(serializers.ModelSerializer):
             "color",
             "quantity",
             "negotiable",
+            "original_price",
+            "sold_count",
+            "discount_percent",
+            "average_rating",
+            "total_ratings",
+            "user_rating",
             "state",
             "city",
             "contact_methods",
@@ -137,6 +148,28 @@ class ProductSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_images_count(self, obj):
         return obj.images_count
+
+    @extend_schema_field(serializers.FloatField(default=0))
+    def get_average_rating(self, obj):
+        avg = getattr(obj, "_average_rating", None)
+        if avg is not None:
+            return round(float(avg), 1)
+        return round(float(obj.ratings.aggregate(avg=models.Avg("value"))["avg"] or 0), 1)
+
+    @extend_schema_field(serializers.IntegerField(default=0))
+    def get_total_ratings(self, obj):
+        total = getattr(obj, "_total_ratings", None)
+        if total is not None:
+            return int(total)
+        return obj.ratings.count()
+
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
+    def get_user_rating(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return None
+        rating = obj.ratings.filter(user_id=request.user.id).first()
+        return rating.value if rating else None
 
     @extend_schema_field(serializers.BooleanField(default=False))
     def get_is_owner(self, obj):
@@ -291,6 +324,15 @@ class ProductSerializer(serializers.ModelSerializer):
         if needs_phone and not contact_number:
             raise serializers.ValidationError({"contact_number": "Contact number is required when Phone Call or WhatsApp is selected."})
 
+        price = attrs.get("price", getattr(self.instance, "price", None))
+        original_price = attrs.get(
+            "original_price", getattr(self.instance, "original_price", None)
+        )
+        if original_price and price and original_price <= price:
+            raise serializers.ValidationError(
+                {"original_price": "Original price must be higher than the sale price to show a discount."}
+            )
+
         return attrs
 
     # -------------------------------------------------------------------------
@@ -417,6 +459,24 @@ class ProductReportSerializer(serializers.ModelSerializer):
                     "You have already reported this listing."
                 )
         return attrs
+
+
+# =============================================================================
+# PRODUCT RATING
+# =============================================================================
+
+class ProductRatingSerializer(serializers.ModelSerializer):
+    user = ProductUserSerializer(read_only=True)
+
+    class Meta:
+        model = ProductRating
+        fields = ["id", "product", "user", "value", "created_at"]
+        read_only_fields = ("id", "user", "created_at")
+
+    def validate_value(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
 
 
 # =============================================================================

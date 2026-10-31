@@ -8,8 +8,9 @@ import Spacer from '../Spacer.jsx';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDate } from '../../dummyData.js';
-import { useToggleFavoriteMutation, useDeleteProductMutation } from '../../hooks/UseMutation.js';
+import { useToggleFavoriteMutation, useDeleteProductMutation, useRateProductMutation } from '../../hooks/UseMutation.js';
 import { useSelector } from 'react-redux';
+import StarRating, { Stars } from './StarRating.jsx';
 
 
 const Product = () => {
@@ -23,6 +24,7 @@ const Product = () => {
 
     const toggleFavoriteMutation = useToggleFavoriteMutation();
     const deleteProductMutation = useDeleteProductMutation();
+    const rateProductMutation = useRateProductMutation(product?.product_slug);
 
     const nextImage = () => {
         const len = product?.images?.length || 0;
@@ -177,9 +179,21 @@ const Product = () => {
                         {/* Price & Status */}
                         <div className="flex items-start justify-between">
                             <div>
-                                <p className="text-3xl font-black text-gray-900 tracking-tight">
-                                    ₦{Number(product?.price).toLocaleString()}
-                                </p>
+                                <div className="flex items-center gap-2.5 flex-wrap">
+                                    <p className="text-3xl font-black text-gray-900 tracking-tight">
+                                        ₦{Number(product?.price).toLocaleString()}
+                                    </p>
+                                    {Number(product?.original_price) > Number(product?.price) && (
+                                        <>
+                                            <p className="text-base text-gray-400 line-through font-semibold">
+                                                ₦{Number(product?.original_price).toLocaleString()}
+                                            </p>
+                                            <span className="bg-red-500 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wide">
+                                                -{product?.discount_percent}%
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
                                 {product?.negotiable && (
                                     <span className="inline-block mt-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
                                         Negotiable
@@ -236,6 +250,38 @@ const Product = () => {
                             <span className="flex items-center gap-1 text-xs text-gray-400">
                                 <FaRegCalendarAlt size={12} /> {formatDate(product?.created_at)}
                             </span>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="mt-5 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                                <Stars value={product?.average_rating || 0} size={15} />
+                                <span className="text-sm font-bold text-gray-900">
+                                    {Number(product?.average_rating || 0).toFixed(1)}
+                                </span>
+                                <span className="text-xs text-gray-400 font-medium">
+                                    ({Number(product?.total_ratings || 0).toLocaleString()} rating{product?.total_ratings !== 1 ? 's' : ''})
+                                </span>
+                                {product?.sold_count > 0 && (
+                                    <span className="text-xs text-gray-400 font-medium">
+                                        • {Number(product?.sold_count).toLocaleString()}+ sold
+                                    </span>
+                                )}
+                            </div>
+
+                            {isAuthenticated && !isOwner && (
+                                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50">
+                                    <p className="text-xs font-semibold text-gray-500">
+                                        {product?.user_rating ? `Your rating: ${product?.user_rating}/5` : 'Rate this seller’s product:'}
+                                    </p>
+                                    <StarRating
+                                        initialValue={product?.user_rating || 0}
+                                        disabled={rateProductMutation.isPending}
+                                        onRate={(value) => rateProductMutation.mutate(value)}
+                                        size={20}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Attributes */}

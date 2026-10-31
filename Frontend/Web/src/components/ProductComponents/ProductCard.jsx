@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { FaHeart, FaEye } from "react-icons/fa";
+import { HiBadgeCheck } from "react-icons/hi";
 import { LuMapPin } from "react-icons/lu";
 import { useSelector } from "react-redux";
 import { useToggleFavoriteMutation } from '../../hooks/UseMutation';
+import { Stars } from './StarRating';
 
 
 const ProductCard = ({ 
@@ -10,7 +12,12 @@ const ProductCard = ({
     product_name,  
     product_slug, 
     images, 
-    price, 
+    price,
+    original_price,
+    discount_percent,
+    average_rating,
+    total_ratings,
+    sold_count,
     description, 
     condition, 
     state, 
@@ -87,6 +94,19 @@ const ProductCard = ({
                     </span>
                 )}
 
+                {/* Discount Badge */}
+                {discount_percent > 0 && (
+                    <span className="absolute bottom-3 left-3 bg-red-500 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm uppercase tracking-wide">
+                        -{discount_percent}%
+                    </span>
+                )}
+
+                {promoted && (
+                    <span className="absolute top-3 right-3 mt-11 bg-amber-400 text-gray-900 text-[9px] font-extrabold px-2 py-1 rounded-md shadow-sm uppercase tracking-wide">
+                        Boosted
+                    </span>
+                )}
+
                 {/* Color Badge */}
                 {color && (
                     <span
@@ -100,11 +120,34 @@ const ProductCard = ({
             {/* Content */}
             <div className="flex flex-col flex-1 p-4">
                 {/* Price Row */}
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-baseline gap-2 flex-wrap">
                     <p className="text-lg font-extrabold text-gray-900 tracking-tight">
                         ₦{Number(price).toLocaleString()}
                     </p>
+                    {Number(original_price) > Number(price) && (
+                        <p className="text-xs text-gray-400 line-through font-medium">
+                            ₦{Number(original_price).toLocaleString()}
+                        </p>
+                    )}
                 </div>
+
+                {/* Rating + sold row */}
+                {total_ratings > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                        <Stars value={average_rating} size={11} />
+                        <span className="text-[11px] text-gray-400 font-medium">
+                            {average_rating} ({total_ratings})
+                        </span>
+                        {sold_count > 0 && (
+                            <span className="text-[11px] text-gray-300">•</span>
+                        )}
+                        {sold_count > 0 && (
+                            <span className="text-[11px] text-gray-400 font-medium">
+                                {sold_count.toLocaleString()}+ sold
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Product Name */}
                 <h3 className="text-sm font-semibold text-gray-800 line-clamp-1 mt-1.5 group-hover:text-brand transition-colors duration-200">
@@ -129,6 +172,9 @@ const ProductCard = ({
                         <span className="text-xs text-gray-500 font-medium truncate">
                             {product_user.full_name || product_user.username}
                         </span>
+                        {(product_user.verified || product_user.store?.verified) && (
+                            <HiBadgeCheck size={14} className="text-blue-500 shrink-0" aria-label="Verified seller" />
+                        )}
                     </div>
                 )}
 

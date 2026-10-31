@@ -3,6 +3,7 @@ import {
     fetchCategoriesFn,
     fetchOtherUserFn,
     fetchFeaturedProductDataFn,
+    fetchFlashDealsFn,
     fetchUserFn,
     fetchUserNotificationsFn,
     productDetailFn,
@@ -99,6 +100,18 @@ export const useFetchFeaturedProductData = () => {
         refetchOnWindowFocus: false,
         retry: 1,
         meta: { hookName: 'useFetchFeaturedProductData' },
+    });
+};
+
+export const useFetchFlashDeals = () => {
+    return useQuery({
+        queryKey: ['flash-deals'],
+        queryFn: fetchFlashDealsFn,
+        staleTime: 1000 * 60 * 2,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+        retry: 1,
+        meta: { hookName: 'useFetchFlashDeals' },
     });
 };
 

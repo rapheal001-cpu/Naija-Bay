@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Product, ProductImage, ProductReport
+from .models import Product, ProductImage, ProductReport, ProductRating
 
 # =============================================================================
 # PRODUCT ADMIN
@@ -126,3 +126,13 @@ class ProductReportAdmin(admin.ModelAdmin):
     def mark_dismissed(self, request, queryset):
         updated = queryset.update(status="dismissed")
         self.message_user(request, f"{updated} report(s) dismissed.")
+
+
+@admin.register(ProductRating)
+class ProductRatingAdmin(admin.ModelAdmin):
+    list_display = ("product", "user", "value", "updated_at")
+    list_filter = ("value",)
+    search_fields = ("product__product_name", "user__username")
+    readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("product", "user")
+    list_select_related = ("product", "user")

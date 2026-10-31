@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import Header from "../components/HeaderComponents/Header.jsx";
+import PromoBar from "../components/HeaderComponents/PromoBar.jsx";
 import Spacer from "../components/Spacer.jsx";
 import Search from "../components/HeaderComponents/Search.jsx";
 import ProductCard from "../components/ProductComponents/ProductCard";
-import { FaArrowRight } from "react-icons/fa";
+import FlashDealsSection from "../components/ProductComponents/FlashDealsSection";
+import { FaArrowRight, FaShieldAlt, FaHandshake, FaHeadset } from "react-icons/fa";
 import CategoryLIst from "../components/ProductComponents/CategoryLIst";
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -40,8 +42,11 @@ const Home = () => {
             <Header />
             <Spacer space={'mb-20'} />
 
+            <PromoBar />
             <Search />
             <CategoryLIst />
+
+            <FlashDealsSection />
 
             {/* Featured Section */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
@@ -103,6 +108,39 @@ const Home = () => {
                     </div>
                 )}
 
+            </section>
+
+            {/* Why Naija-Bay trust strip */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[
+                        {
+                            icon: FaShieldAlt,
+                            title: 'Safe & secure trading',
+                            text: 'Verified sellers, report abuse, and buyer safety tips on every listing.',
+                        },
+                        {
+                            icon: FaHandshake,
+                            title: 'Buy directly from sellers',
+                            text: 'Chat, negotiate and agree on delivery — no middlemen, no hidden fees.',
+                        },
+                        {
+                            icon: FaHeadset,
+                            title: 'Support that shows up',
+                            text: 'Real help when deals go wrong. Reach us anytime from the contact page.',
+                        },
+                    ].map(({ icon: Icon, title, text }) => (
+                        <div key={title} className="flex items-start gap-4 bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg hover:shadow-gray-200/50 transition-shadow">
+                            <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-brand/10 text-brand shrink-0">
+                                <Icon size={20} />
+                            </span>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{text}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </section>
 
             <Spacer space={'mt-20'} />

@@ -1,20 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { RiLoader3Line, RiCheckLine } from "react-icons/ri";
-import {
-    HiOutlineTag, HiOutlineDocumentText,
-    HiOutlineCollection, HiOutlineColorSwatch, HiOutlineLocationMarker,
-    HiOutlineChatAlt2, HiOutlineExclamationCircle, HiOutlineEye, HiOutlineCheckCircle
-} from 'react-icons/hi';
-import {
-    HiOutlineCube, HiOutlineScale, HiOutlineBanknotes, HiOutlinePhone
-} from "react-icons/hi2";
-import {
-    categories, CATEGORY_SUBCATEGORY_MAP, CONDITION_CHOICES,
-    CONTACT_METHOD_CHOICES, STATE_CHOICES, STATE_CITY_MAP
-} from "../../dummyData.js";
-import { useUpdateProductMutation } from '../../hooks/UseMutation.js';
+import { RiUploadCloud2Fill, RiLoader3Line, RiCheckLine } from "react-icons/ri";
+import { HiOutlinePhotograph, HiOutlineTag, HiOutlineDocumentText, HiOutlineCollection, HiOutlineColorSwatch, HiOutlineLocationMarker, HiOutlineChatAlt2, HiOutlineExclamationCircle } from 'react-icons/hi';
+import { HiOutlineCube, HiOutlineScale, HiOutlineBanknotes, HiOutlinePhone } from "react-icons/hi2";
+import { categories, CATEGORY_SUBCATEGORY_MAP, CONDITION_CHOICES, CONTACT_METHOD_CHOICES, MAX_IMAGES, STATE_CHOICES, STATE_CITY_MAP } from "../../dummyData.js";
+import ProductImagePreview from "./ProductImagePreview.jsx";
+import { useCreateProductMutation, useCreateProductImagesMutation } from '../../hooks/UseMutation.js';
 
 
 const toBackendSlug = (str) => {
@@ -22,55 +14,26 @@ const toBackendSlug = (str) => {
     return str.toLowerCase().trim().replace(/[\s\-/]/g, '_');
 };
 
-const buildDefaultValues = (data) => ({
-    product_name: data?.product_name || '',
-    description: data?.description || '',
-    price: data?.price ?? '',
-    category: data?.category || '',
-    sub_category: data?.sub_category || '',
-    condition: data?.condition || '',
-    color: data?.color || '#000000',
-    quantity: data?.quantity ?? 1,
-    negotiable: !!data?.negotiable,
-    state: data?.state || '',
-    city: data?.city || '',
-    contact_methods: data?.contact_methods || [],
-    contact_number: data?.contact_number || '',
-    active: data?.active ?? true,
-    sold: data?.sold ?? false,
-});
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
-const EditProductForm = ({ productSlug, initialData }) => {
+const SellForm = () => {
     const navigate = useNavigate();
-
-    // --- Form & UI state ---
+    const [imageFiles, setImageFiles] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const [imageError, setImageError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
-    const [serverError, setServerError] = useState('');
     const [success, setSuccess] = useState(false);
 
-    const { register, handleSubmit, watch, reset, setValue, formState: { errors }, setError } = useForm({
-        defaultValues: buildDefaultValues(initialData),
-    });
+    const { register, handleSubmit, watch, reset, getValues, formState: { errors }, setError } = useForm();
+    const [serverError, setServerError] = useState('');
 
     const selectedMethods = watch('contact_methods') || [];
-    const isActive = watch('active');
-    const isSold = watch('sold');
-
-    // When Active is turned OFF → Sold becomes TRUE automatically
-    // When Active is turned ON  → Sold becomes FALSE automatically
-    useEffect(() => {
-        if (!isActive) {
-            setValue('sold', true, { shouldValidate: false });
-        } else {
-            setValue('sold', false, { shouldValidate: false });
-        }
-    }, [isActive, setValue]);
 
     const needsPhone = selectedMethods.some(m =>
         ['phone_call', 'whatsapp'].includes(m)
     );
-    const hasPhoneCall = selectedMethods.includes('phone_call');
+    const hasPhoneCall = selectedMethods.includes('phone_call') || selectedMethods.includes('phone');
     const hasWhatsapp = selectedMethods.includes('whatsapp');
 
     const selectedState = watch('state');
@@ -79,17 +42,60 @@ const EditProductForm = ({ productSlug, initialData }) => {
     const selectedCategory = watch('category');
     const subCategories = selectedCategory ? CATEGORY_SUBCATEGORY_MAP[selectedCategory] : [];
 
-    useEffect(() => {
-        if (initialData) {
-            reset(buildDefaultValues(initialData));
-        }
-    }, [initialData, reset]);
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        setImageError('');
 
-    const updateProductData = useUpdateProductMutation(setError, setServerError);
+        // Reject any file that isn't jpg/jpeg/png, even if the OS file picker let it through
+        const invalidFiles = files.filter((f) => !SUPPORTED_IMAGE_TYPES.includes(f.type));
+        if (invalidFiles.length > 0) {
+            setImageError(
+                `Unsupported file type: ${invalidFiles.map((f) => f.name).join(', ')}. Only JPG, JPEG, and PNG images are allowed.`
+            );
+            e.target.value = '';
+            return;
+        }
+
+        if (imageFiles.length + files.length > MAX_IMAGES) {
+            setImageError(`You can upload a maximum of ${MAX_IMAGES} images.`);
+            e.target.value = '';
+            return;
+        }
+
+        const newFiles = [...imageFiles, ...files];
+        const newPreviews = [...imagePreviews, ...files.map((f) => URL.createObjectURL(f))];
+        setImageFiles(newFiles);
+        setImagePreviews(newPreviews);
+        e.target.value = '';
+    };
+
+    const removeImage = (index) => {
+        URL.revokeObjectURL(imagePreviews[index]);
+        setImageFiles((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const createProductData = useCreateProductMutation(setError, setServerError);
+    const createProductImagesData = useCreateProductImagesMutation(setServerError);
 
     const onSubmit = async (data) => {
+        if (imageFiles.length === 0) {
+            setImageError('At least one product image is required.');
+            return;
+        }
+
+        // Final safety net: block submission if any selected file isn't jpg/jpeg/png
+        const invalidFiles = imageFiles.filter((f) => !SUPPORTED_IMAGE_TYPES.includes(f.type));
+        if (invalidFiles.length > 0) {
+            setImageError(
+                `Unsupported file type: ${invalidFiles.map((f) => f.name).join(', ')}. Only JPG, JPEG, and PNG images are allowed.`
+            );
+            return;
+        }
+
         try {
             setIsSubmitting(true);
+            setImageError('');
             setSubmitError('');
             setServerError([]);
 
@@ -97,6 +103,7 @@ const EditProductForm = ({ productSlug, initialData }) => {
                 product_name: data.product_name,
                 description: data.description,
                 price: data.price,
+                original_price: data.original_price || null,
                 category: data.category,
                 sub_category: data.sub_category,
                 condition: data.condition,
@@ -105,25 +112,32 @@ const EditProductForm = ({ productSlug, initialData }) => {
                 negotiable: !!data.negotiable,
                 state: data.state,
                 city: data.city,
-                active: data.active,
-                sold: data.sold,
                 contact_methods: data.contact_methods,
                 ...(needsPhone && data.contact_number ? { contact_number: data.contact_number } : {}),
             };
 
-            await updateProductData.mutateAsync({
-                productSlug: productSlug,
-                payload,
-            });
+            const productData = await createProductData.mutateAsync(payload);
+
+            if (!productData?.id) {
+                throw new Error('Product created but no ID was returned.');
+            }
+
+            if (imageFiles.length > 0) {
+                await createProductImagesData.mutateAsync({
+                    product: productData,
+                    images: imageFiles,
+                });
+            }
 
             setSuccess(true);
+            reset();
+            setImageFiles([]);
+            setImagePreviews([]);
 
-            setTimeout(() => {
-                navigate(`/product/detail/${productSlug}`);
-            }, 1500);
+            setTimeout(() => navigate(`/product/detail/${productData.product_slug}`), 3000);
 
         } catch (error) {
-            setSubmitError(error?.message || 'Unable to update your listing right now. Please try again.');
+            setSubmitError(error?.message || 'Unable to publish your ad right now. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -133,27 +147,26 @@ const EditProductForm = ({ productSlug, initialData }) => {
     const inputError = "border-red-300 focus:border-red-400 bg-red-50/30 focus:ring-red-100";
     const inputNormal = "border-gray-200 focus:border-brand focus:ring-brand/10";
 
-
     if (success) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
                     <RiCheckLine size={32} className="text-emerald-600" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">Changes saved!</h2>
-                <p className="text-sm text-gray-500 mt-1">Redirecting to your listing...</p>
+                <h2 className="text-xl font-bold text-gray-900">Ad posted successfully!</h2>
+                <p className="text-sm text-gray-500 mt-1">Redirecting you to product detail...</p>
             </div>
         );
     }
 
     return (
         <>
-            {(submitError || serverError.length > 0) && (
+            {(submitError || serverError) && (
                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                     <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                         {submitError && <p className="text-red-600 text-sm font-semibold leading-snug">{submitError}</p>}
-                        {serverError && <p className="text-red-600 text-sm font-semibold leading-snug">
+                        {serverError && <p  className="text-red-600 text-sm font-semibold leading-snug">
                             {serverError}
                         </p>
                         }
@@ -163,59 +176,34 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
 
-                {/* Section: Status (Active / Sold) */}
-                <div className="space-y-5">
+                {/* Section: Photos */}
+                <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                        <HiOutlineCheckCircle size={18} className="text-brand" />
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Listing Status</h3>
+                        <HiOutlinePhotograph size={18} className="text-brand" />
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Photos</h3>
+                        <span className="text-xs text-gray-400 font-medium">(up to {MAX_IMAGES})</span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Active Switch */}
-                        <label className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors select-none">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-brand/10 text-brand' : 'bg-gray-200 text-gray-400'}`}>
-                                    <HiOutlineEye size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-gray-900">Active</p>
-                                    <p className="text-xs text-gray-500">Buyers can see this listing</p>
-                                </div>
-                            </div>
-                            <div className="relative inline-flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    {...register('active')}
-                                />
-                                <div className="w-12 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-brand" />
-                            </div>
-                        </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                        {imagePreviews.map((src, index) => (
+                            <ProductImagePreview key={index} src={src} index={index} removeImage={removeImage} />
+                        ))}
 
-                        {/* Sold Switch (read-only, controlled by Active) */}
-                        <label className={`flex items-center justify-between p-4 rounded-2xl border transition-colors select-none ${isSold ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSold ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-200 text-gray-400'}`}>
-                                    <HiOutlineCheckCircle size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-gray-900">Sold</p>
-                                    <p className="text-xs text-gray-500">
-                                        {isActive ? 'Mark as sold by deactivating' : 'Item is marked as sold'}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="relative inline-flex items-center opacity-50 cursor-not-allowed">
+                        {imageFiles.length < MAX_IMAGES && (
+                            <label className="group flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-brand hover:text-brand hover:bg-brand/3 cursor-pointer transition-all">
+                                <RiUploadCloud2Fill size={28} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-bold">Add photo</span>
                                 <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    {...register('sold')}
-                                    disabled
+                                    type="file"
+                                    accept="image/jpeg, image/jpg, image/png"
+                                    multiple
+                                    onChange={handleImageChange}
+                                    className="hidden"
                                 />
-                                <div className={`w-12 h-7 rounded-full peer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all ${isSold ? 'bg-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white' : 'bg-gray-300'}`} />
-                            </div>
-                        </label>
+                            </label>
+                        )}
                     </div>
+                    {imageError && <p className="text-red-500 text-xs font-semibold">{imageError}</p>}
                 </div>
 
                 <div className="w-full h-px bg-gray-100" />
@@ -293,6 +281,32 @@ const EditProductForm = ({ productSlug, initialData }) => {
                                 />
                             </div>
                             {errors.price && <p className="text-red-500 text-xs font-semibold ml-1">{errors.price.message}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label htmlFor="original_price" className="text-[13px] font-bold text-gray-700 ml-1">
+                                Original price (₦) <span className="text-gray-400 font-semibold">— optional</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"><HiOutlineBanknotes size={18} /></span>
+                                <input
+                                    id="original_price"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Shows a discount"
+                                    {...register('original_price', {
+                                        min: { value: 1000, message: 'Original price must be at least ₦1,000.' },
+                                        max: { value: 999999999, message: 'Original price seems too high.' },
+                                        valueAsNumber: true,
+                                        validate: (value) => {
+                                            if (!value) return true;
+                                            return value > getValues('price') || 'Original price must be higher than the sale price.';
+                                        },
+                                    })}
+                                    className={`${inputBase} ${errors.original_price ? inputError : inputNormal}`}
+                                />
+                            </div>
+                            {errors.original_price && <p className="text-red-500 text-xs font-semibold ml-1">{errors.original_price.message}</p>}
                         </div>
 
                         <div className="space-y-1.5">
@@ -473,7 +487,7 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Contact */}
+                {/* Section: Contact — MULTI-SELECT */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineChatAlt2 size={18} className="text-brand" />
@@ -518,6 +532,7 @@ const EditProductForm = ({ productSlug, initialData }) => {
                         {errors.contact_methods && <p className="text-red-500 text-xs font-semibold ml-1">{errors.contact_methods.message}</p>}
                     </div>
 
+                    {/* Phone number — ONLY shown if phone or whatsapp selected */}
                     {needsPhone && (
                         <div className="space-y-1.5">
                             <label htmlFor="contact_number" className="text-[13px] font-bold text-gray-700 ml-1">
@@ -555,9 +570,9 @@ const EditProductForm = ({ productSlug, initialData }) => {
                     className="w-full flex items-center justify-center gap-2 bg-brand text-white font-bold text-[15px] rounded-xl py-3.5 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-brand/20 mt-2"
                 >
                     {isSubmitting ? (
-                        <><RiLoader3Line size={20} className="animate-spin" /> Saving changes...</>
+                        <><RiLoader3Line size={20} className="animate-spin" /> Posting your ad...</>
                     ) : (
-                        'Save changes'
+                        'Post ad'
                     )}
                 </button>
             </form>
@@ -565,4 +580,4 @@ const EditProductForm = ({ productSlug, initialData }) => {
     );
 };
 
-export default EditProductForm;
+export default SellForm;

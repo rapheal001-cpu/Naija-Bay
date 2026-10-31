@@ -1,7 +1,7 @@
 from datetime import timedelta
 
-from django.db import transaction
-from django.db.models import Count, Q
+from django.db import models, transaction
+from django.db.models import Avg, Count, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import (
@@ -25,8 +25,9 @@ from .serializers import (
     ProductSerializer,
     CategorySerializer,
     ProductReportSerializer,
+    ProductRatingSerializer,
 )
-from .models import Product, ProductImage, ProductReport
+from .models import Product, ProductImage, ProductReport, ProductRating
 from core.models import Category
 from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOrReadOnly, IsOwnerOnly
@@ -66,6 +67,10 @@ class ProductsListAPIView(ListAPIView):
             .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
             .select_related("product_user")
             .prefetch_related("views", "favorites", "images")
+            .annotate(
+                _average_rating=Avg("ratings__value"),
+                _total_ratings=Count("ratings", distinct=True),
+            )
             .order_by("-created_at")
         )
 
@@ -119,6 +124,79 @@ featured_products_view = FeaturedProductsListAPIView.as_view()
 
 
 @extend_schema_view(
+    get=extend_schema(tags=["Products"], operation_id="Flash Deals")
+)
+class FlashDealsListAPIView(ListAPIView):
+    """Discounted listings, biggest savings first — powers the homepage flash-deals rail."""
+
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [ProductThrottling]
+    pagination_class = None
+
+    def get_queryset(self):
+        now = timezone.now()
+        return (
+            Product.objects.filter(active=True, sold=False, original_price__gt=0)
+            .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+            .filter(original_price__gt=models.F("price"))
+            .select_related("product_user")
+            .prefetch_related("views", "favorites", "images")
+            .annotate(
+                _average_rating=Avg("ratings__value"),
+                _total_ratings=Count("ratings", distinct=True),
+            )
+            .order_by("-promoted", "price")[:50]
+        )
+
+
+flash_deals_view = FlashDealsListAPIView.as_view()
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Products"],
+        operation_id="Rate Product",
+        request=ProductRatingSerializer,
+        responses={201: ProductRatingSerializer},
+    )
+)
+class RateProductAPIView(APIView):
+    """Create or update the current user's 1–5 star rating for a product."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ProductThrottling]
+
+    def post(self, request, product_slug, *args, **kwargs):
+        product = get_object_or_404(
+            Product, product_slug=product_slug, active=True
+        )
+
+        if product.product_user_id == request.user.id:
+            return Response(
+                {"detail": "You cannot rate your own listing."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ProductRatingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        rating, _ = ProductRating.objects.update_or_create(
+            product=product,
+            user=request.user,
+            defaults={"value": serializer.validated_data["value"]},
+        )
+
+        return Response(
+            ProductRatingSerializer(rating).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+rate_product_view = RateProductAPIView.as_view()
+
+
+@extend_schema_view(
     get=extend_schema(tags=["Products"], operation_id="Categories")
 )
 class CategoriesListAPIView(ListAPIView):
@@ -149,6 +227,10 @@ class ProductsDetailAPIView(RetrieveUpdateDestroyAPIView):
         return (
             Product.objects.select_related("product_user")
             .prefetch_related("views", "favorites", "images")
+            .annotate(
+                _average_rating=Avg("ratings__value"),
+                _total_ratings=Count("ratings", distinct=True),
+            )
             .order_by("-created_at")
         )
 

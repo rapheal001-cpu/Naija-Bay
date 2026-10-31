@@ -59,6 +59,19 @@ class Product(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10000)],
     )
     negotiable = models.BooleanField(_("Price Negotiable"), default=False)
+    original_price = models.DecimalField(
+        _("Original Price"),
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(Decimal("1000.00")),
+            MaxValueValidator(Decimal("999999999")),
+        ],
+        help_text=_("Optional higher 'was' price. When set above the sale price the listing shows a discount."),
+    )
+    sold_count = models.PositiveIntegerField(_("Sold Count"), default=0)
     state = models.CharField(
         _("Product State"), max_length=25, choices=STATE_CHOICES, db_index=True
     )
@@ -98,6 +111,16 @@ class Product(models.Model):
     # -------------------------------------------------------------------------
     # Properties
     # -------------------------------------------------------------------------
+
+    @property
+    def discount_percent(self):
+        if self.original_price and self.original_price > self.price:
+            return round(((self.original_price - self.price) / self.original_price) * 100)
+        return 0
+
+    @property
+    def is_discounted(self):
+        return self.discount_percent > 0
 
     @property
     def favorites_count(self):
@@ -264,4 +287,47 @@ class ProductReport(models.Model):
         indexes = [
             models.Index(fields=["product", "reporter"]),
             models.Index(fields=["status", "-created_at"]),
+        ]
+
+
+# =============================================================================
+# PRODUCT RATING
+# =============================================================================
+
+class ProductRating(models.Model):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="ratings",
+        verbose_name=_("Product"),
+        db_index=True,
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="product_ratings",
+        verbose_name=_("User"),
+        db_index=True,
+    )
+    value = models.PositiveSmallIntegerField(
+        _("Rating"),
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+
+    def __str__(self):
+        return f"{self.product.product_name} rated {self.value}/5 by {self.user.username}"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Product Rating")
+        verbose_name_plural = _("Product Ratings")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "user"], name="unique_rating_per_user"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["product", "user"]),
         ]

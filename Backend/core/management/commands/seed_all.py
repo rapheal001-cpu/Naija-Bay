@@ -12,6 +12,7 @@ import random
 from datetime import timedelta
 from decimal import Decimal
 
+from allauth.account.models import EmailAddress
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -33,7 +34,7 @@ from NaijaBay.utils import (
     SUBCATEGORY_MAP,
     _city_slug,
 )
-from products.models import Product, ProductReport
+from products.models import Product, ProductRating, ProductReport
 
 
 SELLER_NAMES = [
@@ -143,6 +144,7 @@ class Command(BaseCommand):
                 sellers, categories, cities, options["products_per_user"]
             )
             self._seed_engagement(products, sellers, buyers)
+            self._seed_ratings(products, sellers, buyers)
             self._seed_conversations(
                 products, sellers, buyers, options["conversations"]
             )
@@ -158,6 +160,7 @@ class Command(BaseCommand):
     def _clear(self):
         self.stdout.write(self.style.WARNING("Clearing marketplace data..."))
 
+        ProductRating.objects.all().delete()
         ProductReport.objects.all().delete()
         Message.objects.all().delete()
         Conversation.objects.all().delete()
@@ -295,6 +298,14 @@ class Command(BaseCommand):
             user.save(update_fields=["password"])
             buyers.append(user)
 
+        # allauth requires a verified primary email before login
+        for user in sellers + buyers:
+            EmailAddress.objects.get_or_create(
+                user=user,
+                email=user.email,
+                defaults={"verified": True, "primary": True},
+            )
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Users: {len(sellers)} sellers, {len(buyers)} buyers "
@@ -390,6 +401,15 @@ class Command(BaseCommand):
                 is_expired = index == per_user - 2 and per_user >= 6
                 promoted = index < 2 and self.rng.random() < 0.5
 
+                # Temu-style discounts: ~40% of unsold listings have an
+                # original price 10-35% above the sale price.
+                original_price = None
+                if not is_sold and self.rng.random() < 0.4:
+                    markup = self.rng.uniform(1.10, 1.35)
+                    original_price = (price * Decimal(str(markup))).quantize(
+                        Decimal("1")
+                    )
+
                 product, was_created = Product.objects.get_or_create(
                     product_user=seller,
                     product_name=name,
@@ -400,6 +420,8 @@ class Command(BaseCommand):
                             name, category, sub_category, condition
                         ),
                         "price": price,
+                        "original_price": original_price,
+                        "sold_count": self.rng.randint(0, 60) if not is_sold else self.rng.randint(1, 5),
                         "condition": condition,
                         "color": self.rng.choice(COLORS),
                         "quantity": (
@@ -464,6 +486,38 @@ class Command(BaseCommand):
                 f"Engagement: {favorites} favorites, {views} product views."
             )
         )
+
+    # -------------------------------------------------------------------------
+    # Ratings
+    # -------------------------------------------------------------------------
+
+    def _seed_ratings(self, products, sellers, buyers):
+        created = 0
+
+        for product in products:
+            if product.sold:
+                continue
+            # ~70% of active listings get 1-4 ratings from other users.
+            if self.rng.random() >= 0.7:
+                continue
+
+            raters = self.rng.sample(
+                sellers + buyers,
+                k=min(len(sellers) + len(buyers), self.rng.randint(1, 4)),
+            )
+            for rater in raters:
+                if rater.id == product.product_user_id:
+                    continue
+                # Skew positive like a real marketplace.
+                value = self.rng.choices([5, 4, 3, 2, 1], weights=[45, 30, 12, 8, 5])[0]
+                _, was_created = ProductRating.objects.get_or_create(
+                    product=product,
+                    user=rater,
+                    defaults={"value": value},
+                )
+                created += int(was_created)
+
+        self.stdout.write(self.style.SUCCESS(f"Ratings: {created} new product ratings."))
 
     # -------------------------------------------------------------------------
     # Conversations
@@ -589,6 +643,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Conversations:  {Conversation.objects.count()}")
         self.stdout.write(f"  Messages:       {Message.objects.count()}")
         self.stdout.write(f"  Reports:        {ProductReport.objects.count()}")
+        self.stdout.write(f"  Ratings:        {ProductRating.objects.count()}")
         self.stdout.write(f"  Notifications:  {Notifications.objects.count()}")
         self.stdout.write("")
         self.stdout.write(

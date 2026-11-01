@@ -1,20 +1,21 @@
 # NaijaBay Backend API
 
-NaijaBay is a Django REST Framework marketplace backend for Nigerian classifieds and local buying/selling flows. The backend currently powers authentication, profile management, product discovery, product creation, image uploads, favorites, notifications, and the shared API surface used by the frontend.
+NaijaBay is a Django REST Framework marketplace backend for Nigerian classifieds and local buying/selling flows, modeled after Jiji.ng (classifieds) and Temu (flash deals, discounts, ratings). The backend powers authentication, profile/stores, product discovery with filters, discounts and flash deals, product ratings, favorites, reports, notifications, and buyer–seller messaging over REST (the frontend polls; there is no websocket layer).
 
 ## What the backend does
 
 The current API supports:
 
 - user registration, login, logout, verification, password reset, and password change
-- authenticated profile fetch and profile update flows
-- public and authenticated user lookup routes
-- product listing, category browsing, product detail retrieval, and user-specific product listing views
-- product creation and image upload handling
-- favorite toggling for products
-- notification retrieval and mark-as-read workflows
+- authenticated profile fetch and profile update flows, plus public user/store lookup, follows, and stores
+- product listing with django-filter filters (category, state, city, price range, condition, negotiable, discounted, verified sellers, delivery, search, ordering)
+- Temu-style discounts: `original_price` + `sold_count` on products, computed `discount_percent`, and a flash-deals endpoint
+- Jiji-style product ratings: 1–5 star `ProductRating` per user per product with average/total/user rating in the serializer
+- product detail retrieval, product create/update/delete, and image upload handling
+- favorite toggling, product views, and product reports (moderation)
+- buyer–seller messaging (conversations, messages, read receipts, unread counts) over REST
+- notification creation and mark-as-read workflows
 - OpenAPI/schema generation and interactive docs through drf-spectacular
-- chat-related app scaffolding alongside the marketplace and account modules
 
 ## Technology stack
 
@@ -41,16 +42,21 @@ Backend/
 │   └── utils.py
 ├── accounts/
 │   ├── models.py
-│   ├── serializers/
+│   ├── serializers/        # User, store, follow, notification, registration serializers
 │   ├── urls.py
 │   └── views.py
-├── chat/
-│   └── ...
-├── core/
-│   └── models.py
-├── products/
+├── messaging/              # Conversation + Message models and REST views
 │   ├── models.py
 │   ├── serializers.py
+│   ├── urls.py
+│   └── views.py
+├── core/
+│   ├── models.py           # State, City, Category, SubCategory
+│   └── management/commands/  # seed_all, seed_products, categories, nigeria_states, create_user
+├── products/
+│   ├── models.py           # Product, ProductImage, ProductReport, ProductRating
+│   ├── serializers.py
+│   ├── filters.py
 │   ├── urls.py
 │   └── views.py
 ├── manage.py
@@ -98,13 +104,27 @@ These routes are routed through the auth_kit integration and cover the normal au
 
 ### Product routes (`/api/v1/products/`)
 
-- `GET /api/v1/products/`
+- `GET /api/v1/products/` — filterable by `category`, `sub_category`, `state`, `city`, `min_price`, `max_price`, `condition`, `negotiable`, `discounted`, `verified`, `delivery`, `search`, `ordering`
+- `GET /api/v1/products/deals/flash/` — flash deals (active, unsold, discounted, promoted first)
 - `GET /api/v1/products/categories/`
 - `POST /api/v1/products/create/`
 - `POST /api/v1/products/create/images/`
 - `GET /api/v1/products/user/`
 - `GET /api/v1/products/detail/<slug>/`
+- `PUT/PATCH /api/v1/products/detail/<slug>/` and `DELETE /api/v1/products/detail/<slug>/` (owner only)
+- `POST /api/v1/products/rate/<slug>/` — rate a product 1–5 (authenticated, not the owner)
 - `POST /api/v1/core/toggle-favorite-product/<slug>/`
+- `POST /api/v1/products/report/<slug>/` — report abuse (moderation)
+
+### Messaging routes (`/api/v1/messaging/`)
+
+- `GET/POST /api/v1/messaging/` — list or create conversations
+- `GET /api/v1/messaging/unread-count/` — unread messages + notifications
+- `GET /api/v1/messaging/<id>/` — conversation detail
+- `GET/POST /api/v1/messaging/<id>/messages/` — list or send messages
+- `POST /api/v1/messaging/<id>/read/` — mark the thread read
+
+Messaging is REST-only; the frontend refreshes threads on a polling interval. There is no Django Channels/websocket layer yet.
 
 ### Documentation routes
 
@@ -178,6 +198,35 @@ py manage.py migrate
 py manage.py check
 py manage.py runserver 0.0.0.0:8000
 ```
+
+## Seeding demo data
+
+All seed commands live in `core/management/commands/` and are idempotent — re-running them will not create duplicates.
+
+```bash
+# One command seeds everything: states/cities, categories/sub-categories,
+# sellers + buyers (verified emails), stores, follows, products (with
+# discounts, sold counts, promoted/sold/expired samples), ratings,
+# favorites/views, conversations + messages, reports, notifications.
+py manage.py seed_all
+
+# Useful flags
+py manage.py seed_all --images                  # also generate product photos (slower)
+py manage.py seed_all --clear                   # wipe seeded marketplace data first (keeps superusers)
+py manage.py seed_all --users 10 --products-per-user 15 --conversations 8
+py manage.py seed_all --password "MyPass123!" --seed 7
+
+# Individual seeders (run automatically by seed_all)
+py manage.py nigeria_states
+py manage.py categories
+py manage.py seed_products
+
+# Single accounts
+py manage.py create_user --admin                # admin@gmail.com / OnlyGod1@
+py manage.py create_user --user --email a@b.com --username ab --password Pass123!
+```
+
+Every seeded account gets a verified primary email (so `login/` works immediately) and the password from `--password` (default `TestPass123!`). Seller logins follow the pattern `seedseller1@naijabay.test`, buyers `seedbuyer1@naijabay.test`. Roughly 40% of seeded listings carry a discount (`original_price`), ~70% have star ratings, and flash deals are served from `/api/v1/products/deals/flash/`.
 
 ## Notes for contributors
 

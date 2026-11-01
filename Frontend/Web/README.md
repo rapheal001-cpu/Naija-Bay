@@ -1,17 +1,21 @@
 ﻿# NaijaBay Frontend
 
-The frontend is the marketplace experience for the NaijaBay project. It is built with React, Vite, Tailwind CSS, Redux Toolkit, Redux Persist, and TanStack Query. The app connects to the Django REST API in the backend and presents the marketplace pages in a clean, responsive way.
+The frontend is the marketplace experience for the NaijaBay project, styled after Jiji.ng (classifieds) and Temu (flash deals, discounts, ratings). It is built with React, Vite, Tailwind CSS, Redux Toolkit, Redux Persist, and TanStack Query. The app connects to the Django REST API in the backend and presents the marketplace pages in a clean, responsive way.
 
 ## What the frontend does
 
 The frontend currently supports:
 
 - home feed and featured product browsing
-- product detail views with seller and pricing context
-- category and product search flows
+- rotating promo bar, flash deals section with midnight countdown, and a "Why Naija-Bay" trust strip
+- Temu-style product cards: discount % badges, strikethrough original pricing, star ratings, and "N+ sold" counters
+- Jiji-style classifieds: category grid, seller verification badges, sub-category browsing
+- product detail views with seller card, star rating widget (rate 1–5 when signed in), safety notice, and multi-method contact (call / WhatsApp / in-app chat)
+- category and product search flows with filters (price range, condition, negotiable, "On discount", verified sellers, delivery, state/city)
 - user authentication with sign-in and registration
-- seller listing flows for posting a product
+- seller listing flows for posting a product (with optional original price for discounts) and editing/deleting listings
 - profile, update profile, business detail, notifications, and message views
+- buyer–seller messaging (chat threads refresh via React Query polling — no websockets)
 - favorites and protected navigation
 
 ## Tech stack
@@ -66,10 +70,13 @@ All requests are then appended with backend paths such as:
 - `/api/v1/accounts/auth/login`
 - `/api/v1/accounts/auth/registration`
 - `/api/v1/accounts/auth/user`
-- `/api/v1/products`
+- `/api/v1/products` (supports `?discounted=true` and the other filter params)
+- `/api/v1/products/deals/flash`
+- `/api/v1/products/rate/<slug>`
 - `/api/v1/products/create`
 - `/api/v1/products/create/images`
 - `/api/v1/products/detail/<slug>`
+- `/api/v1/messaging` (conversations/messages)
 
 ### How to connect a new backend endpoint
 
@@ -127,6 +134,16 @@ npm run dev
 ```
 
 The dev server exposes the app through Vite. The `/api/v1/...` traffic is sent to the backend URL configured in `.env`, and the Vite proxy is configured to route those requests to the backend target.
+
+## Demo data
+
+To see flash deals, discounts, ratings, and populated chat threads, seed the backend first (from the `Backend/` folder):
+
+```bash
+py manage.py seed_all            # idempotent; add --clear to wipe, --images for photos
+```
+
+Seeded logins follow the pattern `seedseller1@naijabay.test` / `seedbuyer1@naijabay.test` with password `TestPass123!` (override with `--password`). See `Backend/README.md` for the full list of seed commands.
 
 ## Notes for contributors
 

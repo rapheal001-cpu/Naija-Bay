@@ -199,6 +199,16 @@ py manage.py check
 py manage.py runserver 0.0.0.0:8000
 ```
 
+## One command: migrate, seed and run
+
+```bash
+cd Backend
+copy .env.example .env          # first time only
+python run_server.py            # makemigrations + migrate + all seeds + runserver
+```
+
+See the root `README.md` for every flag (`--reset-db`, `--clear`, `--no-images`, `--port`, ...).
+
 ## Seeding demo data
 
 All seed commands live in `core/management/commands/` and are idempotent — re-running them will not create duplicates.
@@ -222,7 +232,7 @@ py manage.py categories
 py manage.py seed_products
 
 # Single accounts
-py manage.py create_user --admin                # admin@gmail.com / OnlyGod1@
+py manage.py create_user                        # admin@gmail.com / OnlyGod1@ + regular users up to 50 total (password Password123@)
 py manage.py create_user --user --email a@b.com --username ab --password Pass123!
 ```
 

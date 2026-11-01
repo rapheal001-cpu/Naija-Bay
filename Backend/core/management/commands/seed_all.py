@@ -18,6 +18,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import Follow, Notifications, Store, User
+from core.management.commands.categories import seed_categories
+from core.management.commands.nigeria_states import seed_locations
 from core.management.commands.seed_products import (
     COLORS,
     PRODUCT_CATALOG,
@@ -31,7 +33,6 @@ from NaijaBay.utils import (
     CONDITION_CHOICES,
     CONTACT_METHOD_CHOICES,
     STATE_CITY_MAP,
-    SUBCATEGORY_MAP,
     _city_slug,
 )
 from products.models import Product, ProductRating, ProductReport
@@ -143,13 +144,20 @@ class Command(BaseCommand):
             products = self._seed_products(
                 sellers, categories, cities, options["products_per_user"]
             )
-            self._seed_engagement(products, sellers, buyers)
-            self._seed_ratings(products, sellers, buyers)
+
+            # Social data covers EVERY product and user in the database (not
+            # just the ones created above), so listings made by create_user /
+            # seed_products also get favorites, views, ratings and chats.
+            all_products = list(Product.objects.order_by("id"))
+            all_users = list(User.objects.filter(is_active=True).order_by("id"))
+
+            self._seed_engagement(all_products, [], all_users)
+            self._seed_ratings(all_products, all_users, [])
             self._seed_conversations(
-                products, sellers, buyers, options["conversations"]
+                all_products, [], all_users, options["conversations"]
             )
-            self._seed_reports(products, buyers)
-            self._seed_notifications(sellers + buyers)
+            self._seed_reports(all_products, all_users)
+            self._seed_notifications(all_users)
 
         self._summary()
 
@@ -181,74 +189,16 @@ class Command(BaseCommand):
     # -------------------------------------------------------------------------
 
     def _seed_locations(self):
-        states = []
-        cities = {}
-
-        for state_slug, city_names in STATE_CITY_MAP.items():
-            if not state_slug:
-                continue
-
-            state, _ = State.objects.get_or_create(
-                slug=state_slug,
-                defaults={"name": state_slug.replace("_", " ").title()},
-            )
-            states.append(state)
-
-            city_objects = []
-            for city_name in city_names:
-                if not city_name:
-                    continue
-                city, _ = City.objects.get_or_create(
-                    state=state,
-                    name=city_name,
-                )
-                city_objects.append(city)
-            cities[state_slug] = city_objects
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Locations: {len(states)} states, "
-                f"{sum(len(v) for v in cities.values())} cities."
-            )
-        )
-        return states, cities
+        # Shared with the ``nigeria_states`` command so both stay identical.
+        return seed_locations(self)
 
     # -------------------------------------------------------------------------
     # Categories
     # -------------------------------------------------------------------------
 
     def _seed_categories(self):
-        categories = {}
-        subcategories = {}
-
-        for raw_category, raw_subs in SUBCATEGORY_MAP.items():
-            if not raw_category:
-                continue
-
-            name = raw_category.strip().title().replace("_", " ")
-            category, _ = Category.objects.get_or_create(name=name)
-            categories[raw_category] = category
-
-            subs = []
-            for raw_sub in raw_subs:
-                if not raw_sub:
-                    continue
-                sub_name = (
-                    raw_sub.strip().title().replace("-", " ").replace("_", " ")
-                )
-                sub, _ = SubCategory.objects.get_or_create(
-                    category=category, name=sub_name
-                )
-                subs.append(sub)
-            subcategories[raw_category] = subs
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Categories: {len(categories)} categories, "
-                f"{sum(len(v) for v in subcategories.values())} sub-categories."
-            )
-        )
-        return categories, subcategories
+        # Shared with the ``categories`` command so both stay identical.
+        return seed_categories(self)
 
     # -------------------------------------------------------------------------
     # Users & stores
@@ -470,7 +420,7 @@ class Command(BaseCommand):
 
         for buyer in buyers:
             for product in self.rng.sample(
-                products, k=min(len(products), max(4, len(products) // 3))
+                products, k=min(len(products), min(max(4, len(products) // 3), 15))
             ):
                 if product.product_user_id == buyer.id:
                     continue

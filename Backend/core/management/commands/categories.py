@@ -1,41 +1,69 @@
+"""Seed marketplace categories and sub-categories.
+
+Usage::
+
+    python manage.py categories
+
+The seeding logic lives in :func:`seed_categories` so that ``seed_all`` can
+reuse it and both commands always produce identical rows.
+"""
+
 from django.core.management import BaseCommand
+
 from core.models import Category, SubCategory
 from NaijaBay.utils import SUBCATEGORY_MAP
 
 
+def display_name(raw):
+    """'phones_tablets' -> 'Phones Tablets'."""
+    return raw.strip().title().replace("-", " ").replace("_", " ")
+
+
+def seed_categories(command):
+    """Create every category and sub-category from ``SUBCATEGORY_MAP`` (idempotent).
+
+    Returns ``(categories, subcategories)``, both keyed by the raw category key.
+    """
+    categories = {}
+    subcategories = {}
+    new_categories = 0
+    new_subcategories = 0
+
+    for raw_category, raw_subs in SUBCATEGORY_MAP.items():
+        if not raw_category:
+            continue
+
+        category, category_created = Category.objects.get_or_create(
+            name=display_name(raw_category)
+        )
+        categories[raw_category] = category
+        new_categories += int(category_created)
+
+        subs = []
+        for raw_sub in raw_subs:
+            if not raw_sub or not raw_sub.strip():
+                continue
+
+            sub, sub_created = SubCategory.objects.get_or_create(
+                category=category, name=display_name(raw_sub)
+            )
+            subs.append(sub)
+            new_subcategories += int(sub_created)
+
+        subcategories[raw_category] = subs
+
+    command.stdout.write(
+        command.style.SUCCESS(
+            f"Categories: {new_categories} new categories, {new_subcategories} new "
+            f"sub-categories ({len(categories)} / "
+            f"{sum(len(v) for v in subcategories.values())} total)."
+        )
+    )
+    return categories, subcategories
+
+
 class Command(BaseCommand):
-    help = 'This Generate Categories and Sub categories.'
+    help = "Generate categories and sub-categories (safe to run repeatedly)."
 
     def handle(self, *args, **options):
-        total_categories = 0
-        total_sub_categories = 0
-
-        # Iterate over the original dictionary keys and values safely
-        for original_category_name, sub_categories in SUBCATEGORY_MAP.items():
-            category_name = original_category_name.strip().title().replace('_', ' ')
-
-            if category_name:
-                category, category_created = Category.objects.get_or_create(name=category_name)
-
-                if category_created:
-                    total_categories += 1
-                    self.stdout.write(self.style.SUCCESS(f"Category '{category_name}' created."))
-                else:
-                    self.stdout.write(self.style.WARNING(f"Category '{category_name}' already exists."))
-
-                # Process The Sub category
-                for sub_category_name in sub_categories:
-                    sub_category_name = sub_category_name.strip().title().replace('-', ' ').replace('_', ' ')
-
-                    if sub_category_name:
-                        # Pass the Category instance to the sub category model
-                        sub_category, sub_category_created = SubCategory.objects.get_or_create(category=category, name=sub_category_name)
-
-                        if sub_category_created:
-                            total_sub_categories += 1
-                            self.stdout.write(self.style.SUCCESS(f"  -> Subcategory '{sub_category_name}' created."))
-                else:
-                    self.stdout.write(self.style.WARNING(f"  -> City '{sub_category_name}' already exists."))
-
-        self.stdout.write(self.style.SUCCESS(
-            f"Finished! Total Category created: {total_categories}, Total Subcategory created: {total_sub_categories}."))
+        seed_categories(self)

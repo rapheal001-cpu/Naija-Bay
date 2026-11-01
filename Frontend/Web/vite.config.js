@@ -12,7 +12,7 @@ plugins: [react(), tailwindcss()],
     // open: true,
     proxy: {
       '/api': {
-        target: 'https://naija-bay-backend.onrender.com',
+        target: 'https//localhost:8000',
         changeOrigin: true,
       },
     },

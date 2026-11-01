@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand, CommandError
 from django.core.files.base import ContentFile
 from PIL import Image, ImageDraw, ImageFont
-from accounts.models import User
+from accounts.models import Store, User
 from products.models import Product, ProductImage
 from NaijaBay.utils import (
     CATEGORY_CHOICES,
@@ -13,7 +13,10 @@ from NaijaBay.utils import (
     CONTACT_METHOD_CHOICES,
     STATE_CHOICES,
     STATE_CITY_MAP,
+    _city_slug,
 )
+
+MIN_PRODUCTS_PER_USER = 3
 
 # =============================================================================
 # REALISTIC PRODUCT CATALOG
@@ -814,31 +817,108 @@ def attach_images_to_product(product):
 
 
 class Command(BaseCommand):
-    help = "Seed the database with realistic sample products."
+    help = (
+        "Seed realistic products for every active user (or one user with --username). "
+        "Each user is topped up to at least 3 products, and gets a store if missing. "
+        "Safe to run repeatedly."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--username",
             type=str,
-            required=True,
-            help="Username of the user to create products for",
+            default=None,
+            help="Only seed this user (default: every active user)",
         )
         parser.add_argument(
             "--count",
             type=int,
-            default=20,
-            help="Number of products to create (default: 20)",
+            default=MIN_PRODUCTS_PER_USER,
+            help=(
+                "Products each user should have, topping up what they already "
+                f"have (default and minimum: {MIN_PRODUCTS_PER_USER})"
+            ),
+        )
+        parser.add_argument(
+            "--images",
+            action="store_true",
+            help="Generate 6-10 placeholder images per product (slower)",
+        )
+        parser.add_argument(
+            "--no-store",
+            action="store_true",
+            help="Do not create stores for users that have none",
         )
 
     def handle(self, *args, **options):
-        username = options["username"]
-        count = options["count"]
+        target = max(options["count"], MIN_PRODUCTS_PER_USER)
 
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise CommandError(f'User "{username}" does not exist.')
+        if options["username"]:
+            users = list(User.objects.filter(username=options["username"]))
+            if not users:
+                raise CommandError(f'User "{options["username"]}" does not exist.')
+        else:
+            users = list(User.objects.filter(is_active=True).order_by("id"))
+            if not users:
+                raise CommandError(
+                    "No users found. Run `python manage.py create_user` first."
+                )
 
+        stores_created = 0
+        products_created = 0
+        images_filled = 0
+
+        for user in users:
+            if not options["no_store"]:
+                stores_created += int(self._ensure_store(user))
+
+            existing = Product.objects.filter(product_user=user).count()
+            needed = max(target - existing, 0)
+            if needed:
+                products_created += self._create_products(
+                    user, needed, options["images"]
+                )
+
+            # Give any existing product that still has no photos some images.
+            if options["images"]:
+                for product in Product.objects.filter(
+                    product_user=user, images__isnull=True
+                ):
+                    attach_images_to_product(product)
+                    images_filled += 1
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Products: {products_created} new products across {len(users)} users "
+                f"(each now has at least {target}); {stores_created} new stores; "
+                f"{images_filled} older products received images."
+            )
+        )
+
+    def _ensure_store(self, user):
+        """Create a store for the user when they don't have one. Returns True if created."""
+        if Store.objects.filter(user=user).exists():
+            return False
+
+        display = user.full_name
+        name = f"{display} Store"[:60]
+        if Store.objects.filter(name=name).exists():
+            name = f"{name[:40]} ({user.username})"[:60]
+
+        Store.objects.create(
+            user=user,
+            name=name,
+            description=(
+                f"{display} is a trusted Naija-Bay seller offering quality "
+                "products with fast replies and safe delivery."
+            ),
+            verified=bool(getattr(user, "verified", False)),
+            state=getattr(user, "state", "") or "",
+            address=getattr(user, "address", "") or "",
+        )
+        return True
+
+    def _create_products(self, user, count, with_images):
         categories = [c[0] for c in CATEGORY_CHOICES if c[0]]
         states = [s[0] for s in STATE_CHOICES if s[0]]
         conditions = [c[0] for c in CONDITION_CHOICES if c[0]]
@@ -864,7 +944,8 @@ class Command(BaseCommand):
             used_combinations.add(combo_key)
 
             state = random.choice(states)
-            city = random.choice(STATE_CITY_MAP.get(state, [""]))
+            city_names = [c for c in STATE_CITY_MAP.get(state, []) if c]
+            city = _city_slug(random.choice(city_names)) if city_names else ""
 
             condition = random.choice(conditions)
 
@@ -883,11 +964,19 @@ class Command(BaseCommand):
 
             price = get_price(category, sub_category)
 
+            original_price = None
+            if random.random() < 0.4:
+                original_price = (
+                    Decimal(str(price)) * Decimal(str(random.uniform(1.10, 1.35)))
+                ).quantize(Decimal("1"))
+
             product = Product.objects.create(
                 product_user=user,
                 product_name=name,
                 description=description,
                 price=Decimal(str(price)),
+                original_price=original_price,
+                sold_count=random.randint(0, 60),
                 category=category,
                 sub_category=sub_category,
                 condition=condition,
@@ -910,13 +999,9 @@ class Command(BaseCommand):
                 sold=False,
             )
 
-            # Generate 6-10 placeholder images for this product
-            attach_images_to_product(product)
+            if with_images:
+                attach_images_to_product(product)
 
             created += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Successfully created {created} realistic products for user '{username}'."
-            )
-        )
+        return created

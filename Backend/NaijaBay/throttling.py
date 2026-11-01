@@ -91,3 +91,28 @@ class ConversationThrottling(UserRateThrottle):
 # Abuse report throttling
 class ReportThrottling(UserRateThrottle):
     scope = 'report'
+
+
+# Cart throttling
+class CartThrottling(UserRateThrottle):
+    scope = 'cart'
+
+
+# Checkout / payment start throttling
+class CheckoutThrottling(UserRateThrottle):
+    scope = 'checkout'
+
+
+# Orders (read + status updates) throttling
+class OrderThrottling(UserRateThrottle):
+    scope = 'order'
+
+
+# Ad boosting throttling
+class BoostThrottling(UserRateThrottle):
+    scope = 'boost'
+
+
+# Payment verification throttling
+class PaymentVerifyThrottling(UserRateThrottle):
+    scope = 'payment_verify'

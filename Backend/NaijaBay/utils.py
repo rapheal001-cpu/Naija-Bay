@@ -208,8 +208,20 @@ NOTIFICATION_TYPES = [
     ('new_follower', 'New Follower'),
     ('store_created', 'Store Created'),
     ('product_reported', 'Product Reported'),
+    ('order_placed', 'Order Placed'),
+    ('order_received', 'Order Received'),
+    ('order_update', 'Order Update'),
+    ('boost_activated', 'Ad Boost Activated'),
+    ('boost_expired', 'Ad Boost Expired'),
     ('other', 'Other'),
 ]
+
+
+# ==============================
+# Categories that cannot be bought through the cart
+# (these are contact-the-seller listings)
+# ==============================
+NON_PURCHASABLE_CATEGORIES = ['real_estate', 'jobs', 'services', 'vehicles']
 
 
 # ==============================

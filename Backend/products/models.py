@@ -13,6 +13,7 @@ from NaijaBay.utils import (
     CITY_CHOICES,
     validate_contact_methods,
     product_images_upload_path,
+    NON_PURCHASABLE_CATEGORIES,
 )
 
 
@@ -87,6 +88,18 @@ class Product(models.Model):
     active = models.BooleanField(_("Active"), default=True, db_index=True)
     sold = models.BooleanField(_("Sold"), default=False, db_index=True)
     promoted = models.BooleanField(_("Promoted"), default=False, db_index=True)
+    promoted_until = models.DateTimeField(
+        _("Promoted Until"),
+        null=True,
+        blank=True,
+        help_text=_("When a paid ad boost ends. Empty means promoted without an end date."),
+    )
+    boost_level = models.PositiveSmallIntegerField(
+        _("Boost Level"),
+        default=0,
+        db_index=True,
+        help_text=_("Higher levels appear first among promoted listings."),
+    )
     delivery_available = models.BooleanField(_("Delivery Available"), default=False)
     expires_at = models.DateTimeField(_("Expires At"), null=True, blank=True)
 
@@ -156,6 +169,24 @@ class Product(models.Model):
     @property
     def is_expired(self):
         return self.listing_status == "expired"
+
+    @property
+    def is_boosted(self):
+        from django.utils import timezone
+
+        return bool(
+            self.promoted
+            and (self.promoted_until is None or self.promoted_until > timezone.now())
+        )
+
+    @property
+    def is_purchasable(self):
+        """True when the item can be bought through the cart and checkout."""
+        return (
+            self.listing_status == "active"
+            and self.quantity >= 1
+            and self.category not in NON_PURCHASABLE_CATEGORIES
+        )
 
     # -------------------------------------------------------------------------
     # Methods

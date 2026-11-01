@@ -31,6 +31,7 @@ from .models import Product, ProductImage, ProductReport, ProductRating
 from core.models import Category
 from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOrReadOnly, IsOwnerOnly
+from payments.services import expire_boosts_if_due
 from NaijaBay.throttling import (
     ProductThrottling,
     CreateProductThrottling,
@@ -61,6 +62,8 @@ class ProductsListAPIView(ListAPIView):
     ]
 
     def get_queryset(self):
+        # Switch off paid boosts that have run out (cheap: runs at most once a minute).
+        expire_boosts_if_due()
         now = timezone.now()
         return (
             Product.objects.filter(active=True, sold=False)
@@ -79,22 +82,22 @@ class ProductsListAPIView(ListAPIView):
         sort = (self.request.query_params.get("sort") or "").lower()
 
         if sort == "price_asc":
-            return queryset.order_by("-promoted", "price", "-created_at")
+            return queryset.order_by("-promoted", "-boost_level", "price", "-created_at")
         if sort == "price_desc":
-            return queryset.order_by("-promoted", "-price", "-created_at")
+            return queryset.order_by("-promoted", "-boost_level", "-price", "-created_at")
         if sort == "oldest":
-            return queryset.order_by("-promoted", "created_at")
+            return queryset.order_by("-promoted", "-boost_level", "created_at")
         if sort in ("popular", "views"):
             return queryset.annotate(
                 _views_total=Count("views", distinct=True)
-            ).order_by("-promoted", "-_views_total", "-created_at")
+            ).order_by("-promoted", "-boost_level", "-_views_total", "-created_at")
         if sort == "favorites":
             return queryset.annotate(
                 _favorites_total=Count("favorites", distinct=True)
-            ).order_by("-promoted", "-_favorites_total", "-created_at")
+            ).order_by("-promoted", "-boost_level", "-_favorites_total", "-created_at")
 
         # Default: promoted listings first, then newest.
-        return queryset.order_by("-promoted", "-created_at")
+        return queryset.order_by("-promoted", "-boost_level", "-created_at")
 
 
 products_list_view = ProductsListAPIView.as_view()
@@ -146,7 +149,7 @@ class FlashDealsListAPIView(ListAPIView):
                 _average_rating=Avg("ratings__value"),
                 _total_ratings=Count("ratings", distinct=True),
             )
-            .order_by("-promoted", "price")[:50]
+            .order_by("-promoted", "-boost_level", "price")[:50]
         )
 
 

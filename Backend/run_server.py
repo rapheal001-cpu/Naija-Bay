@@ -123,6 +123,9 @@ def seed(args):
     step("Seeding categories and sub-categories")
     call_command("categories")
 
+    step("Seeding ad boost plans")
+    call_command("seed_boost_plans")
+
     step("Seeding admin and regular users (+ avatars and verified emails)")
     call_command("create_user")
 

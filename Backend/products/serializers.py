@@ -69,6 +69,8 @@ class ProductSerializer(serializers.ModelSerializer):
     views_count = serializers.SerializerMethodField(read_only=True)
     images_count = serializers.SerializerMethodField(read_only=True)
     listing_status = serializers.CharField(read_only=True)
+    is_boosted = serializers.BooleanField(read_only=True)
+    is_purchasable = serializers.BooleanField(read_only=True)
     is_owner = serializers.SerializerMethodField(read_only=True)
     discount_percent = serializers.IntegerField(read_only=True)
     average_rating = serializers.SerializerMethodField(read_only=True)
@@ -107,6 +109,10 @@ class ProductSerializer(serializers.ModelSerializer):
             "active",
             "sold",
             "promoted",
+            "promoted_until",
+            "boost_level",
+            "is_boosted",
+            "is_purchasable",
             "delivery_available",
             "expires_at",
             "listing_status",
@@ -122,6 +128,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "favorites",
             "active",
             "promoted",
+            "promoted_until",
+            "boost_level",
             "created_at",
             "updated_at",
         )

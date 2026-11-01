@@ -119,6 +119,8 @@ INSTALLED_APPS = [
     "products.apps.ProductsConfig",
     "core.apps.CoreConfig",
     "messaging.apps.MessagingConfig",
+    "orders.apps.OrdersConfig",
+    "payments.apps.PaymentsConfig",
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
@@ -351,6 +353,11 @@ REST_FRAMEWORK = {
         "message": "1000/hour",
         "conversation": "300/hour",
         "report": "50/day",
+        "cart": "2000/day",
+        "checkout": "200/day",
+        "order": "2000/day",
+        "boost": "200/day",
+        "payment_verify": "1000/day",
     },
 }
 
@@ -525,6 +532,24 @@ PHONENUMBER_DEFAULT_REGION = "NG"
 
 
 # =============================================================================
+# PAYMENTS (PAYSTACK)
+# =============================================================================
+
+# Leave PAYSTACK_SECRET_KEY empty in development to use the built-in test mode
+# (payments are approved without charging anything; only works when DEBUG=True).
+PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="", cast=str).strip()
+
+# Where Paystack sends the buyer back after paying (the React app).
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173", cast=str).strip()
+
+# Flat delivery fee added once to every order (in naira). 0 = free delivery.
+DELIVERY_FEE = config("DELIVERY_FEE", default=0, cast=int)
+
+if IS_PRODUCTION and not PAYSTACK_SECRET_KEY:
+    raise ValueError("PAYSTACK_SECRET_KEY must be set in production.")
+
+
+# =============================================================================
 # LOGGING
 # =============================================================================
 
@@ -589,6 +614,16 @@ LOGGING = {
             "propagate": False,
         },
         "chat": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "orders": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "payments": {
             "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,

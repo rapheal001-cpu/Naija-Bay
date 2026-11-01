@@ -24,6 +24,10 @@ urlpatterns = [
     path(f'{API_VERSION}core/', include('core.urls')),
     # Messaging urls
     path(f'{API_VERSION}messaging/', include('messaging.urls')),
+    # Orders urls (cart, checkout, orders, sales)
+    path(f'{API_VERSION}orders/', include('orders.urls')),
+    # Payments urls (Paystack verify/webhook, ad boosting)
+    path(f'{API_VERSION}payments/', include('payments.urls')),
     # Drf spectacular urls
     path(f'{API_VERSION}schema/', SpectacularAPIView.as_view(), name='schema'),
     path(f'{API_VERSION}docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

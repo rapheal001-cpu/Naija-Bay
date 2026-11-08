@@ -117,6 +117,14 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
 
     def get_last_payment_status(self, obj):
+        # Prefer the prefetched payments (order lists) to avoid a per-row
+        # ordered query; fall back only for single-object responses.
+        cached = obj._prefetched_objects_cache.get("payments") if hasattr(obj, "_prefetched_objects_cache") else None
+        if cached is not None:
+            if not cached:
+                return None
+            latest = max(cached, key=lambda p: (p.created_at or p.pk))
+            return latest.status
         payment = obj.payments.order_by("-created_at").first()
         return payment.status if payment else None
 

@@ -42,6 +42,7 @@ from NaijaBay.throttling import (
     UserThrottling,
     VerifyEmailThrottling,
 )
+from NaijaBay.queryset_helper import with_seller_context
 from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOnly
 
@@ -156,7 +157,7 @@ class CustomUserView(UserView):
 
 @extend_schema_view(get=extend_schema(tags=["User"], operation_id="Other User Profile"))
 class OtherUserProfileAPIView(RetrieveAPIView):
-    queryset = User.objects.filter(is_active=True).prefetch_related("products", "products__images", "favorite_products", "favorite_products__images")
+    queryset = with_seller_context(User.objects.filter(is_active=True))
     serializer_class = CustomUserSerializer
     throttle_classes = [UserDetailThrottling]
     lookup_field = "pk"

@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import {
     fetchCategoriesFn,
     fetchAttributeDefinitionsFn,
@@ -78,8 +78,22 @@ export const useFetchUserNotifications = (isAuthenticated) => {
 // PRODUCTS
 // =============================================================================
 
-export const useFetchProducts = (params = {}) => {
-    return useQuery({
+export const useInfiniteProducts = (params = {}) => {
+    return useInfiniteQuery({
+        queryKey: ['products', params],
+        queryFn: ({ pageParam = 1 }) => fetchProductsFn({ ...params, page: pageParam }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage, allPages) => (lastPage?.next ? allPages.length + 1 : undefined),
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        retry: 1,
+        meta: { hookName: 'useInfiniteProducts' },
+    });
+};
+
+export const useFetchProducts = (params = {}) => {    return useQuery({
         queryKey: ['products', params],
         queryFn: () => fetchProductsFn(params),
         staleTime: 1000 * 60 * 5,       // 5 min
@@ -233,6 +247,19 @@ export const useFetchMyListings = (isAuthenticated, status = '', page = 1) => {
         placeholderData: keepPreviousData,
         retry: 1,
         meta: { hookName: 'useFetchMyListings' },
+    });
+};
+
+export const useInfiniteMyListings = (isAuthenticated, status = '') => {
+    return useInfiniteQuery({
+        queryKey: ['my-listings', status],
+        queryFn: ({ pageParam = 1 }) => fetchMyListingsFn({ status, page: pageParam }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage, allPages) => (lastPage?.next ? allPages.length + 1 : undefined),
+        enabled: Boolean(isAuthenticated),
+        staleTime: 1000 * 60,
+        retry: 1,
+        meta: { hookName: 'useInfiniteMyListings' },
     });
 };
 

@@ -4,11 +4,13 @@ import { HiOutlineSearch, HiOutlineX } from "react-icons/hi";
 import { BiSolidCategory } from 'react-icons/bi';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import Header from '../components/HeaderComponents/Header.jsx';
+import AppLayout from '../components/AppLayout.jsx';
+import InfiniteListSentinel from '../components/InfiniteListSentinel.jsx';
 import Spacer from '../components/Spacer.jsx';
 import ProductCard from '../components/ProductComponents/ProductCard.jsx';
 import Pagination from '../components/Pagination.jsx';
 import SkeletonProductCard from '../skeletons/SkeletonProductCard.jsx';
-import { useFetchAttributeDefinitions, useFetchCategories, useFetchProducts } from '../hooks/UseQuery.js';
+import { useFetchAttributeDefinitions, useFetchCategories, useInfiniteProducts } from '../hooks/UseQuery.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProducts } from '../slice/ProductSlice.js';
 import { setCategories } from '../slice/CategorySlice.js';
@@ -116,7 +118,9 @@ const Products = () => {
         [filters, activeCategory, activeSubCategory]
     );
 
-    const fetchProducts = useFetchProducts(effectiveFilters);
+    const fetchProducts = useInfiniteProducts(
+        Object.fromEntries(Object.entries(effectiveFilters).filter(([k]) => k !== 'page'))
+    );
     const fetchCategories = useFetchCategories();
 
     // Category-specific filter definitions for the active scope
@@ -159,11 +163,11 @@ const Products = () => {
         attrFilterValues,
     ]);
 
-    useEffect(() => {
-        if (fetchProducts.isSuccess && fetchProducts.data) {
-            dispatch(setProducts(fetchProducts.data.results || []));
-        }
-    }, [fetchProducts.isSuccess, fetchProducts.data, dispatch]);
+    // Infinite-scroll aggregation (DRF page results flattened below)
+    const infiniteResults = useMemo(
+        () => fetchProducts.data?.pages.flatMap((p) => p.results || []) || [],
+        [fetchProducts.data]
+    );
 
     useEffect(() => {
         if (fetchCategories.isSuccess && fetchCategories.data) {
@@ -283,30 +287,20 @@ const Products = () => {
         updateParams({ [key]: '' });
     };
 
-    const handlePageChange = (nextPage) => {
-        const newParams = new URLSearchParams(searchParams);
-        if (nextPage <= 1) {
-            newParams.delete('page');
-        } else {
-            newParams.set('page', String(nextPage));
-        }
-        setSearchParams(newParams);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    const handlePageChange = () => {
+        fetchProducts.fetchNextPage();
     };
 
-    const results = fetchProducts.data?.results || [];
-    const totalCount = fetchProducts.data?.count ?? 0;
-    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const results = infiniteResults;
+    const totalCount = fetchProducts.data?.pages?.[0]?.count ?? results.length;
+    const hasMore = Boolean(fetchProducts.hasNextPage);
     const activeFilterCount = FILTER_PARAM_KEYS.filter((key) => filters[key]).length + Object.keys(attrFilterValues).length;
 
     const stateLabel = (value) => STATE_CHOICES.find((s) => s.value === value)?.label || value?.replace(/[-_]/g, ' ');
 
     return (
-        <>
-            <Header />
-            <Spacer space="mb-36 md:mb-28" />
-
-            <div className="min-h-screen bg-linear-to-b from-gray-50 to-white pb-16">
+        <AppLayout>
+            <div className="min-h-screen pb-16">
                 {/* Search Hero */}
                 <div className="relative bg-brand overflow-hidden">
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30" />
@@ -930,33 +924,32 @@ const Products = () => {
                         </div>
                     ) : (
                         <>
+                            <InfiniteListSentinel
+                                hasMore={hasMore}
+                                isFetching={fetchProducts.isFetchingNextPage}
+                                onLoadMore={handlePageChange}
+                            />
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                                 {results.map((product) => (
                                     <ProductCard key={product.id} {...product} />
                                 ))}
                             </div>
-
-                            <Pagination
-                                page={page}
-                                count={totalCount}
-                                pageSize={PAGE_SIZE}
-                                onChange={handlePageChange}
-                                className="mt-10"
-                            />
-
-                            {totalPages > 1 && (
-                                <p className="text-center text-xs text-gray-400 mt-3">
-                                    Page {page} of {totalPages}
-                                </p>
+                            {fetchProducts.isFetchingNextPage && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 mt-5" aria-hidden="true">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="flex flex-col gap-2.5 bg-white rounded-2xl border border-gray-100 p-4">
+                                            <div className="aspect-square bg-gray-100 animate-pulse rounded-xl" />
+                                            <div className="h-4 w-2/3 bg-gray-100 animate-pulse rounded" />
+                                            <div className="h-3.5 w-1/3 bg-gray-100 animate-pulse rounded" />
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </>
                     )}
                 </div>
             </div>
-
-            <Spacer space={'mt-20'} />
-            <Footer />
-        </>
+        </AppLayout>
     );
 };
 

@@ -4,6 +4,7 @@ import { IoIosEye, IoLogoWhatsapp } from 'react-icons/io';
 import { HiBadgeCheck, HiOutlineChatAlt2 } from 'react-icons/hi';
 import { TbAlertTriangleFilled } from 'react-icons/tb';
 import Header from '../HeaderComponents/Header.jsx';
+import AppLayout from '../AppLayout.jsx';
 import Spacer from '../Spacer.jsx';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -83,11 +84,8 @@ const Product = () => {
     const cleanNumber = contactNumber.replace(/\D/g, '');
 
     return (
-        <>
-            <Header />
-            <Spacer space={'mb-36 md:mb-28'} />
-
-            <div className="max-w-7xl mx-auto px-4 py-6">
+        <AppLayout>
+            <div className="py-6">
                 {/* Back link */}
                 <button
                     type="button"
@@ -491,10 +489,9 @@ const Product = () => {
                     </div>
                 </section>
             )}
-
             <StartChatModal open={chatOpen} onClose={() => setChatOpen(false)} product={product} />
             <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} productSlug={product?.product_slug} productName={product?.product_name} />
-        </>
+        </AppLayout>
     );
 };
 

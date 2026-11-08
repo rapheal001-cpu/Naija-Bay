@@ -72,8 +72,25 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ["id", "conversation", "sender", "body", "read", "is_mine", "created_at"]
+        fields = [
+            "id", "conversation", "sender", "body",
+            "attachment_type", "attachment_url", "duration_ms",
+            "read", "is_mine", "created_at",
+        ]
         read_only_fields = ("id", "conversation", "sender", "read", "created_at")
+
+    def validate(self, attrs):
+        body = (attrs.get("body") or "").strip()
+        attachment_type = attrs.get("attachment_type", "")
+        attachment_url = attrs.get("attachment_url", "")
+        # Text messages OR attachment messages are valid; empty everything is not.
+        if not body and not attachment_type:
+            raise serializers.ValidationError("Message cannot be empty.")
+        if attachment_type and attachment_type not in dict(Message.ATTACHMENT_TYPE_CHOICES):
+            raise serializers.ValidationError({"attachment_type": "Invalid attachment type."})
+        if attachment_type and not attachment_url:
+            raise serializers.ValidationError({"attachment_url": "Attachment URL is required."})
+        return attrs
 
     @extend_schema_field(serializers.BooleanField(default=False))
     def get_is_mine(self, obj):
@@ -134,13 +151,22 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(MessageSerializer(allow_null=True))
     def get_last_message(self, obj):
-        message = obj.last_message()
+        # Serves from the prefetched messages cache (see conversations_for);
+        # falls back to a direct query only for single-object responses.
+        cached = obj._prefetched_objects_cache.get("messages") if hasattr(obj, "_prefetched_objects_cache") else None
+        if cached is not None:
+            message = max(cached, key=lambda m: (m.created_at, m.pk)) if cached else None
+        else:
+            message = obj.last_message()
         if not message:
             return None
         return MessageSerializer(message, context=self.context).data
 
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_unread_count(self, obj):
+        annotated = getattr(obj, "_annotated_unread_count", None)
+        if annotated is not None:
+            return annotated
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return 0

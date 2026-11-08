@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { HiOutlineSearch, HiOutlineLocationMarker } from 'react-icons/hi';
 import { STATE_CHOICES } from '../../dummyData.js';
@@ -66,7 +66,7 @@ const GlobalSearch = ({ compact = false }) => {
 
             <button
                 type="submit"
-                className="hidden shrink-0 items-center gap-1.5 bg-brand-green px-4 text-sm font-bold text-white transition-colors hover:bg-brand-green/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:flex"
+                className="hidden shrink-0 items-center gap-1.5 bg-brand px-4 text-sm font-bold text-white transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:flex"
             >
                 <HiOutlineSearch size={16} aria-hidden="true" />
                 Search

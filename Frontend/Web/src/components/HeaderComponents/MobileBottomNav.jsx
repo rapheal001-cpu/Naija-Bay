@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+﻿import { NavLink, useNavigate } from 'react-router-dom';
 import { HiOutlineHome, HiOutlineSearch, HiOutlinePlusCircle, HiOutlineChatAlt2, HiOutlineCollection } from 'react-icons/hi';
 import { useSelector } from 'react-redux';
 import { useFetchUnreadCounts } from '../../hooks/UseQuery.js';
@@ -45,7 +45,7 @@ const MobileBottomNav = () => {
                 <button
                     type="button"
                     onClick={() => navigate(isAuthenticated ? '/sell' : '/sign-in')}
-                    className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-brand-green"
+                    className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-brand"
                 >
                     <HiOutlinePlusCircle size={26} aria-hidden="true" />
                     Post Ad

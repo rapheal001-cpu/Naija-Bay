@@ -98,6 +98,11 @@ class Conversation(models.Model):
 # =============================================================================
 
 class Message(models.Model):
+    ATTACHMENT_TYPE_CHOICES = [
+        ("image", "Image"),
+        ("audio", "Voice Note"),
+    ]
+
     conversation = models.ForeignKey(
         Conversation,
         on_delete=models.CASCADE,
@@ -112,7 +117,14 @@ class Message(models.Model):
         verbose_name=_("Sender"),
         db_index=True,
     )
-    body = models.TextField(_("Message"))
+    body = models.TextField(_("Message"), blank=True)
+    # Attachments (multi-image + voice notes share this WhatsApp-style shape).
+    attachment_type = models.CharField(
+        _("Attachment Type"), max_length=10, choices=ATTACHMENT_TYPE_CHOICES,
+        blank=True, default="", db_index=True,
+    )
+    attachment_url = models.URLField(_("Attachment URL"), max_length=1000, blank=True)
+    duration_ms = models.PositiveIntegerField(_("Duration (ms)"), default=0)
     read = models.BooleanField(_("Read"), default=False, db_index=True)
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
 

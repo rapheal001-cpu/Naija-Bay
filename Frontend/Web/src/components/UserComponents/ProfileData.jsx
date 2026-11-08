@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import Header from "../HeaderComponents/Header.jsx";
-import Spacer from "../Spacer.jsx";
+import AppLayout from "../AppLayout.jsx";
 import ProductCard from "../ProductComponents/ProductCard.jsx";
 import ProfileHeaderCard from "./ProfileHeaderCard.jsx";
 import ProfileContactDetailCard from "./ProfileContactDetailCard.jsx";
 import ProfileStatCard from "./ProfileStatCard.jsx";
-import Footer from '../FooterComponents/Footer.jsx';
 
 
 const ProfileData = ({ profile, isOwnProfile }) => {
@@ -27,11 +25,8 @@ const ProfileData = ({ profile, isOwnProfile }) => {
     console.log(soldListings)
 
     return (
-        <>
-            <Header />
-            <Spacer />
-
-            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <AppLayout>
+            <div className="py-4">
                 <ProfileHeaderCard profile={profile} isOwnProfile={isOwnProfile} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -107,10 +102,7 @@ const ProfileData = ({ profile, isOwnProfile }) => {
                     )}
                 </div>
             </div>
-
-            <Spacer space={'mt-20'} />
-            <Footer />
-        </>
+        </AppLayout>
     );
 };
 

@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from NaijaBay.pagination import StandardPagination
+from NaijaBay.queryset_helper import with_order_context
 from NaijaBay.throttling import CartThrottling, CheckoutThrottling, OrderThrottling
 from . import services
 from .models import Order, OrderItem
@@ -113,11 +114,9 @@ class MyOrdersListAPIView(ListAPIView):
     pagination_class = StandardPagination
 
     def get_queryset(self):
-        queryset = (
+        queryset = with_order_context(
             Order.objects.filter(buyer=self.request.user)
-            .prefetch_related("items", "items__product__images", "items__seller", "payments")
-            .order_by("-created_at")
-        )
+        ).order_by("-created_at")
         payment = (self.request.query_params.get("payment_status") or "").lower()
         if payment in {"paid", "unpaid"}:
             queryset = queryset.filter(payment_status=payment)
@@ -134,9 +133,7 @@ class OrderDetailAPIView(RetrieveAPIView):
 
     def get_queryset(self):
         # Scoped to the buyer: other people's orders simply 404.
-        return Order.objects.filter(buyer=self.request.user).prefetch_related(
-            "items", "items__product__images", "items__seller", "payments"
-        )
+        return with_order_context(Order.objects.filter(buyer=self.request.user))
 
 
 @extend_schema_view(post=extend_schema(tags=["Orders"], operation_id="Cancel Order"))

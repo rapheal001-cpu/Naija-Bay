@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { HiOutlineCollection, HiOutlineEye, HiOutlineHeart, HiOutlinePencilAlt, HiOutlineTrash, HiOutlineCheckCircle, HiOutlinePlusCircle } from 'react-icons/hi';
 import Header from '../components/HeaderComponents/Header.jsx';
+import AppLayout from '../components/AppLayout.jsx';
+import InfiniteListSentinel from '../components/InfiniteListSentinel.jsx';
 import Spacer from '../components/Spacer.jsx';
 import Footer from '../components/FooterComponents/Footer.jsx';
 import { useSelector } from 'react-redux';
@@ -38,9 +40,12 @@ const MyAds = () => {
         if (!isAuthenticated && !user) navigate('/sign-in');
     }, [isAuthenticated, user, navigate]);
 
-    const listings = useFetchMyListings(isAuthenticated, status, 1);
+    const listings = useInfiniteMyListings(isAuthenticated, status);
     const allListings = useFetchMyListings(isAuthenticated, '', 1);
-    const ads = listings.data?.results || [];
+    const ads = useMemo(
+        () => listings.data?.pages.flatMap((p) => p.results || []) || [],
+        [listings.data]
+    );
 
     const stats = useMemo(() => {
         const all = allListings.data?.results || [];
@@ -74,11 +79,8 @@ const MyAds = () => {
     });
 
     return (
-        <>
-            <Header />
-            <Spacer space={'mb-36 md:mb-28'} />
-
-            <div className="min-h-screen bg-linear-to-b from-gray-50 to-white pb-16">
+        <AppLayout>
+            <div className="min-h-screen pb-16">
                 <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
@@ -92,7 +94,7 @@ const MyAds = () => {
                         </div>
                         <Link
                             to="/sell"
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-green px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-green/90"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand/90"
                         >
                             <HiOutlinePlusCircle size={16} aria-hidden="true" />
                             Post a new ad
@@ -173,6 +175,7 @@ const MyAds = () => {
                             </Link>
                         </div>
                     ) : (
+                        <>
                         <ul className="space-y-3">
                             {ads.map((ad) => (
                                 <li key={ad.id} className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row">
@@ -216,7 +219,7 @@ const MyAds = () => {
                                                 type="button"
                                                 disabled={markSoldMutation.isPending}
                                                 onClick={() => markSoldMutation.mutate(ad.product_slug)}
-                                                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-green px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                                             >
                                                 <HiOutlineCheckCircle size={13} aria-hidden="true" /> Mark sold
                                             </button>
@@ -252,12 +255,29 @@ const MyAds = () => {
                                 </li>
                             ))}
                         </ul>
+                        {ads.length > 0 && listings.hasNextPage && (
+                            <>
+                                <InfiniteListSentinel hasMore={listings.hasNextPage} isFetching={listings.isFetchingNextPage} onLoadMore={() => listings.fetchNextPage()} />
+                                {listings.isFetchingNextPage && (
+                                    <div className="space-y-3 mt-3" aria-hidden="true">
+                                        {[0, 1].map((i) => (
+                                            <div key={i} className="flex animate-pulse gap-4 rounded-2xl border border-gray-100 bg-white p-4">
+                                                <div className="h-20 w-20 shrink-0 rounded-xl bg-gray-100" />
+                                                <div className="flex-1 space-y-2 py-1">
+                                                    <div className="h-4 w-1/2 bg-gray-100 rounded" />
+                                                    <div className="h-3 w-1/4 bg-gray-100 rounded" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        </>
                     )}
                 </div>
             </div>
-
-            <Footer />
-        </>
+        </AppLayout>
     );
 };
 

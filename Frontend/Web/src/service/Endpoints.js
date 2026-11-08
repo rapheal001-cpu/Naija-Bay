@@ -205,6 +205,18 @@ export const createProductImagesFn = async ({ product, images }) => {
 };
 
 /**
+ * Attach directly-uploaded images by object key (direct-to-storage flow).
+ * @param {{ product: { id: string|number }, keys: string[] }} payload
+ */
+export const createProductImagesByKeyFn = async ({ product, keys }) => {
+    const formData = new FormData();
+    formData.append('product', product.id);
+    keys.forEach((key) => formData.append('keys', key));
+    const { data } = await axiosInstance.post('/api/v1/products/create/images/', formData);
+    return data;
+};
+
+/**
  * @param {{ product: { id: string|number }, images: File }} payload
  */
 export const updateProductImagesFn = async ({ product, images }) => {
@@ -423,10 +435,14 @@ export const startConversationFn = async ({ productId, message }) => {
 };
 
 /**
- * @param {{ conversationId: string|number, body: string }} payload
+ * @param {{ conversationId: string|number, body: string, attachment_type?: string, attachment_url?: string, duration_ms?: number }} payload
  */
-export const sendMessageFn = async ({ conversationId, body }) => {
-    const { data } = await axiosInstance.post(`/api/v1/messaging/${conversationId}/messages/`, { body });
+export const sendMessageFn = async ({ conversationId, body, attachment_type, attachment_url, duration_ms }) => {
+    const payload = { body };
+    if (attachment_type) payload.attachment_type = attachment_type;
+    if (attachment_url) payload.attachment_url = attachment_url;
+    if (duration_ms) payload.duration_ms = duration_ms;
+    const { data } = await axiosInstance.post(`/api/v1/messaging/${conversationId}/messages/`, payload);
     return data;
 };
 

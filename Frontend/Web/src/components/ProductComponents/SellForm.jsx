@@ -7,6 +7,8 @@ import { HiOutlineCube, HiOutlineScale, HiOutlineBanknotes, HiOutlinePhone } fro
 import { categories, CATEGORY_SUBCATEGORY_MAP, CONDITION_CHOICES, CONTACT_METHOD_CHOICES, MAX_IMAGES, STATE_CHOICES, STATE_CITY_MAP } from "../../dummyData.js";
 import ProductImagePreview from "./ProductImagePreview.jsx";
 import AttributeFields from "./AttributeFields.jsx";
+import { uploadProductImages } from "../../core/utils/uploadImages.js";
+import { createProductImagesByKeyFn } from "../../service/Endpoints.js";
 import { useFetchAttributeDefinitions } from '../../hooks/UseQuery.js';
 import { useCreateProductMutation, useCreateProductImagesMutation } from '../../hooks/UseMutation.js';
 
@@ -24,6 +26,7 @@ const SellForm = () => {
     const [imagePreviews, setImagePreviews] = useState([]);
     const [imageError, setImageError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [submitError, setSubmitError] = useState('');
     const [success, setSuccess] = useState(false);
 
@@ -135,10 +138,20 @@ const SellForm = () => {
             }
 
             if (imageFiles.length > 0) {
-                await createProductImagesData.mutateAsync({
-                    product: productData,
-                    images: imageFiles,
+                // Direct-to-storage first (progress bars); File fallback still
+                // flows through the existing multipart endpoint as before.
+                const { keys, files: fallbackFiles } = await uploadProductImages(imageFiles, {
+                    onProgress: setUploadProgress,
                 });
+                if (keys.length > 0) {
+                    await createProductImagesByKeyFn({ product: productData, keys });
+                }
+                if (fallbackFiles.length > 0) {
+                    await createProductImagesData.mutateAsync({
+                        product: productData,
+                        images: fallbackFiles,
+                    });
+                }
             }
 
             setSuccess(true);
@@ -590,7 +603,7 @@ const SellForm = () => {
                     className="w-full flex items-center justify-center gap-2 bg-brand text-white font-bold text-[15px] rounded-xl py-3.5 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-brand/20 mt-2"
                 >
                     {isSubmitting ? (
-                        <><RiLoader3Line size={20} className="animate-spin" /> Posting your ad...</>
+                        <><RiLoader3Line size={20} className="animate-spin" /> {uploadProgress > 0 ? `Uploading ${uploadProgress}%...` : 'Posting your ad...'}</>
                     ) : (
                         'Post ad'
                     )}

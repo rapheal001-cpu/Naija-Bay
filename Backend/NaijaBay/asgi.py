@@ -1,16 +1,33 @@
 """
 ASGI config for NaijaBay project.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+HTTP requests go to Django views; WebSockets (messaging) go through
+Channels with cookie-JWT authentication.
 
-For more information on this file, see
-https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
+Run with:  daphne -p 8000 NaijaBay.asgi:application   (or uvicorn)
 """
 
 import os
 
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'NaijaBay.settings')
 
-application = get_asgi_application()
+import django  # noqa: E402
+
+django.setup()
+
+from messaging.middleware import jwt_cookie_auth_middleware  # noqa: E402
+from messaging.routing import websocket_urlpatterns  # noqa: E402
+
+application = ProtocolTypeRouter(
+    {
+        "http": get_asgi_application(),
+        "websocket": AllowedHostsOriginValidator(
+            jwt_cookie_auth_middleware(AuthMiddlewareStack(URLRouter(websocket_urlpatterns)))
+        ),
+    }
+)

@@ -8,6 +8,7 @@ from .views import (
     toggle_follow_user_view,
     attribute_definitions_view,
 )
+from NaijaBay.media_uploads import upload_initiate_view
 
 urlpatterns = [
     # Notifications
@@ -48,5 +49,11 @@ urlpatterns = [
         "attributes/",
         attribute_definitions_view,
         name="attribute-definitions",
+    ),
+    # Direct-to-storage image uploads
+    path(
+        "media/upload-initiate/",
+        upload_initiate_view,
+        name="media-upload-initiate",
     ),
 ]

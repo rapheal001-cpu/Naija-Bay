@@ -1,6 +1,7 @@
 import django_filters
 
 from django.db import models
+from django.db.models import Q
 
 from .models import Product
 
@@ -58,16 +59,34 @@ class ProductFilter(django_filters.FilterSet):
         ]
 
     def filter_category(self, queryset, name, value):
-        return queryset.filter(category__iexact=_slug(value))
+        # Reads resolve through the relational FK first (Phase A cutover),
+        # falling back to the legacy string stored on the product.
+        slug = _slug(value)
+        return queryset.filter(
+            Q(category_obj__slug=slug, category_obj__isnull=False)
+            | Q(category__iexact=slug)
+        )
 
     def filter_sub_category(self, queryset, name, value):
-        return queryset.filter(sub_category__iexact=_slug(value))
+        slug = _slug(value)
+        return queryset.filter(
+            Q(subcategory_obj__slug=slug, subcategory_obj__isnull=False)
+            | Q(sub_category__iexact=slug)
+        )
 
     def filter_state(self, queryset, name, value):
-        return queryset.filter(state__iexact=_slug(value))
+        slug = _slug(value)
+        return queryset.filter(
+            Q(state_obj__slug__iexact=slug)
+            | Q(state__iexact=slug)
+        )
 
     def filter_city(self, queryset, name, value):
-        return queryset.filter(city__iexact=_slug(value))
+        slug = _slug(value)
+        return queryset.filter(
+            Q(city_obj__slug__iexact=slug)
+            | Q(city__iexact=slug)
+        )
 
     def filter_discounted(self, queryset, name, value):
         if value is True:

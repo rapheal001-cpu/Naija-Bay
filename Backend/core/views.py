@@ -8,6 +8,7 @@ from django.db.models import Q
 
 from core.models import AttributeDefinition, Category, SubCategory
 from core.serializers import AttributeDefinitionSerializer
+from NaijaBay.cache import ATTRIBUTE_DEFINITIONS_CACHE, cached_read_list
 from accounts.models import Follow, Notifications, User
 from accounts.serializers.serializers import NotificationSerializer
 from accounts.serializers.store import FollowUserSerializer
@@ -230,13 +231,19 @@ class AttributeDefinitionListAPIView(ListAPIView):
     permission_classes = [AllowAny]
     pagination_class = None
 
+    @cached_read_list(ATTRIBUTE_DEFINITIONS_CACHE)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         category = _resolve_taxonomy(self.request.query_params.get("category"), Category)
         if category is None:
             return AttributeDefinition.objects.none()
 
         sub_category = _resolve_taxonomy(self.request.query_params.get("sub_category"), SubCategory)
-        qs = AttributeDefinition.objects.filter(category=category).prefetch_related("options")
+        qs = AttributeDefinition.objects.filter(category=category).select_related(
+            "category", "sub_category"
+        ).prefetch_related("options")
         if sub_category is not None and sub_category.category_id == category.id:
             qs = qs.filter(Q(sub_category__isnull=True) | Q(sub_category=sub_category))
         else:

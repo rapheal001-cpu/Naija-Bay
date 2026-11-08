@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.generics import (
     ListCreateAPIView,
@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+from NaijaBay.queryset_helper import with_conversation_context
 
 from accounts.models import Notifications
 from products.models import Product
@@ -28,10 +30,14 @@ from .serializers import (
 # =============================================================================
 
 def conversations_for(user):
-    return (
-        Conversation.objects.filter(Q(buyer=user) | Q(seller=user))
-        .select_related("product", "buyer", "seller")
-        .prefetch_related("messages__sender")
+    """Conversations the user takes part in, with the unread count annotated.
+
+    The last message is read from the prefetched messages cache (one batch
+    query) and the unread count is a single annotated COUNT — no per-row
+    queries during serialization.
+    """
+    return with_conversation_context(
+        Conversation.objects.filter(Q(buyer=user) | Q(seller=user)), user
     )
 
 
@@ -118,7 +124,13 @@ class MessageListCreateAPIView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         conversation = self.get_conversation()
-        message = serializer.save(conversation=conversation, sender=self.request.user)
+        message = serializer.save(
+            conversation=conversation,
+            sender=self.request.user,
+            attachment_type=serializer.validated_data.get("attachment_type", ""),
+            attachment_url=serializer.validated_data.get("attachment_url", ""),
+            duration_ms=serializer.validated_data.get("duration_ms", 0),
+        )
         # Sending a message implicitly marks the thread as read for the sender.
         conversation.messages.filter(read=False).exclude(
             sender=self.request.user
@@ -130,7 +142,11 @@ class MessageListCreateAPIView(ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         message = serializer.save(
-            conversation=conversation, sender=request.user
+            conversation=conversation,
+            sender=request.user,
+            attachment_type=serializer.validated_data.get("attachment_type", ""),
+            attachment_url=serializer.validated_data.get("attachment_url", ""),
+            duration_ms=serializer.validated_data.get("duration_ms", 0),
         )
         conversation.messages.filter(read=False).exclude(sender=request.user).update(
             read=True

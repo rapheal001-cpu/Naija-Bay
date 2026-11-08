@@ -1,5 +1,6 @@
-from decimal import Decimal
+﻿from decimal import Decimal
 
+from django.test import TransactionTestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -168,3 +169,119 @@ class MessagingAPITests(APITestCase):
             response.status_code,
             (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN),
         )
+
+class ConversationListQueryCountTests(APITestCase):
+    def test_conversation_list_uses_constant_queries(self):
+        seller = User.objects.create_user(email="s2@example.com", username="s2", password="StrongPass123!")
+        buyer = User.objects.create_user(email="b2@example.com", username="b2", password="StrongPass123!")
+        for i in range(10):
+            product = make_product(seller, name=f"Item {i}")
+            conv = Conversation.objects.create(product=product, buyer=buyer, seller=seller)
+            Message.objects.create(conversation=conv, sender=buyer, body=f"Question {i}")
+            Message.objects.create(conversation=conv, sender=seller, body=f"Answer {i}", read=True)
+        self.client.force_authenticate(buyer)
+        from django.test.utils import CaptureQueriesContext
+        from django.db import connection
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse("conversation-list-create"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 10)
+        self.assertLessEqual(len(ctx.captured_queries), 20, f"{len(ctx.captured_queries)} queries: N+1 regressed")
+
+
+class ChatConsumerTests(TransactionTestCase):
+    """Channels run DB access on worker threads; transactions would deadlock SQLite."""
+    def setUp(self):
+        self.seller = User.objects.create_user(email='s3@example.com', username='s3', password='StrongPass123!')
+        self.buyer = User.objects.create_user(email='b3@example.com', username='b3', password='StrongPass123!')
+        self.stranger = User.objects.create_user(email='x3@example.com', username='x3', password='StrongPass123!')
+        self.product = make_product(self.seller)
+        self.conv = Conversation.objects.create(buyer=self.buyer, seller=self.seller, product=self.product)
+        Message.objects.create(conversation=self.conv, sender=self.buyer, body='Seed')
+
+    def _app(self):
+        from messaging.routing import websocket_urlpatterns
+        from messaging.middleware import jwt_cookie_auth_middleware
+        from channels.auth import AuthMiddlewareStack
+        from channels.routing import URLRouter
+        return jwt_cookie_auth_middleware(AuthMiddlewareStack(URLRouter(websocket_urlpatterns)))
+
+    def test_unauthenticated_close_4401(self):
+        import asyncio
+        from channels.testing import WebsocketCommunicator
+        async def run():
+            communicator = WebsocketCommunicator(self._app(), f'/ws/chat/{self.conv.pk}/')
+            return await communicator.connect()
+        connected, close_code = asyncio.run(run())
+        self.assertFalse(connected)
+        self.assertEqual(close_code, 4401)
+
+    def test_stranger_close_4404(self):
+        import asyncio
+        from channels.testing import WebsocketCommunicator
+        from rest_framework_simplejwt.tokens import AccessToken
+        token = str(AccessToken.for_user(self.stranger))
+        async def run():
+            communicator = WebsocketCommunicator(self._app(), f'/ws/chat/{self.conv.pk}/', headers=[(b'cookie', f'access={token}'.encode())])
+            return await communicator.connect()
+        connected, close_code = asyncio.run(run())
+        self.assertFalse(connected)
+        self.assertEqual(close_code, 4404)
+
+    def test_participant_send_and_broadcast(self):
+        import asyncio
+        from channels.testing import WebsocketCommunicator
+        from rest_framework_simplejwt.tokens import AccessToken
+        buyer_token = str(AccessToken.for_user(self.buyer))
+        seller_token = str(AccessToken.for_user(self.seller))
+        async def run():
+            buyer_ws = WebsocketCommunicator(self._app(), f'/ws/chat/{self.conv.pk}/', headers=[(b'cookie', f'access={buyer_token}'.encode())])
+            seller_ws = WebsocketCommunicator(self._app(), f'/ws/chat/{self.conv.pk}/', headers=[(b'cookie', f'access={seller_token}'.encode())])
+            a, _ = await buyer_ws.connect()
+            b, _ = await seller_ws.connect()
+            self.assertTrue(a and b)
+            await buyer_ws.send_json_to({'type': 'message', 'body': 'Hello from buyer'})
+            await seller_ws.receive_json_from(timeout=5)
+            echoed = await buyer_ws.receive_json_from(timeout=5)
+            await seller_ws.disconnect()
+            await buyer_ws.disconnect()
+            return echoed
+        echoed = asyncio.run(run())
+        self.assertEqual(echoed['type'], 'message')
+        self.assertEqual(echoed['message']['body'], 'Hello from buyer')
+        self.assertTrue(Message.objects.filter(conversation=self.conv, body='Hello from buyer').exists())
+        self.assertEqual(self.conv.unread_count_for(self.seller), 2)
+
+class AttachmentMessageTests(APITestCase):
+    def setUp(self):
+        self.seller = User.objects.create_user(email='s9@example.com', username='s9', password='StrongPass123!')
+        self.buyer = User.objects.create_user(email='b9@example.com', username='b9', password='StrongPass123!')
+        self.product = make_product(self.seller)
+        self.conv = Conversation.objects.create(buyer=self.buyer, seller=self.seller, product=self.product)
+        self.client.force_authenticate(self.buyer)
+
+    def test_send_image_attachment_via_rest(self):
+        resp = self.client.post(
+            f"/api/v1/messaging/{self.conv.pk}/messages/",
+            {"body": "Check this out", "attachment_type": "image", "attachment_url": "https://cdn.example.com/a.jpg"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data["attachment_type"], "image")
+        self.assertEqual(resp.data["attachment_url"], "https://cdn.example.com/a.jpg")
+
+    def test_attachment_without_url_rejected(self):
+        resp = self.client.post(
+            f"/api/v1/messaging/{self.conv.pk}/messages/",
+            {"body": "", "attachment_type": "image"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_empty_message_rejected(self):
+        resp = self.client.post(
+            f"/api/v1/messaging/{self.conv.pk}/messages/",
+            {"body": ""},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)

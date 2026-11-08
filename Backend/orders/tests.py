@@ -219,3 +219,23 @@ class OrderTests(APITestCase):
         self.checkout()
         self.client.force_authenticate(self.seller)
         self.assertEqual(self.client.get("/api/v1/orders/sales/").data["count"], 0)
+
+class OrderListQueryCountTests(APITestCase):
+    def test_my_orders_list_uses_constant_queries(self):
+        from django.test.utils import CaptureQueriesContext
+        from django.db import connection
+        seller = make_user("seller")
+        buyer = make_user("buyer")
+        product = make_product(seller, quantity=100)
+        self.client.force_authenticate(buyer)
+        cart = Cart.objects.create(user=buyer)
+        for i in range(1, 11):
+            CartItem.objects.create(cart=cart, product=product, quantity=i)
+            resp = self.client.post("/api/v1/orders/checkout/", SHIPPING, format="json")
+            assert resp.status_code == 201, resp.content
+            CartItem.objects.filter(cart__user=buyer).delete()
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get("/api/v1/orders/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 10)
+        self.assertLessEqual(len(ctx.captured_queries), 30, f"{len(ctx.captured_queries)} queries: N+1 regressed")

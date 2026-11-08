@@ -2,9 +2,10 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { RiLoader3Line } from 'react-icons/ri';
-import { HiOutlineShieldCheck, HiOutlineEye, HiOutlineEyeOff, HiOutlineExclamationCircle } from 'react-icons/hi';
+import { HiOutlineEye, HiOutlineEyeOff, HiOutlineExclamationCircle } from 'react-icons/hi';
 import { HiOutlineEnvelope, HiOutlineLockClosed } from "react-icons/hi2";
 import { useSignInMutation } from '../../hooks/UseMutation';
+import AuthSplit from './AuthSplit.jsx';
 
 const SignInForm = () => {
     const { register, handleSubmit, formState: { errors }, setError } = useForm();
@@ -20,27 +21,11 @@ const SignInForm = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-linear-to-b from-gray-50 to-white">
-            <div className="w-full max-w-md">
-
-                {/* Brand mark */}
-                <div className="flex items-center justify-center gap-2.5 mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shadow-lg shadow-brand/20">
-                        <HiOutlineShieldCheck className="text-white" size={20} />
-                    </div>
-                    <span className="text-xl font-black text-gray-900 tracking-tight">NaijaBay</span>
-                </div>
-
-                <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 sm:p-10">
-
-                    <div className="mb-8 text-center sm:text-left">
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                            Welcome back
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                            Sign in to continue buying and selling on NaijaBay.
-                        </p>
-                    </div>
+        <AuthSplit
+            heading="Welcome back"
+            subheading="Sign in to continue buying and selling on NaijaBay."
+        >
+            <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 sm:p-10">
 
                     {/* Server Errors */}
                     {serverError && (
@@ -165,9 +150,7 @@ const SignInForm = () => {
                         Create an account
                     </Link>
                 </p>
-
-            </div>
-        </div>
+        </AuthSplit>
     )
 }
 

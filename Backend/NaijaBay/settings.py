@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from urllib.parse import urlparse
 from decouple import config
+from django.core.exceptions import ImproperlyConfigured
 from datetime import timedelta
 
 
@@ -152,13 +153,16 @@ AUTHENTICATION_BACKENDS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "NaijaBay.middleware.SecurityHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "NaijaBay.middleware.OwnerOnlyDjangoAdminMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "NaijaBay.middleware.TrustedOriginMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -292,21 +296,35 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
-if IS_PRODUCTION:
-    STORAGES = {
-        "default": {
-            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
-    CLOUDINARY_STORAGE = {
-        "CLOUD_NAME": config("CLOUD_NAME"),
-        "API_KEY": config("CLOUD_API_KEY"),
-        "API_SECRET": config("CLOUD_API_SECRET"),
-    }
-else:
+# SkillStream-style storage switching: development allows local|cloudinary,
+# production allows s3|cloudinary. Validated at startup.
+MEDIA_STORAGE_BACKEND = config(
+    "MEDIA_STORAGE_BACKEND", cast=str,
+    default="local" if ENVIRONMENT == "development" else "cloudinary",
+)
+MEDIA_STORAGE_BACKENDS = {
+    "development": {"local", "cloudinary"},
+    "production": {"s3", "cloudinary"},
+    "staging": {"s3", "cloudinary"},
+}
+ALLOWED_MEDIA_STORAGES = MEDIA_STORAGE_BACKENDS.get(
+    ENVIRONMENT, MEDIA_STORAGE_BACKENDS.get("production", set())
+)
+if MEDIA_STORAGE_BACKEND not in ALLOWED_MEDIA_STORAGES:
+    raise ImproperlyConfigured(
+        f"MEDIA_STORAGE_BACKEND={MEDIA_STORAGE_BACKEND!r} is not allowed for "
+        f"ENVIRONMENT={ENVIRONMENT!r}. Allowed: {sorted(ALLOWED_MEDIA_STORAGES)}."
+    )
+
+AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", cast=str, default="")
+AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", cast=str, default="")
+AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", cast=str, default="")
+AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", cast=str, default="us-east-1")
+# Optional S3-compatible endpoint (e.g. Cloudflare R2) — empty means AWS.
+AWS_S3_ENDPOINT_URL = config("AWS_S3_ENDPOINT_URL", cast=str, default="")
+AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN", cast=str, default="")
+
+if MEDIA_STORAGE_BACKEND == "local":
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -314,6 +332,31 @@ else:
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
+    }
+elif MEDIA_STORAGE_BACKEND == "s3":
+    if not AWS_STORAGE_BUCKET_NAME:
+        raise ImproperlyConfigured("AWS_STORAGE_BUCKET_NAME is required for S3 storage.")
+    STORAGES = {
+        "default": {
+            "BACKEND": "NaijaBay.storage.S3MediaStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:  # cloudinary
+    STORAGES = {
+        "default": {
+            "BACKEND": "NaijaBay.storage.AutoResourceCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": config("CLOUD_NAME", default=""),
+        "API_KEY": config("CLOUD_API_KEY", default=""),
+        "API_SECRET": config("CLOUD_API_SECRET", default=""),
     }
 
 
@@ -643,12 +686,60 @@ LOGGING = {
 
 APPEND_SLASH = True
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "naijabay-cache",
+REDIS_URL = config("REDIS_URL", cast=str, default="redis://127.0.0.1:6379/0")
+
+if IS_PRODUCTION:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SOCKET_CONNECT_TIMEOUT": 3,
+                "SOCKET_TIMEOUT": 5,
+            },
+            "KEY_PREFIX": "naijabay",
+            "TIMEOUT": 60 * 30,
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "naijabay-cache",
+        }
+    }
 
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+
+# =============================================================================
+# CHANNELS (WebSockets)
+# =============================================================================
+
+ASGI_APPLICATION = "NaijaBay.asgi.application"
+
+if IS_PRODUCTION:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [
+                    {
+                        "address": config("REDIS_URL", cast=str, default="redis://127.0.0.1:6379/0"),
+                        "socket_connect_timeout": 5,
+                        "socket_timeout": 20,
+                        "socket_keepalive": True,
+                        "health_check_interval": 25,
+                    }
+                ],
+            },
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        }
+    }

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { LuCheckCheck, LuTrash2, LuBell, LuInbox } from 'react-icons/lu';
 import Header from '../components/HeaderComponents/Header.jsx';
+import AppLayout from '../components/AppLayout.jsx';
 import Spacer from '../components/Spacer.jsx';
 import NotificationCard from '../components/UserComponents/NotificationCard.jsx';
 import { useDispatch, useSelector } from 'react-redux';
@@ -41,11 +42,8 @@ const Notifications = () => {
     }, [isAuthenticated, user, navigate, dispatch, notificationData.isSuccess, notificationData.data]);
 
     return (
-        <>
-            <Header />
-            <Spacer />
-
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <AppLayout>
+            <div className="py-8 sm:py-12">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-3">
@@ -112,7 +110,7 @@ const Notifications = () => {
                     )}
                 </div>
             </div>
-        </>
+        </AppLayout>
     );
 };
 

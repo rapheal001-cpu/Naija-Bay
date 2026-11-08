@@ -320,14 +320,25 @@ def process_webhook(payload):
     event_key = f"{event}:{data.get('id') or reference}"[:120]
     # Event row + processing share one transaction: if verification fails the row
     # rolls back and Paystack's retry is processed again instead of skipped.
+    # The status flag keeps the outcome auditable (processing -> succeeded/failed).
     with transaction.atomic():
-        _, created = WebhookEvent.objects.get_or_create(
+        record, created = WebhookEvent.objects.get_or_create(
             event_key=event_key,
-            defaults={"event_type": event, "reference": reference},
+            defaults={"event_type": event, "reference": reference, "status": "processing"},
         )
         if not created:
             return "duplicate"
-        verify_payment(reference)  # re-checks with Paystack; body is never trusted
+        try:
+            verify_payment(reference)  # re-checks with Paystack; body is never trusted
+        except Exception as exc:
+            record.status = "failed"
+            record.error = str(exc)[:2000]
+            record.processed_at = timezone.now()
+            record.save(update_fields=["status", "error", "processed_at"])
+            raise
+        record.status = "succeeded"
+        record.processed_at = timezone.now()
+        record.save(update_fields=["status", "error", "processed_at"])
     return "processed"
 
 

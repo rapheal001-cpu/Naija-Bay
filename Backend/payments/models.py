@@ -58,15 +58,33 @@ class Payment(models.Model):
             models.Index(fields=["user", "-created_at"]),
             models.Index(fields=["purpose", "status"]),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name="payment_amount_non_negative",
+            ),
+        ]
 
 
 class WebhookEvent(models.Model):
     """One row per processed Paystack webhook delivery (idempotency guard)."""
 
+    EVENT_STATUS_CHOICES = [
+        ("processing", "Processing"),
+        ("succeeded", "Succeeded"),
+        ("failed", "Failed"),
+    ]
+
     event_key = models.CharField(_("Event Key"), max_length=120, unique=True)
     event_type = models.CharField(_("Event Type"), max_length=60)
     reference = models.CharField(_("Reference"), max_length=64, blank=True)
+    status = models.CharField(
+        _("Status"), max_length=20, choices=EVENT_STATUS_CHOICES,
+        default="succeeded", db_index=True,
+    )
+    error = models.TextField(_("Error"), blank=True, default="")
     received_at = models.DateTimeField(_("Received At"), auto_now_add=True)
+    processed_at = models.DateTimeField(_("Processed At"), null=True, blank=True)
 
     def __str__(self):
         return self.event_key
@@ -75,6 +93,9 @@ class WebhookEvent(models.Model):
         ordering = ["-received_at"]
         verbose_name = _("Webhook Event")
         verbose_name_plural = _("Webhook Events")
+        indexes = [
+            models.Index(fields=["status", "-received_at"]),
+        ]
 
 
 # =============================================================================

@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 import { HiOutlineShieldCheck } from "react-icons/hi";
-import Header from "../components/HeaderComponents/Header.jsx";
-import Spacer from "../components/Spacer.jsx";
+import AppLayout from "../components/AppLayout.jsx";
 import { useSelector } from 'react-redux';
 import SellForm from '../components/ProductComponents/SellForm.jsx';
 
@@ -20,11 +19,8 @@ const Sell = () => {
     }, [isAuthenticated, user, navigate]);
 
     return (
-        <>
-            <Header />
-            <Spacer space={'mb-36 md:mb-28'} />
-
-            <div className="min-h-screen bg-linear-to-b from-gray-50 to-white py-10 sm:py-14 relative overflow-hidden">
+        <AppLayout>
+            <div className="min-h-screen py-10 sm:py-14 relative overflow-hidden">
                 {/* Decorative background */}
                 <div className="absolute top-0 left-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
                 <div className="absolute bottom-0 right-0 w-120 h-120 bg-brand/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
@@ -72,7 +68,7 @@ const Sell = () => {
                     </p>
                 </div>
             </div>
-        </>
+        </AppLayout>
     );
 };
 

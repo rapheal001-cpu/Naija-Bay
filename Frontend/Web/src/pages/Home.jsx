@@ -1,10 +1,8 @@
-import { Link } from 'react-router-dom'
-import Header from "../components/HeaderComponents/Header.jsx";
+﻿import { Link } from 'react-router-dom'
+import AppLayout from "../components/AppLayout.jsx";
 import PromoBar from "../components/HeaderComponents/PromoBar.jsx";
-import Spacer from "../components/Spacer.jsx";
 import Search from "../components/HeaderComponents/Search.jsx";
 import ProductCard from "../components/ProductComponents/ProductCard";
-import FlashDealsSection from "../components/ProductComponents/FlashDealsSection";
 import { FaArrowRight, FaShieldAlt, FaHandshake, FaHeadset, FaClock, FaPlus } from "react-icons/fa";
 import CategoryLIst from "../components/ProductComponents/CategoryLIst";
 import { useEffect } from 'react';
@@ -13,7 +11,6 @@ import { useFetchFeaturedProductData, useFetchProducts, useFetchUserData } from 
 import { setUser } from '../slice/UserSlice.js';
 import { setFeaturedProducts } from '../slice/ProductSlice.js';
 import SkeletonProductCard from '../skeletons/SkeletonProductCard';
-import Footer from '../components/FooterComponents/Footer.jsx';
 
 
 const Home = () => {
@@ -41,18 +38,17 @@ const Home = () => {
     }, [fetchFeaturedProducts.isSuccess, fetchFeaturedProducts.data, dispatch]);
 
     return (
-        <>
-            <Header />
-            <Spacer space={'mb-36 md:mb-28'} />
-
-            <PromoBar />
-            <Search />
-            <CategoryLIst />
-
-            <FlashDealsSection />
-
+        <AppLayout
+            hero={
+                <>
+                    <PromoBar />
+                    <Search />
+                    <CategoryLIst />
+                </>
+            }
+        >
             {/* Featured Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+            <section className="py-10 lg:py-14">
                 {/* Section Header */}
                 <div className="flex items-end justify-between mb-8">
                     <div>
@@ -114,7 +110,7 @@ const Home = () => {
             </section>
 
             {/* Latest Ads */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+            <section className="py-10 lg:py-14">
                 <div className="flex items-end justify-between mb-8">
                     <div>
                         <p className="text-xs font-bold text-brand uppercase tracking-[0.15em] mb-1.5 flex items-center gap-1.5">
@@ -160,8 +156,8 @@ const Home = () => {
             </section>
 
             {/* Promotional: sell CTA */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
-                <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-brand-green to-emerald-600 px-6 py-10 sm:px-10">
+            <section className="pb-10 lg:pb-14">
+                <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-brand to-brand-hover px-6 py-10 sm:px-10">
                     <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" aria-hidden="true" />
                     <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                         <div>
@@ -174,7 +170,7 @@ const Home = () => {
                         </div>
                         <Link
                             to={isAuthenticated ? "/sell" : "/sign-in"}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-black text-brand-green shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-black text-brand shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                         >
                             <FaPlus size={14} aria-hidden="true" />
                             Post a free ad
@@ -184,7 +180,7 @@ const Home = () => {
             </section>
 
             {/* Why Naija-Bay trust strip */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+            <section className="pb-10 lg:pb-14">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
                         {
@@ -215,10 +211,7 @@ const Home = () => {
                     ))}
                 </div>
             </section>
-
-            <Spacer space={'mt-20'} />
-            <Footer />
-        </>
+        </AppLayout>
     )
 }
 

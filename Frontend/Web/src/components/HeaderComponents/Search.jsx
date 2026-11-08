@@ -61,28 +61,11 @@ const Search = () => {
                         type="button"
                         aria-label="Search"
                         onClick={handleSearch}
-                        className="flex items-center justify-center bg-brand text-white m-1.5 px-6 py-3 sm:py-3.5 rounded-xl font-semibold text-sm hover:bg-brand/90 active:scale-95 transition-all duration-200 shrink-0"
+                        className="flex items-center justify-center bg-brand text-white m-1.5 px-6 py-3 sm:py-3.5 rounded-xl font-semibold text-sm hover:bg-brand-hover active:scale-95 transition-all duration-200 shrink-0"
                     >
                         <span className="hidden sm:inline">Search</span>
                         <IoSearchOutline size={18} className="sm:hidden" />
                     </button>
-                </div>
-
-                {/* Quick tags */}
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                    {['Phones', 'Fashion', 'Laptops', 'Home'].map((tag) => (
-                        <button
-                            key={tag}
-                            type="button"
-                            onClick={() => {
-                                setSearch(tag);
-                                navigate(`/products?search=${encodeURIComponent(tag)}`);
-                            }}
-                            className="px-3.5 py-1.5 text-xs font-medium text-white/80 bg-white/10 rounded-full hover:bg-white/20 hover:text-white transition-all duration-200 backdrop-blur-sm border border-white/5"
-                        >
-                            {tag}
-                        </button>
-                    ))}
                 </div>
             </div>
 

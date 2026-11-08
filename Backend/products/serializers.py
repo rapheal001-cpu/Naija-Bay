@@ -156,14 +156,41 @@ class ProductSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
+        cached = getattr(obj, "prefetched_favorites", None)
+        if cached is not None:
+            return any(u.id == request.user.id for u in cached)
+        cached = obj._prefetched_objects_cache.get("favorites") if hasattr(obj, "_prefetched_objects_cache") else None
+        if cached is not None:
+            return any(u.id == request.user.id for u in cached)
         return obj.favorites.filter(id=request.user.id).exists()
+
+    def _cached_ratings(self, obj):
+        cached = getattr(obj, "prefetched_ratings", None)
+        if cached is not None:
+            return cached
+        if hasattr(obj, "_prefetched_objects_cache"):
+            return obj._prefetched_objects_cache.get("ratings")
+        return None
+
+    def _cached_len(self, obj, relation, attr_name):
+        """Length of a prefetched relation via its to_attr list, if present."""
+        rows = getattr(obj, attr_name, None)
+        if rows is not None:
+            return len(rows)
+        return None
 
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_favorites_count(self, obj):
+        cached = self._cached_len(obj, "favorites", "prefetched_favorites")
+        if cached is not None:
+            return cached
         return obj.favorites_count
 
     @extend_schema_field(serializers.IntegerField(default=0))
     def get_views_count(self, obj):
+        cached = self._cached_len(obj, "views", "prefetched_views")
+        if cached is not None:
+            return cached
         return obj.views_count
 
     @extend_schema_field(serializers.IntegerField(default=0))
@@ -175,6 +202,11 @@ class ProductSerializer(serializers.ModelSerializer):
         avg = getattr(obj, "_average_rating", None)
         if avg is not None:
             return round(float(avg), 1)
+        cached = self._cached_ratings(obj)
+        if cached is not None:
+            if not cached:
+                return 0.0
+            return round(sum(r.value for r in cached) / len(cached), 1)
         return round(float(obj.ratings.aggregate(avg=models.Avg("value"))["avg"] or 0), 1)
 
     @extend_schema_field(serializers.IntegerField(default=0))
@@ -182,12 +214,21 @@ class ProductSerializer(serializers.ModelSerializer):
         total = getattr(obj, "_total_ratings", None)
         if total is not None:
             return int(total)
+        cached = self._cached_ratings(obj)
+        if cached is not None:
+            return len(cached)
         return obj.ratings.count()
 
     @extend_schema_field(serializers.IntegerField(allow_null=True))
     def get_user_rating(self, obj):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
+            return None
+        cached = self._cached_ratings(obj)
+        if cached is not None:
+            for rating in cached:
+                if rating.user_id == request.user.id:
+                    return rating.value
             return None
         rating = obj.ratings.filter(user_id=request.user.id).first()
         return rating.value if rating else None
@@ -204,11 +245,13 @@ class ProductSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_images(self, obj):
         request = self.context.get("request")
+        cached = getattr(obj, "prefetched_images", None)
+        images = cached if cached is not None else obj.images.all()
         if request:
             return [
-                request.build_absolute_uri(img.image.url) for img in obj.images.all()
+                request.build_absolute_uri(img.image.url) for img in images
             ]
-        return [img.image.url for img in obj.images.all()]
+        return [img.image.url for img in images]
 
     # -------------------------------------------------------------------------
     # Category-specific attributes (write + read)
@@ -380,28 +423,33 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        values = getattr(instance, "attribute_values", None)
         output = []
-        if values is not None:
-            for row in values.select_related("definition") if hasattr(values, "select_related") else values:
-                d = row.definition
-                if d.data_type in ("number", "decimal"):
-                    value = float(row.value_number) if row.value_number is not None else None
-                elif d.data_type == "boolean":
-                    value = row.value_bool
-                elif d.data_type == "date":
-                    value = row.value_date.isoformat() if row.value_date else None
-                elif d.data_type == "multiselect":
-                    value = row.value_list
-                else:
-                    value = row.value_text
-                output.append({
-                    "slug": d.slug,
-                    "label": d.label,
-                    "data_type": d.data_type,
-                    "unit": d.unit,
-                    "value": value,
-                })
+        # Prefetch(to_attr) rows land on the instance (zero extra queries);
+        # single/fresh objects fall back to one direct queryset.
+        attribute_rows = getattr(instance, "prefetched_attribute_values", None)
+        if attribute_rows is None:
+            attribute_rows = getattr(instance, "_attribute_values_list", None)
+        if attribute_rows is None:
+            attribute_rows = list(instance.attribute_values.all())
+        for row in attribute_rows:
+            d = row.definition
+            if d.data_type in ("number", "decimal"):
+                value = float(row.value_number) if row.value_number is not None else None
+            elif d.data_type == "boolean":
+                value = row.value_bool
+            elif d.data_type == "date":
+                value = row.value_date.isoformat() if row.value_date else None
+            elif d.data_type == "multiselect":
+                value = row.value_list
+            else:
+                value = row.value_text
+            output.append({
+                "slug": d.slug,
+                "label": d.label,
+                "data_type": d.data_type,
+                "unit": d.unit,
+                "value": value,
+            })
         data["attributes"] = output
         return data
 
@@ -581,11 +629,29 @@ class ProductSerializer(serializers.ModelSerializer):
 # =============================================================================
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    # Direct-to-storage uploads attach by object key instead of a file.
+    image_key = serializers.CharField(write_only=True, required=False, max_length=512)
 
     class Meta:
         model = ProductImage
-        fields = ["id", "product", "image", "created_at"]
+        fields = ["id", "product", "image", "image_key", "created_at"]
         read_only_fields = ("id", "created_at")
+        extra_kwargs = {
+            "image": {"required": False, "allow_null": True},
+        }
+
+    def validate(self, attrs):
+        from NaijaBay.media_uploads import is_own_direct_upload_key
+
+        image = attrs.get("image")
+        image_key = attrs.get("image_key")
+        if not image and not image_key:
+            raise serializers.ValidationError({"image": "Provide a file or an image_key."})
+        if image_key is not None and not is_own_direct_upload_key(
+            image_key.strip(), getattr(self.context.get("request"), "user", None).pk if self.context.get("request") else None
+        ):
+            raise serializers.ValidationError({"image_key": "This file was not uploaded by you."})
+        return attrs
 
     def validate_image(self, image):
         name = image.name.lower()
@@ -606,6 +672,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return image
 
     def create(self, validated_data):
+        image_key = validated_data.pop("image_key", None)
+        if image_key:
+            validated_data["image"] = image_key.strip()
         product_image = ProductImage.objects.create(**validated_data)
         return product_image
 

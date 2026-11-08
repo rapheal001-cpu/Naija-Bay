@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { HiOutlineChatAlt2, HiOutlinePaperAirplane, HiOutlineArrowLeft, HiOutlineInbox } from 'react-icons/hi';
+import { HiOutlineChatAlt2, HiOutlinePaperAirplane, HiOutlineArrowLeft, HiOutlineInbox, HiOutlinePaperClip, HiOutlineMicrophone, HiOutlineStop, HiOutlineX } from 'react-icons/hi';
 import Header from '../components/HeaderComponents/Header.jsx';
-import Spacer from '../components/Spacer.jsx';
+import AppLayout from '../components/AppLayout.jsx';
 import Footer from '../components/FooterComponents/Footer.jsx';
+import { uploadProductImages } from '../core/utils/uploadImages.js';
 import {
     useFetchConversations,
     useFetchConversation,
@@ -27,8 +28,14 @@ const Messages = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [draft, setDraft] = useState('');
     const [sendError, setSendError] = useState('');
+    const [socketReady, setSocketReady] = useState(false);
     const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
+    const [pendingImages, setPendingImages] = useState([]); // {id, name, size, url(blob)}
+    const [recording, setRecording] = useState(null); // {stream, chunks, startedAt}
+    const fileInputRef = useRef(null);
     const scrollRef = useRef(null);
+    const socketRef = useRef(null);
+    const queryClient = useQueryClient();
 
     const activeId = useMemo(() => {
         const raw = searchParams.get('conversation');
@@ -90,6 +97,50 @@ const Messages = () => {
         );
     }, [messagesQuery.data]);
 
+    // ---- Live chat socket (WebSocket; REST polling remains the fallback) ----
+    useEffect(() => {
+        if (!effectiveId || !isAuthenticated) {
+            setSocketReady(false);
+            return undefined;
+        }
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${window.location.host}/ws/chat/${effectiveId}/`);
+        socketRef.current = socket;
+
+        socket.onopen = () => setSocketReady(true);
+        socket.onclose = () => setSocketReady(false);
+        socket.onerror = () => {
+            setSocketReady(false);
+        };
+        socket.onmessage = (event) => {
+            let frame;
+            try {
+                frame = JSON.parse(event.data);
+            } catch {
+                return;
+            }
+            if (frame.type === 'message' && frame.message) {
+                const incoming = frame.message;
+                queryClient.setQueryData(['messages', effectiveId, 1], (cached) => {
+                    if (!cached) return cached;
+                    const results = cached.results || [];
+                    if (results.some((m) => m.id === incoming.id)) return cached;
+                    return { ...cached, results: [...results, incoming], count: (cached.count || results.length) + 1 };
+                });
+                queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                queryClient.invalidateQueries({ queryKey: ['conversation', effectiveId] });
+                queryClient.invalidateQueries({ queryKey: ['unread-counts'] });
+            }
+        };
+
+        return () => {
+            socket.onclose = null;
+            socket.close();
+            socketRef.current = null;
+            setSocketReady(false);
+        };
+    }, [effectiveId, isAuthenticated, queryClient]);
+
     // ---- Mark the open thread as read ----
     const markRead = useMarkConversationReadMutation(effectiveId);
     useEffect(() => {
@@ -103,17 +154,108 @@ const Messages = () => {
         if (el) el.scrollTop = el.scrollHeight;
     }, [messages, effectiveId]);
 
-    // ---- Send ----
+    // ---- Send (WebSocket first; REST fallback when offline) ----
     const sendMessage = useSendMessageMutation(effectiveId);
-    const handleSend = (event) => {
+
+    const addPendingImages = (files) => {
+        const accepted = Array.from(files)
+            .filter((f) => ['image/jpeg', 'image/jpg', 'image/png'].includes(f.type) && f.size <= 2 * 1024 * 1024)
+            .slice(0, 10 - pendingImages.length);
+        if (!accepted.length) {
+            setSendError('Images must be JPG/PNG up to 2 MB (max 10 per message).');
+            return;
+        }
+        setPendingImages((prev) => [
+            ...prev,
+            ...accepted.map((file) => ({ id: `${Date.now()}-${file.name}`, file, url: URL.createObjectURL(file) })),
+        ]);
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+            recorder.ondataavailable = (event) => chunks.push(event.data);
+            recorder.start();
+            setRecording({ stream, recorder, chunks, startedAt: Date.now() });
+        } catch {
+            setSendError('Microphone is unavailable. Voice notes are not supported on this device.');
+        }
+    };
+
+    const stopRecording = (keep = true) => {
+        if (!recording) return;
+        const { stream, recorder, chunks, startedAt } = recording;
+        setRecording(null);
+        stream.getTracks().forEach((track) => track.stop());
+        recorder.onstop = () => {};
+        recorder.stop();
+        if (!keep || chunks.length === 0) return;
+        const blob = new Blob(chunks, { type: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
+        const durationMs = Date.now() - startedAt;
+        // Treat the recording as one pending attachment slot (audio).
+        setPendingImages((prev) => [
+            ...prev.slice(0, 9),
+            { id: `voice-${Date.now()}`, file: new File([blob], `voice-note.webm`, { type: blob.type }), url: URL.createObjectURL(blob), durationMs },
+        ]);
+    };
+
+    const handleSend = async (event) => {
         event.preventDefault();
         const body = draft.trim();
-        if (!body) return;
+
+        // Upload attachments first (direct-to-storage with progress).
+        let attachmentUrls = [];
+        if (pendingImages.length) {
+            try {
+                const { urls, files } = await uploadProductImages(pendingImages.map((p) => p.file));
+                attachmentUrls = urls;
+                if (files.length) {
+                    // Fallback files can't be sent generically: attach their names as a notice.
+                    attachmentUrls = attachmentUrls.concat(files.map((f) => f.name));
+                }
+            } catch (err) {
+                setSendError(err?.response?.data?.detail || 'Could not upload attachments. Try again.');
+                return;
+            }
+        }
+
+        const text = body;
+        const attachmentType = attachmentUrls.length ? (pendingImages.some((p) => p.file.type.startsWith('audio')) ? 'audio' : 'image') : '';
+        const duration = pendingImages.find((p) => p.durationMs)?.durationMs || 0;
+
+        if (!text && !attachmentType) return;
         setSendError('');
+
+        const socket = socketRef.current;
+        if (socket && socketReady && socket.readyState === WebSocket.OPEN) {
+            try {
+                socket.send(JSON.stringify({
+                    type: 'message',
+                    body: text,
+                    attachment_type: attachmentType,
+                    attachment_url: attachmentUrls[0] || '',
+                    duration_ms: duration,
+                }));
+                setDraft('');
+                setPendingImages([]);
+                return;
+            } catch {
+                // fall through to the REST mutation below
+            }
+        }
+
         sendMessage.mutate(
-            { conversationId: effectiveId, body },
             {
-                onSuccess: () => setDraft(''),
+                conversationId: effectiveId,
+                body: text,
+                attachment_type: attachmentType,
+                attachment_url: attachmentUrls[0] || '',
+                duration_ms: duration,
+            },
+            {
+                onSuccess: () => { setDraft(''); setPendingImages([]); },
                 onError: (err) => {
                     const data = err?.response?.data;
                     setSendError(
@@ -142,11 +284,8 @@ const Messages = () => {
     );
 
     return (
-        <>
-            <Header />
-            <Spacer space={'mb-36 md:mb-28'} />
-
-            <div className="min-h-screen bg-linear-to-b from-gray-50 to-white pb-16">
+        <AppLayout withSidebar={false}>
+            <div className="min-h-screen pb-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Page header */}
                     <div className="flex items-center gap-3 mb-6">
@@ -232,18 +371,29 @@ const Messages = () => {
                                                                 {conv.product.product_name}
                                                             </p>
                                                         )}
-                                                        <div className="flex items-center justify-between gap-2 mt-0.5">
+                                                        <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                                                            {conv.last_message?.attachment_type === 'image' && conv.last_message.attachment_url && (
+                                                                <img
+                                                                    src={conv.last_message.attachment_url}
+                                                                    alt=""
+                                                                    className="h-7 w-7 rounded-md object-cover bg-gray-100 shrink-0"
+                                                                />
+                                                            )}
                                                             <p className={`text-xs truncate ${conv.unread_count > 0 ? 'text-gray-800 font-semibold' : 'text-gray-400'}`}>
                                                                 {conv.last_message
-                                                                    ? `${conv.last_message.is_mine ? 'You: ' : ''}${conv.last_message.body}`
+                                                                    ? (conv.last_message.attachment_type === 'image'
+                                                                        ? `${conv.last_message.is_mine ? 'You sent' : 'Photo'}`
+                                                                        : conv.last_message.attachment_type === 'audio'
+                                                                            ? `${conv.last_message.is_mine ? 'You sent' : 'Voice note'}`
+                                                                            : `${conv.last_message.is_mine ? 'You: ' : ''}${conv.last_message.body}`)
                                                                     : 'Say hello...'}
                                                             </p>
+                                                        </div>
                                                             {conv.unread_count > 0 && (
                                                                 <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-brand text-white text-[10px] font-bold shrink-0">
                                                                     {conv.unread_count}
                                                                 </span>
                                                             )}
-                                                        </div>
                                                     </div>
                                                 </button>
                                             </li>
@@ -285,6 +435,13 @@ const Messages = () => {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-bold text-gray-900 truncate">
                                                 {displayName(counterpart) || 'Conversation'}
+                                            </p>
+                                            <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                                                <span
+                                                    className={`inline-block h-1.5 w-1.5 rounded-full ${socketReady ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                                                    aria-hidden="true"
+                                                />
+                                                {socketReady ? 'Live' : 'Refreshing automatically'}
                                             </p>
                                             {counterpart?.store && (
                                                 <p className="text-[11px] text-gray-400 truncate">
@@ -329,8 +486,24 @@ const Messages = () => {
                                         ) : (
                                             messages.map((message) => (
                                                 <div key={message.id} className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'}`}>
-                                                    <div className={`max-w-[75%] sm:max-w-[60%] px-4 py-2.5 ${message.is_mine ? 'bg-brand text-white rounded-2xl rounded-br-md' : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-md shadow-sm'}`}>
-                                                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.body}</p>
+                                                    <div className={`max-w-[80%] sm:max-w-[65%] px-2 py-2 ${message.is_mine ? 'bg-brand text-white rounded-2xl rounded-br-md' : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-md shadow-sm'}`}>
+                                                        {message.attachment_type === 'image' && message.attachment_url && (
+                                                            <img
+                                                                src={message.attachment_url}
+                                                                alt="Attachment"
+                                                                className="mb-1.5 rounded-lg max-h-52 w-full object-cover"
+                                                                loading="lazy"
+                                                            />
+                                                        )}
+                                                        {message.attachment_type === 'audio' && message.attachment_url && (
+                                                            <audio
+                                                                controls
+                                                                preload="metadata"
+                                                                className="mb-1.5 h-9 w-44"
+                                                                src={message.attachment_url}
+                                                            />
+                                                        )}
+                                                        {message.body && <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.body}</p>}
                                                         <p className={`text-[10px] mt-1 text-right ${message.is_mine ? 'text-white/60' : 'text-gray-400'}`}>
                                                             {formatDate(message.created_at)}
                                                             {message.is_mine && (message.read ? ' • Read' : ' • Sent')}
@@ -348,7 +521,52 @@ const Messages = () => {
                                                 {sendError}
                                             </p>
                                         )}
+                                        {pendingImages.length > 0 && (
+                                            <div className="flex gap-2 overflow-x-auto pb-2 mb-1">
+                                                {pendingImages.map((p) => (
+                                                    <div key={p.id} className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 shrink-0">
+                                                        {p.file.type.startsWith('image/')
+                                                            ? <img src={p.url} alt="" className="h-full w-full object-cover" />
+                                                            : <span className="flex h-full w-full items-center justify-center text-gray-400"><HiOutlineMicrophone size={20} /></span>}
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Remove attachment"
+                                                            onClick={() => setPendingImages((prev) => prev.filter((x) => x.id !== p.id))}
+                                                            className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                                                        >
+                                                            <HiOutlineX size={11} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                         <div className="flex items-end gap-2">
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png"
+                                                multiple
+                                                hidden
+                                                aria-hidden="true"
+                                                tabIndex={-1}
+                                                onChange={(e) => { addPendingImages(e.target.files || []); e.target.value = ''; }}
+                                            />
+                                            <button
+                                                type="button"
+                                                aria-label="Attach image"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="flex items-center justify-center w-11 h-11 rounded-xl text-gray-400 hover:text-brand hover:bg-brand/5 transition-colors shrink-0"
+                                            >
+                                                <HiOutlinePaperClip size={20} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                aria-label={recording ? 'Stop recording' : 'Record voice note'}
+                                                onClick={() => (recording ? stopRecording(true) : startRecording())}
+                                                className={`flex items-center justify-center w-11 h-11 rounded-xl transition-colors shrink-0 ${recording ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-brand hover:bg-brand/5'}`}
+                                            >
+                                                {recording ? <HiOutlineStop size={20} /> : <HiOutlineMicrophone size={20} />}
+                                            </button>
                                             <textarea
                                                 value={draft}
                                                 onChange={(event) => setDraft(event.target.value)}
@@ -360,7 +578,7 @@ const Messages = () => {
                                             />
                                             <button
                                                 type="submit"
-                                                disabled={!draft.trim() || sendMessage.isPending}
+                                                disabled={(!draft.trim() && pendingImages.length === 0) || sendMessage.isPending}
                                                 aria-label="Send message"
                                                 className="flex items-center justify-center w-11 h-11 rounded-xl bg-brand text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity shrink-0"
                                             >
@@ -377,9 +595,7 @@ const Messages = () => {
                     </div>
                 </div>
             </div>
-
-            <Footer />
-        </>
+        </AppLayout>
     );
 };
 

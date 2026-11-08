@@ -8,6 +8,8 @@ from datetime import timedelta
 
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.test.utils import CaptureQueriesContext
+from django.db import connection
 
 from accounts.models import User
 from core.models import AttributeDefinition, AttributeOption, Category, City, State, SubCategory
@@ -712,3 +714,39 @@ class ProductAttributeFacetTests(ProductAttributeAPITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["facets"]["tags"]["new-arrival"], 1)
         self.assertEqual(response.data["facets"]["tags"]["deal"], 1)
+
+class ListQueryCountTests(ProductAPITestCase):
+    def test_product_list_uses_constant_queries(self):
+        for i in range(10):
+            product = make_product(self.seller, product_name=f"Phone {i}")
+            product.favorites.add(self.buyer)
+            product.views.add(self.buyer)
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse("products-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 10)
+        # Constant regardless of row count: base + count + prefetches + facets off.
+        self.assertLessEqual(len(ctx.captured_queries), 25, f"{len(ctx.captured_queries)} queries: N+1 regressed")
+
+    def test_create_image_by_direct_upload_key(self):
+        product = make_product(self.seller)
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product-images"),
+            {"product": product.id, "key": f"naijabay/{self.seller.pk}/0123abcd.jpg"},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        image = ProductImage.objects.filter(product=product).first()
+        self.assertEqual(image.image.name, f"naijabay/{self.seller.pk}/0123abcd.jpg")
+        image.delete()
+
+    def test_create_image_rejects_foreign_key(self):
+        product = make_product(self.seller)
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product-images"),
+            {"product": product.id, "key": "naijabay/999999/other.jpg"},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

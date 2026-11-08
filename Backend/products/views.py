@@ -1,4 +1,4 @@
-import datetime
+﻿import datetime
 from datetime import timedelta
 
 from django.db import models, transaction
@@ -32,6 +32,8 @@ from .serializers import (
 )
 from .models import Product, ProductImage, ProductReport, ProductRating
 from core.models import AttributeDefinition, Category
+from NaijaBay.cache import CATEGORY_LIST_CACHE, cached_read_list
+from NaijaBay.queryset_helper import with_category_context, with_listing_context, with_rating_aggregates
 from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOrReadOnly, IsOwnerOnly
 from payments.services import expire_boosts_if_due
@@ -62,6 +64,8 @@ class ProductsListAPIView(ListAPIView):
         "condition",
         "state",
         "city",
+        "category_obj__name",
+        "subcategory_obj__name",
     ]
 
     def get_queryset(self):
@@ -69,13 +73,11 @@ class ProductsListAPIView(ListAPIView):
         expire_boosts_if_due()
         now = timezone.now()
         return (
-            Product.objects.filter(active=True, sold=False)
-            .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
-            .select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
-            .annotate(
-                _average_rating=Avg("ratings__value"),
-                _total_ratings=Count("ratings", distinct=True),
+            with_rating_aggregates(
+                with_listing_context(
+                    Product.objects.filter(active=True, sold=False)
+                    .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+                )
             )
             .order_by("-created_at")
         )
@@ -382,12 +384,9 @@ class FeaturedProductsListAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            Product.objects.filter(
-                active=True,
-                sold=False,
+            with_listing_context(
+                Product.objects.filter(active=True, sold=False)
             )
-            .select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .order_by("-created_at")[:50]
         )
 
@@ -408,14 +407,12 @@ class FlashDealsListAPIView(ListAPIView):
     def get_queryset(self):
         now = timezone.now()
         return (
-            Product.objects.filter(active=True, sold=False, original_price__gt=0)
-            .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
-            .filter(original_price__gt=models.F("price"))
-            .select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
-            .annotate(
-                _average_rating=Avg("ratings__value"),
-                _total_ratings=Count("ratings", distinct=True),
+            with_rating_aggregates(
+                with_listing_context(
+                    Product.objects.filter(active=True, sold=False, original_price__gt=0)
+                    .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+                    .filter(original_price__gt=models.F("price"))
+                )
             )
             .order_by("-promoted", "-boost_level", "price")[:50]
         )
@@ -471,12 +468,14 @@ rate_product_view = RateProductAPIView.as_view()
     get=extend_schema(tags=["Products"], operation_id="Categories")
 )
 class CategoriesListAPIView(ListAPIView):
-    queryset = Category.objects.prefetch_related("sub_categories").order_by(
-        "-created_at"
-    )
+    queryset = with_category_context(Category.objects.all()).order_by("-created_at")
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
     throttle_classes = [ProductThrottling]
+
+    @cached_read_list(CATEGORY_LIST_CACHE)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 categories_list_view = CategoriesListAPIView.as_view()
 
@@ -496,12 +495,7 @@ class ProductsDetailAPIView(RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return (
-            Product.objects.select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
-            .annotate(
-                _average_rating=Avg("ratings__value"),
-                _total_ratings=Count("ratings", distinct=True),
-            )
+            with_rating_aggregates(with_listing_context(Product.objects.all()))
             .order_by("-created_at")
         )
 
@@ -559,6 +553,10 @@ class ProductImageCreateAPIView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         product_id = request.data.get("product")
         images = request.FILES.getlist("images")
+        # Direct-to-storage uploads attach by object key (see media_uploads).
+        keys = request.data.getlist("keys") if hasattr(request.data, "getlist") else []
+        if not keys and request.data.get("key"):
+            keys = [request.data.get("key")]
 
         if not product_id:
             return Response(
@@ -566,7 +564,7 @@ class ProductImageCreateAPIView(CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not images:
+        if not images and not keys:
             return Response(
                 {"images": ["At least one image is required."]},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -589,6 +587,20 @@ class ProductImageCreateAPIView(CreateAPIView):
             serializer.save()
             created.append(serializer.data)
 
+        for image_key in keys:
+            serializer = self.get_serializer(
+                data={"product": product.id, "image_key": image_key}
+            )
+            serializer.is_valid(raise_exception=True)
+            obj = serializer.save()
+            if not obj.image:
+                obj.delete()
+                return Response(
+                    {"image_key": ["The referenced upload is missing or invalid."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            created.append(serializer.data)
+
         return Response(created, status=status.HTTP_201_CREATED)
 
 create_product_images_view = ProductImageCreateAPIView.as_view()
@@ -608,10 +620,8 @@ class MyProductsListAPIView(ListAPIView):
     pagination_class = StandardPagination
 
     def get_queryset(self):
-        queryset = (
+        queryset = with_listing_context(
             Product.objects.filter(product_user=self.request.user)
-            .select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
         )
 
         status_filter = (self.request.query_params.get("status") or "").lower()
@@ -651,9 +661,9 @@ class FavoriteProductsListAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            self.request.user.favorite_products.filter(active=True, sold=False)
-            .select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
+            with_listing_context(
+                self.request.user.favorite_products.filter(active=True, sold=False)
+            )
             .order_by("-created_at")
         )
 
@@ -672,9 +682,9 @@ class RecentlyViewedProductsListAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            self.request.user.viewed_products.filter(active=True, sold=False)
-            .select_related("product_user")
-            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
+            with_listing_context(
+                self.request.user.viewed_products.filter(active=True, sold=False)
+            )
             .order_by("-created_at")
         )
 

@@ -1,4 +1,4 @@
-import LeftComponent from "./LeftComponent.jsx";
+﻿import LeftComponent from "./LeftComponent.jsx";
 import RightComponent from "./RightComponent.jsx";
 import GlobalSearch from "./GlobalSearch.jsx";
 import CategoryNav from "./CategoryNav.jsx";
@@ -24,7 +24,7 @@ const Header = () => {
                     <div className="ml-auto flex items-center gap-2 md:ml-0">
                         <Link
                             to={isAuthenticated ? "/sell" : "/sign-in"}
-                            className="hidden items-center gap-1.5 rounded-xl bg-brand-green px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-green/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:flex"
+                            className="hidden items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:flex"
                         >
                             <FaPlus size={13} aria-hidden="true" />
                             Post Ad

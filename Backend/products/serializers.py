@@ -393,13 +393,19 @@ class ProductSerializer(serializers.ModelSerializer):
             )
 
     def _resolve_fk_fields(self, attrs):
-        """Keep the relational FKs in sync with the legacy string fields."""
+        """Resolve legacy string taxonomy fields to relational FKs.
+
+        Cutover: a supplied string becomes the FK source of truth, and the
+        legacy string columns are DERIVED back from the FKs so both always
+        agree (API output keeps the current underscore format).
+        """
         category = attrs.get("category")
         if category:
             normalized = _normalize(category).replace("_", "-")
             cat = Category.objects.filter(slug=normalized).first()
             if cat:
                 attrs["category_obj"] = cat
+                attrs["category"] = cat.slug.replace("-", "_")
                 sub_value = attrs.get("sub_category")
                 if sub_value:
                     sub = SubCategory.objects.filter(
@@ -407,6 +413,7 @@ class ProductSerializer(serializers.ModelSerializer):
                     ).first()
                     if sub:
                         attrs["subcategory_obj"] = sub
+                        attrs["sub_category"] = sub.slug.replace("-", "_")
         state = attrs.get("state")
         if state:
             st = State.objects.filter(slug=str(state).strip().lower()).first()

@@ -122,6 +122,8 @@ INSTALLED_APPS = [
     "messaging.apps.MessagingConfig",
     "orders.apps.OrdersConfig",
     "payments.apps.PaymentsConfig",
+    # Project package (configures management commands under NaijaBay/)
+    "NaijaBay",
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",

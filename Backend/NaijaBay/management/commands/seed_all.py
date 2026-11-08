@@ -1,4 +1,4 @@
-"""One-command seeding for every Naija-Bay model.
+﻿"""One-command seeding for every Naija-Bay model.
 
 Usage::
 
@@ -18,9 +18,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import Follow, Notifications, Store, User
-from core.management.commands.categories import seed_categories
-from core.management.commands.nigeria_states import seed_locations
-from core.management.commands.seed_products import (
+from NaijaBay.management.commands.categories import seed_categories
+from NaijaBay.management.commands.nigeria_states import seed_locations
+from NaijaBay.management.commands.seed_products import (
     COLORS,
     PRODUCT_CATALOG,
     attach_images_to_product,
@@ -142,7 +142,7 @@ class Command(BaseCommand):
             stores = self._seed_stores(sellers)
             self._seed_follows(sellers, buyers)
             products = self._seed_products(
-                sellers, categories, cities, options["products_per_user"]
+                sellers, categories, subcategories, cities, options["products_per_user"]
             )
 
             # Social data covers EVERY product and user in the database (not
@@ -305,9 +305,10 @@ class Command(BaseCommand):
     # Products
     # -------------------------------------------------------------------------
 
-    def _seed_products(self, sellers, categories, cities, per_user):
+    def _seed_products(self, sellers, categories, subcategories, cities, per_user):
         conditions = [c[0] for c in CONDITION_CHOICES if c[0]]
         contact_methods_all = [m[0] for m in CONTACT_METHOD_CHOICES if m[0]]
+        states_list = list(State.objects.all())
         valid_categories = [
             key for key in PRODUCT_CATALOG if key in categories
         ]
@@ -366,6 +367,21 @@ class Command(BaseCommand):
                     category=category,
                     sub_category=sub_category,
                     defaults={
+                        "category_obj": categories.get(category),
+                        "subcategory_obj": next(
+                            (s for s in subcategories.get(category, [])
+                             if s.slug == sub_category.replace("_", "-")),
+                            None,
+                        ),
+                        "state_obj": next(
+                            (st for st in states_list if st.slug == state_slug),
+                            None,
+                        ),
+                        "city_obj": next(
+                            (c for c in cities.get(state_slug) or []
+                             if c.slug == city_slug.replace("_", "-")),
+                            None,
+                        ),
                         "description": generate_description(
                             name, category, sub_category, condition
                         ),
@@ -396,6 +412,28 @@ class Command(BaseCommand):
                     },
                 )
                 products.append(product)
+
+                # Backfill FKs for products seeded before the cutover.
+                if not was_created and (
+                    product.category_obj_id is None
+                    or product.state_obj_id is None
+                ):
+                    product.category_obj = categories.get(category) or product.category_obj
+                    product.subcategory_obj = next(
+                        (s for s in subcategories.get(category, [])
+                         if s.slug == sub_category.replace("_", "-")),
+                        product.subcategory_obj,
+                    )
+                    product.state_obj = next(
+                        (st for st in states_list if st.slug == state_slug),
+                        product.state_obj,
+                    )
+                    product.city_obj = next(
+                        (c for c in cities.get(state_slug) or []
+                         if c.slug == city_slug.replace("_", "-")),
+                        product.city_obj,
+                    )
+                    product.save(update_fields=["category_obj", "subcategory_obj", "state_obj", "city_obj"])
 
                 if was_created:
                     created += 1

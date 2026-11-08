@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 from PIL import Image, ImageDraw, ImageFont
 from accounts.models import Store, User
 from products.models import Product, ProductImage
+from core.models import Category, City, State, SubCategory
 from NaijaBay.utils import (
     CATEGORY_CHOICES,
     SUBCATEGORY_MAP,
@@ -970,6 +971,23 @@ class Command(BaseCommand):
                     Decimal(str(price)) * Decimal(str(random.uniform(1.10, 1.35)))
                 ).quantize(Decimal("1"))
 
+            # Cutover: resolve relational FKs (run `categories` + `nigeria_states`
+            # or `seed_all` first so the lookup tables exist).
+            category_obj = Category.objects.filter(slug=category.replace("_", "-")).first()
+            subcategory_obj = (
+                SubCategory.objects.filter(
+                    category=category_obj, slug=sub_category.replace("_", "-")
+                ).first()
+                if category_obj
+                else None
+            )
+            state_obj = State.objects.filter(slug=state).first()
+            city_obj = (
+                City.objects.filter(state=state_obj, slug=city.replace("_", "-")).first()
+                if state_obj and city
+                else None
+            )
+
             product = Product.objects.create(
                 product_user=user,
                 product_name=name,
@@ -979,6 +997,10 @@ class Command(BaseCommand):
                 sold_count=random.randint(0, 60),
                 category=category,
                 sub_category=sub_category,
+                category_obj=category_obj,
+                subcategory_obj=subcategory_obj,
+                state_obj=state_obj,
+                city_obj=city_obj,
                 condition=condition,
                 color=random.choice(COLORS),
                 quantity=(

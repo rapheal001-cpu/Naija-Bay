@@ -10,19 +10,40 @@ A Nigerian online marketplace in the style of Jiji.ng (classifieds) and Temu (de
 
 ```text
 Naija-Bay/
+├── UNDERSTAND.md           product, architecture, and handover explainer
+├── SCALLING.md             production runbook
 ├── Backend/
-│   ├── NaijaBay/         # settings, urls, shared choices (utils.py)
+│   ├── NaijaBay/         # settings, urls, ASGI, shared helpers, management/commands (seed commands)
 │   ├── accounts/         # users, stores, follows, notifications
-│   ├── products/         # products, images, ratings, reports
-│   ├── messaging/        # buyer/seller conversations and messages
-│   ├── core/             # states, cities, categories + seed commands
-│   │   └── management/commands/
+│   ├── products/         # products, images, ratings, reports, attribute filters
+│   ├── messaging/        # buyer/seller conversations, messages, WebSocket chat
+│   ├── orders/           # cart, orders, checkout
+│   ├── payments/         # Paystack initialize/verify/webhook, boost plans
+│   ├── core/             # states, cities, categories, attribute definitions
+│   ├── images/           # screenshots of the web app (REA captures)
 │   ├── run_server.py     # migrate + seed everything + start the server
 │   ├── manage.py
 │   └── requirements.txt
 └── Frontend/
     └── Web/
 ```
+
+## Screenshots
+
+Captured with REA from the live app (see [UNDERSTAND.md](UNDERSTAND.md#15-screenshots) for the full list):
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Home](Backend/images/home.png) | ![Home mobile](Backend/images/home-mobile.png) |
+| ![Browse](Backend/images/browse.png) | ![Login](Backend/images/login.png) |
+| ![Product page](Backend/images/product-page.png) | ![Register](Backend/images/register.png) |
+| ![Sell](Backend/images/sell.png) | ![Messages](Backend/images/messages.png) |
+| ![My Ads](Backend/images/my-ads.png) | |
+
+**Want the product story, architecture diagrams, and handover checklist?**
+Read [UNDERSTAND.md](UNDERSTAND.md) first. For production setup see
+[SCALLING.md](SCALLING.md), [Backend/ENDPOINTS.md](Backend/ENDPOINTS.md),
+and [Backend/PRODUCTION.md](Backend/PRODUCTION.md).
 
 ## Quick start
 
@@ -40,17 +61,18 @@ python run_server.py --reset-db # first time only (see note below)
 python run_server.py            # every other time
 ```
 
-`--reset-db` renames any old `db.sqlite3` to `db.sqlite3.bak-<timestamp>` and starts clean. Use it the first time because the app folders currently contain no migration files, so an old database file would not match the models.
+`--reset-db` renames any old `db.sqlite3` to `db.sqlite3.bak-<timestamp>` and starts clean. After the cutover reset every app carries a single `0001_cutover_baseline` migration, so a fresh database always matches the models.
 
-`run_server.py` does everything in one go:
+`run_server.py` does everything in one go (all seed commands now live under `NaijaBay/management/commands/`):
 
-1. `makemigrations` and `migrate`
+1. `migrate`
 2. Seeds states and cities (`nigeria_states`)
 3. Seeds categories and sub-categories (`categories`)
 4. Seeds the admin and regular users with avatars and verified emails (`create_user`)
 5. Gives every user a store and at least 3 products (`seed_products`)
 6. Seeds sellers, buyers, follows, favorites, views, ratings, chats, reports and notifications (`seed_all`)
-7. Starts the Django server at http://127.0.0.1:8000
+7. Seeds the 40 attribute definitions and 133 options (`attribute_definitions`)
+8. Starts the Django server at http://127.0.0.1:8000
 
 Every seed step is idempotent, so running it again does not create duplicates.
 

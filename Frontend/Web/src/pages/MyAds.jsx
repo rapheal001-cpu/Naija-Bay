@@ -8,7 +8,7 @@ import InfiniteListSentinel from '../components/InfiniteListSentinel.jsx';
 import Spacer from '../components/Spacer.jsx';
 import Footer from '../components/FooterComponents/Footer.jsx';
 import { useSelector } from 'react-redux';
-import { useFetchMyListings } from '../hooks/UseQuery.js';
+import { useFetchMyListings, useInfiniteMyListings } from '../hooks/UseQuery.js';
 import { deleteProductFn, updateProductFn } from '../service/Endpoints.js';
 import { formatDate } from '../dummyData.js';
 

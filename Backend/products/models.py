@@ -5,6 +5,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 from accounts.models import User
+from core.models import AttributeDefinition, Category, City, State, SubCategory
 from NaijaBay.utils import (
     CONDITION_CHOICES,
     CATEGORY_CHOICES,
@@ -50,6 +51,25 @@ class Product(models.Model):
     sub_category = models.CharField(
         _("Sub Category"), max_length=20, choices=SUBCATEGORY_CHOICES, db_index=True
     )
+    # Relational references to the seeded taxonomy (nullable during migration).
+    category_obj = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        verbose_name=_("Category (Relational)"),
+        db_index=True,
+    )
+    subcategory_obj = models.ForeignKey(
+        SubCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        verbose_name=_("Sub Category (Relational)"),
+        db_index=True,
+    )
     condition = models.CharField(
         _("Product Condition"), max_length=20, choices=CONDITION_CHOICES, db_index=True
     )
@@ -78,6 +98,25 @@ class Product(models.Model):
     )
     city = models.CharField(
         _("Product City"), max_length=20, choices=CITY_CHOICES, db_index=True
+    )
+    # Relational references to the seeded location taxonomy (nullable during migration).
+    state_obj = models.ForeignKey(
+        State,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        verbose_name=_("State (Relational)"),
+        db_index=True,
+    )
+    city_obj = models.ForeignKey(
+        City,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        verbose_name=_("City (Relational)"),
+        db_index=True,
     )
     contact_methods = models.JSONField(
         _("Contact Methods"),
@@ -229,6 +268,8 @@ class Product(models.Model):
             models.Index(fields=["product_user", "category", "sub_category", "active"]),
             models.Index(fields=["state", "city"]),
             models.Index(fields=["category", "state", "city"]),
+            models.Index(fields=["category_obj", "subcategory_obj"]),
+            models.Index(fields=["state_obj", "city_obj"]),
         ]
 
 
@@ -361,4 +402,61 @@ class ProductRating(models.Model):
         ]
         indexes = [
             models.Index(fields=["product", "user"]),
+        ]
+
+
+# =============================================================================
+# PRODUCT ATTRIBUTE VALUE
+# =============================================================================
+
+class ProductAttribute(models.Model):
+    """One typed specification value for a product (e.g. Cars → year=2019).
+
+    Values are stored in typed columns so category-specific filters
+    (``attr_year_gte``, ``attr_transmission``) are indexed range/equality
+    lookups instead of JSON or string scans.
+    """
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="attribute_values",
+        verbose_name=_("Product"),
+        db_index=True,
+    )
+    definition = models.ForeignKey(
+        AttributeDefinition,
+        on_delete=models.CASCADE,
+        related_name="product_values",
+        verbose_name=_("Attribute Definition"),
+        db_index=True,
+    )
+    value_text = models.TextField(_("Text Value"), null=True, blank=True)
+    value_number = models.DecimalField(
+        _("Number Value"), max_digits=15, decimal_places=2, null=True, blank=True
+    )
+    value_bool = models.BooleanField(_("Boolean Value"), null=True, blank=True)
+    value_date = models.DateField(_("Date Value"), null=True, blank=True)
+    value_list = models.JSONField(_("List Value"), null=True, blank=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+
+    def __str__(self):
+        return f"{self.product.product_name} — {self.definition.label}"
+
+    class Meta:
+        ordering = ["definition__sort_order", "definition__name"]
+        verbose_name = _("Product Attribute")
+        verbose_name_plural = _("Product Attributes")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "definition"],
+                name="unique_product_attribute",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["definition", "value_number"]),
+            models.Index(fields=["definition", "value_text"]),
+            models.Index(fields=["product"]),
+            models.Index(fields=["definition"]),
         ]

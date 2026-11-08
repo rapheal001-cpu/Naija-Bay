@@ -1,7 +1,7 @@
 import { FaHeart, FaPhoneAlt, FaRegCalendarAlt, FaArrowLeft, FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from 'react-icons/fa';
 import { LuMapPin } from 'react-icons/lu';
 import { IoIosEye, IoLogoWhatsapp } from 'react-icons/io';
-import { HiBadgeCheck } from 'react-icons/hi';
+import { HiBadgeCheck, HiOutlineChatAlt2 } from 'react-icons/hi';
 import { TbAlertTriangleFilled } from 'react-icons/tb';
 import Header from '../HeaderComponents/Header.jsx';
 import Spacer from '../Spacer.jsx';
@@ -11,6 +11,10 @@ import { formatDate } from '../../dummyData.js';
 import { useToggleFavoriteMutation, useDeleteProductMutation, useRateProductMutation } from '../../hooks/UseMutation.js';
 import { useSelector } from 'react-redux';
 import StarRating, { Stars } from './StarRating.jsx';
+import StartChatModal from './StartChatModal.jsx';
+import ReportModal from './ReportModal.jsx';
+import ProductCard from './ProductCard.jsx';
+import { useFetchProducts } from '../../hooks/UseQuery.js';
 
 
 const Product = () => {
@@ -19,6 +23,15 @@ const Product = () => {
     const product = useSelector((state) => state.products.productDetail);
 
     const [activeImage, setActiveImage] = useState(0);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [reportOpen, setReportOpen] = useState(false);
+
+    const similarQuery = useFetchProducts(
+        product?.category ? { category: product.category, page: 1, page_size: 8 } : {}
+    );
+    const similarAds = (similarQuery.data?.results || [])
+        .filter((item) => item.product_slug !== product?.product_slug && !item.sold)
+        .slice(0, 4);
 
     const navigate = useNavigate();
 
@@ -72,7 +85,7 @@ const Product = () => {
     return (
         <>
             <Header />
-            <Spacer space={'mb-18'} />
+            <Spacer space={'mb-36 md:mb-28'} />
 
             <div className="max-w-7xl mx-auto px-4 py-6">
                 {/* Back link */}
@@ -86,6 +99,30 @@ const Product = () => {
                     </span>
                     Back to results
                 </button>
+
+                <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs font-semibold text-gray-500">
+                    <Link to="/" className="hover:text-brand">Home</Link>
+                    <span aria-hidden="true" className="text-gray-300">/</span>
+                    <Link to="/products" className="hover:text-brand">All Ads</Link>
+                    {product?.category && (
+                        <>
+                            <span aria-hidden="true" className="text-gray-300">/</span>
+                            <Link to={`/${product.category}`} className="capitalize hover:text-brand">
+                                {product.category.replace(/_/g, ' ')}
+                            </Link>
+                        </>
+                    )}
+                    {product?.sub_category && (
+                        <>
+                            <span aria-hidden="true" className="text-gray-300">/</span>
+                            <Link to={`/${product.category}/${product.sub_category}`} className="capitalize hover:text-brand">
+                                {product.sub_category.replace(/_/g, ' ')}
+                            </Link>
+                        </>
+                    )}
+                    <span aria-hidden="true" className="text-gray-300">/</span>
+                    <span className="max-w-48 truncate text-gray-800 sm:max-w-xs" aria-current="page">{product?.product_name}</span>
+                </nav>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
                     {/* Left: Image gallery */}
@@ -313,11 +350,22 @@ const Product = () => {
                                 <p className="text-sm font-bold text-gray-800 capitalize">{product?.category?.replace(/_/g, ' ')}</p>
                             </div>
                             {product?.sub_category && (
-                                <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-100 col-span-2">
+                                <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
                                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Sub Category</p>
                                     <p className="text-sm font-bold text-gray-800 capitalize">{product?.sub_category?.replace(/_/g, ' ')}</p>
                                 </div>
                             )}
+                            {/* Dynamic category specifications */}
+                            {(product?.attributes || []).map((attr) => (
+                                <div key={attr.slug} className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
+                                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{attr.label}</p>
+                                    <p className="text-sm font-bold text-gray-800 break-words">
+                                        {Array.isArray(attr.value)
+                                            ? attr.value.join(', ')
+                                            : attr.value === true ? 'Yes' : attr.value === false ? 'No' : `${attr.value ?? ''}${attr.unit ? ` ${attr.unit}` : ''}`}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Description */}
@@ -362,12 +410,35 @@ const Product = () => {
                                 <p className="text-xs text-amber-700/80 leading-relaxed mt-1">
                                     Meet at a public location and inspect the item before payment. Never transfer money before confirming the product.
                                 </p>
+                                {isAuthenticated && !isOwner && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setReportOpen(true)}
+                                        className="mt-2.5 text-xs font-bold text-amber-800 underline underline-offset-2 hover:text-amber-900"
+                                    >
+                                        Report this ad
+                                    </button>
+                                )}
                             </div>
                         </div>
 
                         {/* Contact Actions — MULTI-METHOD */}
                         {!product?.sold && product?.product_user && !isOwner && (
                             <div className="flex flex-col gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!isAuthenticated && !user) {
+                                            navigate('/sign-in');
+                                            return;
+                                        }
+                                        setChatOpen(true);
+                                    }}
+                                    className="flex items-center justify-center gap-2.5 bg-white text-brand border-2 border-brand font-bold rounded-xl py-3.5 hover:bg-brand hover:text-white active:scale-[0.98] transition-all shadow-lg shadow-brand/10"
+                                >
+                                    <HiOutlineChatAlt2 size={18} />
+                                    Message Seller
+                                </button>
                                 {product.contact_methods?.includes('phone_call') && contactNumber && (
                                     <a
                                         href={`tel:${cleanNumber}`}
@@ -394,6 +465,35 @@ const Product = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Similar Ads */}
+            {similarAds.length > 0 && (
+                <section className="mx-auto mt-14 max-w-7xl px-4 pb-4">
+                    <div className="mb-6 flex items-end justify-between">
+                        <div>
+                            <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.15em] text-brand">You may also like</p>
+                            <h2 className="text-2xl font-black tracking-tight text-gray-900">Similar Ads</h2>
+                        </div>
+                        {product?.category && (
+                            <Link
+                                to={`/${product.category}`}
+                                className="flex items-center gap-2 text-sm font-bold text-brand hover:gap-3 transition-all"
+                            >
+                                View all
+                                <FaChevronRight size={12} aria-hidden="true" />
+                            </Link>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                        {similarAds.map((item) => (
+                            <ProductCard key={item.id} {...item} />
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            <StartChatModal open={chatOpen} onClose={() => setChatOpen(false)} product={product} />
+            <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} productSlug={product?.product_slug} productName={product?.product_name} />
         </>
     );
 };

@@ -22,7 +22,7 @@ const Sell = () => {
     return (
         <>
             <Header />
-            <Spacer space={'mb-20'} />
+            <Spacer space={'mb-36 md:mb-28'} />
 
             <div className="min-h-screen bg-linear-to-b from-gray-50 to-white py-10 sm:py-14 relative overflow-hidden">
                 {/* Decorative background */}

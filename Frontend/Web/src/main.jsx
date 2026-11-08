@@ -11,6 +11,8 @@ import Home from "@/pages/Home.jsx";
 import NotFound from "@/pages/NotFound.jsx";
 import ProductDetail from "@/pages/ProductDetail.jsx";
 import Notifications from "@/pages/Notifications.jsx";
+import Messages from "@/pages/Messages.jsx";
+import MyAds from "@/pages/MyAds.jsx";
 import Sell from "@/pages/Sell.jsx";
 import Profile from "@/pages/Profile.jsx";
 import SignIn from "@/pages/SignIn.jsx";
@@ -52,6 +54,22 @@ const router = createBrowserRouter([
     {
         path: '/notifications',
         element: <Notifications />,
+    },
+    {
+        path: '/messages',
+        element: <Messages />,
+    },
+    {
+        path: '/my-ads',
+        element: <MyAds />,
+    },
+    {
+        path: '/:category',
+        element: <Products />,
+    },
+    {
+        path: '/:category/:subCategory',
+        element: <Products />,
     },
     {
         path: '/sell',

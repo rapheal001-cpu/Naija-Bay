@@ -1,9 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import ListAPIView, get_object_or_404
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.db.models import Q
+
+from core.models import AttributeDefinition, Category, SubCategory
+from core.serializers import AttributeDefinitionSerializer
 from accounts.models import Follow, Notifications, User
 from accounts.serializers.serializers import NotificationSerializer
 from accounts.serializers.store import FollowUserSerializer
@@ -195,3 +199,49 @@ class ToggleFollowUserAPIView(APIView):
 
 
 toggle_follow_user_view = ToggleFollowUserAPIView.as_view()
+
+
+# =============================================================================
+# ATTRIBUTE DEFINITIONS
+# =============================================================================
+
+def _resolve_taxonomy(slug_value, model):
+    """Resolve a category/subcategory slug (hyphen or underscore forms)."""
+    if not slug_value:
+        return None
+    normalized = str(slug_value).strip().lower().replace("_", "-").replace(" ", "-")
+    return model.objects.filter(slug=normalized).first()
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Attributes"],
+        operation_id="List Attribute Definitions",
+        summary="List attribute definitions (with options) for a category/subcategory",
+        description=(
+            "Returns the Sell-form specifications for a category. "
+            "Pass `?category=vehicles` and optionally `?sub_category=cars`. "
+            "Definitions scoped to the category plus the subcategory are returned."
+        ),
+    )
+)
+class AttributeDefinitionListAPIView(ListAPIView):
+    serializer_class = AttributeDefinitionSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        category = _resolve_taxonomy(self.request.query_params.get("category"), Category)
+        if category is None:
+            return AttributeDefinition.objects.none()
+
+        sub_category = _resolve_taxonomy(self.request.query_params.get("sub_category"), SubCategory)
+        qs = AttributeDefinition.objects.filter(category=category).prefetch_related("options")
+        if sub_category is not None and sub_category.category_id == category.id:
+            qs = qs.filter(Q(sub_category__isnull=True) | Q(sub_category=sub_category))
+        else:
+            qs = qs.filter(sub_category__isnull=True)
+        return qs
+
+
+attribute_definitions_view = AttributeDefinitionListAPIView.as_view()

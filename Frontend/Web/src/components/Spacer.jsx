@@ -1,4 +1,4 @@
-const Spacer = ({ space='mb-24' }) => {
+const Spacer = ({ space='mb-36 md:mb-28' }) => {
   return (
       <div className={space}></div>
   )

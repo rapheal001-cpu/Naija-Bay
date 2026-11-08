@@ -85,7 +85,7 @@ const Contact = () => {
     return (
         <>
             <Header />
-            <Spacer space="mb-20" />
+            <Spacer space="mb-36 md:mb-28" />
 
             <div className="max-w-5xl mx-auto px-4 py-6 pb-16 space-y-14">
                 {/* ── Hero ─────────────────────────────────────────── */}

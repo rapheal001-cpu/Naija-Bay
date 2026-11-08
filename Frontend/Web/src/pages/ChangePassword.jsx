@@ -62,7 +62,7 @@ const ChangePassword = () => {
     return (
         <>
             <Header />
-            <Spacer space="mb-20" />
+            <Spacer space="mb-36 md:mb-28" />
 
             <div className="min-h-[85vh] bg-linear-to-b from-gray-50 to-white py-10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 pointer-events-none" />

@@ -12,7 +12,7 @@ plugins: [react(), tailwindcss()],
     // open: true,
     proxy: {
       '/api': {
-        target: 'https//localhost:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },

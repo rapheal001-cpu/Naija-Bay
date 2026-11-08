@@ -10,8 +10,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import User
-from core.models import Category, City, State, SubCategory
-from products.models import Product, ProductImage, ProductReport
+from core.models import AttributeDefinition, AttributeOption, Category, City, State, SubCategory
+from products.models import Product, ProductAttribute, ProductImage, ProductReport
 
 
 PNG_BYTES = base64.b64decode(
@@ -403,3 +403,312 @@ class ProductImageTests(ProductAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ProductImage.objects.filter(product=product).count(), 1)
+
+
+class ProductAttributeAPITestCase(ProductAPITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.make = AttributeDefinition.objects.create(
+            category=cls.category, name="Make", label="Make", data_type="select", required=True,
+            filterable=True, sort_order=1,
+        )
+        AttributeOption.objects.create(definition=cls.make, value="apple", label="Apple")
+        AttributeOption.objects.create(definition=cls.make, value="samsung", label="Samsung")
+        cls.year = AttributeDefinition.objects.create(
+            category=cls.category, sub_category=cls.sub_category, name="Year", label="Year",
+            data_type="number", min_value=1990, max_value=2026, filterable=True, sort_order=2,
+        )
+        cls.storage = AttributeDefinition.objects.create(
+            category=cls.category, name="Storage", label="Storage", data_type="select", sort_order=3,
+        )
+        for value in ("64gb", "128gb"):
+            AttributeOption.objects.create(definition=cls.storage, value=value, label=value.upper())
+
+    def _payload(self, **extra):
+        payload = {
+            "product_name": "Apple iPhone 13",
+            "description": "Clean used phone with box and charger included.",
+            "price": "350000.00",
+            "category": "phones_tablets",
+            "sub_category": "mobile_phones",
+            "condition": "used",
+            "color": "#111111",
+            "quantity": 1,
+            "state": "lagos",
+            "city": "ikeja",
+            "contact_methods": ["whatsapp"],
+            "contact_number": "08012345678",
+        }
+        payload.update(extra)
+        return payload
+
+
+class AttributeDefinitionEndpointTests(ProductAttributeAPITestCase):
+    def test_definitions_for_category(self):
+        response = self.client.get(reverse("attribute-definitions"), {"category": "phones-tablets"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        slugs = {d["slug"] for d in response.data}
+        self.assertEqual(slugs, {"make", "storage"})
+        make = next(d for d in response.data if d["slug"] == "make")
+        self.assertEqual(make["data_type"], "select")
+        self.assertEqual({o["value"] for o in make["options"]}, {"apple", "samsung"})
+
+    def test_definitions_include_subcategory_scope(self):
+        response = self.client.get(
+            reverse("attribute-definitions"),
+            {"category": "phones-tablets", "sub_category": "mobile-phones"},
+        )
+        slugs = {d["slug"] for d in response.data}
+        self.assertEqual(slugs, {"make", "storage", "year"})
+
+    def test_definitions_unknown_category_returns_empty(self):
+        response = self.client.get(reverse("attribute-definitions"), {"category": "nope"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+
+class ProductAttributeWriteTests(ProductAttributeAPITestCase):
+    def test_create_with_valid_attributes(self):
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product"),
+            self._payload(attributes={"make": "apple", "year": 2021, "storage": "128gb"}),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        product = Product.objects.get(product_slug=response.data["product_slug"])
+        self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 3)
+        year = ProductAttribute.objects.get(product=product, definition=self.year)
+        self.assertEqual(year.value_number, Decimal("2021"))
+        returned = {a["slug"]: a["value"] for a in response.data["attributes"]}
+        self.assertEqual(returned["make"], "apple")
+        self.assertEqual(returned["year"], 2021.0)
+
+    def test_create_rejects_invalid_select_option(self):
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product"), self._payload(attributes={"make": "blackberry"}), format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_create_rejects_wrong_data_type(self):
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product"), self._payload(attributes={"year": "not-a-number"}), format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_create_rejects_missing_required_attribute(self):
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product"), self._payload(attributes={"storage": "64gb"}), format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("make", response.data)
+
+    def test_create_rejects_unknown_attribute(self):
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product"), self._payload(attributes={"make": "apple", "bogus": 1}), format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("bogus", response.data)
+
+    def test_create_without_attributes_keeps_legacy_compatibility(self):
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(reverse("create-product"), self._payload(), format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        product = Product.objects.get(product_slug=response.data["product_slug"])
+        self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 0)
+        self.assertEqual(response.data["attributes"], [])
+
+    def test_update_attributes(self):
+        product = make_product(self.seller)
+        self.client.force_authenticate(self.seller)
+        url = reverse("product-detail", kwargs={"product_slug": product.product_slug})
+
+        response = self.client.patch(url, {"attributes": {"make": "samsung", "year": 2020}}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 2)
+
+        # Re-submit a changed value; explicit null clears the attribute.
+        response = self.client.patch(url, {"attributes": {"make": "apple", "year": None}}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 1)
+        make = ProductAttribute.objects.get(product=product, definition=self.make)
+        self.assertEqual(make.value_text, "apple")
+
+    def test_update_without_attributes_leaves_values_untouched(self):
+        product = make_product(self.seller)
+        ProductAttribute.objects.create(
+            product=product, definition=self.make, value_text="apple"
+        )
+        self.client.force_authenticate(self.seller)
+        response = self.client.patch(
+            reverse("product-detail", kwargs={"product_slug": product.product_slug}),
+            {"negotiable": False},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 1)
+
+
+class ProductAttributeReadTests(ProductAttributeAPITestCase):
+    def test_attributes_returned_on_detail_and_list(self):
+        product = make_product(self.seller)
+        ProductAttribute.objects.create(product=product, definition=self.year, value_number=Decimal("2019"))
+        ProductAttribute.objects.create(product=product, definition=self.make, value_text="apple")
+
+        detail = self.client.get(
+            reverse("product-detail", kwargs={"product_slug": product.product_slug})
+        )
+        values = {a["slug"]: a["value"] for a in detail.data["attributes"]}
+        self.assertEqual(values, {"make": "apple", "year": 2019.0})
+
+        listing = self.client.get(reverse("products-list"))
+        first = listing.data["results"][-1]
+        self.assertEqual({a["slug"] for a in first["attributes"]}, {"make", "year"})
+
+
+class ProductAttributeFilterTests(ProductAttributeAPITestCase):
+    def _seed_products(self, price1="600000.00", price2="100000.00"):
+        p1 = make_product(self.seller, product_name="iPhone 13", price=Decimal(price1))
+        ProductAttribute.objects.create(product=p1, definition=self.make, value_text="apple")
+        ProductAttribute.objects.create(product=p1, definition=self.year, value_number=Decimal("2021"))
+        p2 = make_product(self.seller, product_name="Galaxy S22", price=Decimal(price2))
+        ProductAttribute.objects.create(product=p2, definition=self.make, value_text="samsung")
+        ProductAttribute.objects.create(product=p2, definition=self.year, value_number=Decimal("2022"))
+        make_product(self.seller, product_name="Plain Listing")
+        return p1, p2
+
+    def test_exact_select_filter(self):
+        self._seed_products()
+        response = self.client.get(reverse("products-list"), {"attr_make": "apple"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["product_name"], "iPhone 13")
+
+    def test_number_range_filter(self):
+        self._seed_products()
+        response = self.client.get(
+            reverse("products-list"), {"attr_year_min": "2022", "attr_year_max": "2025"}
+        )
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["product_name"], "Galaxy S22")
+
+    def test_unknown_attribute_param_is_ignored(self):
+        self._seed_products()
+        response = self.client.get(reverse("products-list"), {"attr_does_not_exist": "x"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 3)
+
+    def test_non_filterable_definition_is_ignored(self):
+        self.storage.filterable = False
+        self.storage.save(update_fields=["filterable"])
+        self._seed_products()
+        response = self.client.get(reverse("products-list"), {"attr_storage": "128gb"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 3)
+
+    def test_in_filter(self):
+        self._seed_products()
+        response = self.client.get(reverse("products-list"), {"attr_make__in": "apple,samsung"})
+        self.assertEqual(response.data["count"], 2)
+
+    def test_invalid_number_returns_400(self):
+        self._seed_products()
+        response = self.client.get(reverse("products-list"), {"attr_year_min": "abc"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_combines_with_category_filter(self):
+        self._seed_products()
+        response = self.client.get(
+            reverse("products-list"),
+            {"category": "phones-tablets", "attr_make": "samsung", "condition": "used"},
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_sort_still_applies_after_attribute_filter(self):
+        self._seed_products()
+        response = self.client.get(
+            reverse("products-list"), {"attr_make__in": "apple,samsung", "sort": "price_asc"}
+        )
+        names = [p["product_name"] for p in response.data["results"]]
+        self.assertEqual(names, ["Galaxy S22", "iPhone 13"])
+
+
+class ProductAttributeFacetTests(ProductAttributeAPITestCase):
+    def test_facets_return_option_counts(self):
+        p1 = make_product(self.seller, product_name="iPhone 13")
+        ProductAttribute.objects.create(product=p1, definition=self.make, value_text="apple")
+        p2 = make_product(self.seller, product_name="Galaxy S22")
+        ProductAttribute.objects.create(product=p2, definition=self.make, value_text="samsung")
+        make_product(self.seller, product_name="Plain Listing")
+
+        response = self.client.get(
+            reverse("products-list"), {"facets": "1", "category": "phones-tablets"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("facets", response.data)
+        self.assertEqual(response.data["facets"]["make"]["apple"], 1)
+        self.assertEqual(response.data["facets"]["make"]["samsung"], 1)
+
+    def test_facets_absent_without_flag(self):
+        make_product(self.seller)
+        response = self.client.get(reverse("products-list"))
+        self.assertNotIn("facets", response.data)
+
+    def test_facets_respect_active_filters(self):
+        p1 = make_product(self.seller, product_name="Expensive Phone", price=Decimal("900000.00"))
+        ProductAttribute.objects.create(product=p1, definition=self.make, value_text="apple")
+        p2 = make_product(self.seller, product_name="Cheap Phone", price=Decimal("50000.00"))
+        ProductAttribute.objects.create(product=p2, definition=self.make, value_text="apple")
+
+        response = self.client.get(
+            reverse("products-list"),
+            {"facets": "1", "category": "phones-tablets", "max_price": "600000"},
+        )
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["facets"]["make"]["apple"], 1)
+
+    def test_facets_exclude_own_attribute_filter(self):
+        p1 = make_product(self.seller, product_name="iPhone 13")
+        ProductAttribute.objects.create(product=p1, definition=self.make, value_text="apple")
+        ProductAttribute.objects.create(product=p1, definition=self.year, value_number=Decimal("2021"))
+        p2 = make_product(self.seller, product_name="Galaxy S22")
+        ProductAttribute.objects.create(product=p2, definition=self.make, value_text="samsung")
+        ProductAttribute.objects.create(product=p2, definition=self.year, value_number=Decimal("2022"))
+
+        # Filtering by make=apple narrows the RESULT set to 1, but the make
+        # facet itself must still report samsung (its own filter excluded).
+        response = self.client.get(
+            reverse("products-list"),
+            {"facets": "1", "category": "phones-tablets", "attr_make": "apple"},
+        )
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["facets"]["make"]["apple"], 1)
+        self.assertEqual(response.data["facets"]["make"]["samsung"], 1)
+
+    def test_multiselect_facets_and_filter(self):
+        tags = AttributeDefinition.objects.create(
+            category=self.category, name="Tags", label="Tags", data_type="multiselect",
+            filterable=True, sort_order=9,
+        )
+        for value in ("new-arrival", "deal"):
+            AttributeOption.objects.create(definition=tags, value=value, label=value)
+        p1 = make_product(self.seller, product_name="Tagged Phone")
+        ProductAttribute.objects.create(
+            product=p1, definition=tags, value_list=["new-arrival", "deal"]
+        )
+        make_product(self.seller, product_name="Untagged Phone")
+
+        response = self.client.get(
+            reverse("products-list"),
+            {"facets": "1", "category": "phones-tablets", "attr_tags__in": "deal"},
+        )
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["facets"]["tags"]["new-arrival"], 1)
+        self.assertEqual(response.data["facets"]["tags"]["deal"], 1)

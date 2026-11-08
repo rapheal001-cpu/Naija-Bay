@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HiOutlineX } from 'react-icons/hi';
 import { TbAlertTriangleFilled } from 'react-icons/tb';
-import { useReportProductMutation } from '../hooks/UseMutation';
+import { useReportProductMutation } from '../../hooks/UseMutation';
 
 const REASONS = [
     { value: 'scam', label: 'Scam or fraud' },

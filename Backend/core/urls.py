@@ -6,6 +6,7 @@ from .views import (
     delete_notification_view,
     toggle_favorite_product_view,
     toggle_follow_user_view,
+    attribute_definitions_view,
 )
 
 urlpatterns = [
@@ -41,5 +42,11 @@ urlpatterns = [
         "toggle-follow-user/<int:user_id>/",
         toggle_follow_user_view,
         name="toggle-follow-user",
+    ),
+    # Attribute definitions (Sell form specs, per category/subcategory)
+    path(
+        "attributes/",
+        attribute_definitions_view,
+        name="attribute-definitions",
     ),
 ]

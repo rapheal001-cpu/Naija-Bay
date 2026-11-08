@@ -144,6 +144,18 @@ export const fetchCategoriesFn = async () => {
 };
 
 /**
+ * Category-specific attribute definitions (Sell form specs).
+ * @param {{ category?: string, subCategory?: string }} [params]
+ */
+export const fetchAttributeDefinitionsFn = async (params = {}) => {
+    const query = {};
+    if (params.category) query.category = params.category;
+    if (params.subCategory) query.sub_category = params.subCategory;
+    const { data } = await axiosInstance.get('/api/v1/core/attributes/', { params: query });
+    return data;
+};
+
+/**
  * @param {string} productSlug
  */
 export const productDetailFn = async (productSlug) => {
@@ -388,10 +400,12 @@ export const fetchConversationFn = async (conversationId) => {
 };
 
 /**
- * @param {{ conversationId: string|number, page?: number }} params
+ * @param {{ conversationId: string|number, page?: number, pageSize?: number }} params
  */
-export const fetchMessagesFn = async ({ conversationId, page }) => {
-    const params = page ? { page } : {};
+export const fetchMessagesFn = async ({ conversationId, page, pageSize }) => {
+    const params = {};
+    if (page) params.page = page;
+    if (pageSize) params.page_size = pageSize;
     const { data } = await axiosInstance.get(`/api/v1/messaging/${conversationId}/messages/`, { params });
     return data;
 };

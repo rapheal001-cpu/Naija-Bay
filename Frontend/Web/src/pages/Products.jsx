@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo } from 'react';
 import { HiOutlineFunnel, HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2';
 import { HiOutlineSearch, HiOutlineX } from "react-icons/hi";
 import { BiSolidCategory } from 'react-icons/bi';
@@ -8,11 +8,11 @@ import Spacer from '../components/Spacer.jsx';
 import ProductCard from '../components/ProductComponents/ProductCard.jsx';
 import Pagination from '../components/Pagination.jsx';
 import SkeletonProductCard from '../skeletons/SkeletonProductCard.jsx';
-import { useFetchCategories, useFetchProducts } from '../hooks/UseQuery.js';
+import { useFetchAttributeDefinitions, useFetchCategories, useFetchProducts } from '../hooks/UseQuery.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProducts } from '../slice/ProductSlice.js';
 import { setCategories } from '../slice/CategorySlice.js';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { categoryIconsMap, STATE_CHOICES, CONDITION_CHOICES } from '../dummyData.js';
 import Footer from '../components/FooterComponents/Footer.jsx';
 
@@ -52,12 +52,21 @@ const buildFilters = (params) => {
         if (params.get(key) === 'true') filters[key] = true;
     });
 
+    // Dynamic attribute filters (attr_<slug>, attr_<slug>_min/_max, attr_<slug>__in)
+    for (const [key, value] of params.entries()) {
+        if (key.startsWith('attr_') && value) filters[key] = value;
+    }
+
     return filters;
 };
 
 
 const Products = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const routeParams = useParams();
+    const routeCategory = routeParams.category || '';
+    const routeSubCategory = routeParams.subCategory || '';
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
@@ -65,6 +74,14 @@ const Products = () => {
 
     const queryString = searchParams.toString();
     const filters = useMemo(() => buildFilters(new URLSearchParams(queryString)), [queryString]);
+
+    const attrFilterValues = useMemo(() => {
+        const values = {};
+        for (const [key, value] of new URLSearchParams(queryString).entries()) {
+            if (key.startsWith('attr_') && value) values[key] = value;
+        }
+        return values;
+    }, [queryString]);
 
     const [draft, setDraft] = useState({
         condition: filters.condition || '',
@@ -76,18 +93,42 @@ const Products = () => {
         verified: Boolean(filters.verified_seller),
         negotiable: Boolean(filters.negotiable),
         discounted: Boolean(filters.discounted),
+        attr: attrFilterValues,
     });
 
     const searchQuery = filters.search || '';
-    const activeCategory = filters.category || '';
-    const activeSubCategory = filters.sub_category || '';
+    // SEO path params (`/:category`, `/:category/:subCategory`) win over query params.
+    const activeCategory = routeCategory || filters.category || '';
+    const activeSubCategory = routeSubCategory || filters.sub_category || '';
     const activeSort = filters.sort || '';
     const page = filters.page || 1;
 
     const categories = useSelector((state) => state.categories.categories);
 
-    const fetchProducts = useFetchProducts(filters);
+    // SEO path params flow into the API query alongside the URL filters.
+    const effectiveFilters = useMemo(
+        () => ({
+            ...filters,
+            ...(activeCategory ? { category: activeCategory } : {}),
+            ...(activeSubCategory ? { sub_category: activeSubCategory } : {}),
+            facets: '1',
+        }),
+        [filters, activeCategory, activeSubCategory]
+    );
+
+    const fetchProducts = useFetchProducts(effectiveFilters);
     const fetchCategories = useFetchCategories();
+
+    // Category-specific filter definitions for the active scope
+    const definitionsQuery = useFetchAttributeDefinitions(activeCategory || undefined, activeSubCategory || undefined);
+    const filterDefinitions = useMemo(
+        () => (definitionsQuery.data || []).filter((d) => d.filterable),
+        [definitionsQuery.data]
+    );
+    const definitionBySlug = useMemo(
+        () => Object.fromEntries(filterDefinitions.map((d) => [d.slug, d])),
+        [filterDefinitions]
+    );
 
     // Keep local inputs in sync when the URL changes (back button, chip removal).
     useEffect(() => {
@@ -102,6 +143,7 @@ const Products = () => {
             verified: Boolean(filters.verified_seller),
             negotiable: Boolean(filters.negotiable),
             discounted: Boolean(filters.discounted),
+            attr: attrFilterValues,
         });
     }, [
         searchQuery,
@@ -114,6 +156,7 @@ const Products = () => {
         filters.verified_seller,
         filters.negotiable,
         filters.discounted,
+        attrFilterValues,
     ]);
 
     useEffect(() => {
@@ -168,15 +211,40 @@ const Products = () => {
         updateParams({ search: searchInput.trim() });
     };
 
+    // Category and page filters live in the SEO path (`/:category[/:subCategory]`);
+    // search/state/price filters stay in the query string.
+    const navigateToBrowse = (path) => {
+        const keep = new URLSearchParams(searchParams);
+        keep.delete('category');
+        keep.delete('sub_category');
+        keep.delete('page');
+        const qs = keep.toString();
+        navigate(qs ? `${path}?${qs}` : path);
+    };
+
     const handleCategoryClick = (slug) => {
-        updateParams({
-            category: activeCategory === slug ? '' : slug,
-            sub_category: '',
-        });
+        if (!slug || activeCategory === slug) {
+            navigateToBrowse('/products');
+        } else {
+            navigateToBrowse(`/${slug}`);
+        }
+    };
+
+    const handleSubCategoryClick = (parentSlug, subSlug) => {
+        if (subSlug) navigateToBrowse(`/${parentSlug}/${subSlug}`);
+        else navigateToBrowse(`/${parentSlug}`);
     };
 
     const applyFilters = (e) => {
         e.preventDefault();
+        // Attribute filter params live alongside the classic ones in the query string.
+        const attrUpdates = {};
+        for (const key of Object.keys(searchParams).filter((k) => k.startsWith('attr_'))) {
+            attrUpdates[key] = '';
+        }
+        for (const [key, value] of Object.entries(draft.attr || {})) {
+            if (value !== '' && value !== undefined && value !== null) attrUpdates[key] = value;
+        }
         updateParams({
             condition: draft.condition,
             state: draft.state,
@@ -187,6 +255,7 @@ const Products = () => {
             verified_seller: draft.verified,
             negotiable: draft.negotiable,
             discounted: draft.discounted,
+            ...attrUpdates,
         });
     };
 
@@ -195,15 +264,24 @@ const Products = () => {
         if (filters.search) keep.set('search', filters.search);
         if (filters.category) keep.set('category', filters.category);
         if (filters.sub_category) keep.set('sub_category', filters.sub_category);
+        for (const [key, value] of Object.entries(attrFilterValues)) {
+            keep.set(key, value);
+        }
         setSearchParams(keep);
     };
 
     const clearAll = () => {
-        setSearchParams(new URLSearchParams());
         setSearchInput('');
+        navigateToBrowse('/products');
     };
 
-    const removeParam = (key) => updateParams({ [key]: '' });
+    const removeParam = (key) => {
+        if (key === 'category' || key === 'sub_category') {
+            navigateToBrowse(activeSubCategory ? `/${activeCategory}` : '/products');
+            return;
+        }
+        updateParams({ [key]: '' });
+    };
 
     const handlePageChange = (nextPage) => {
         const newParams = new URLSearchParams(searchParams);
@@ -219,14 +297,14 @@ const Products = () => {
     const results = fetchProducts.data?.results || [];
     const totalCount = fetchProducts.data?.count ?? 0;
     const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-    const activeFilterCount = FILTER_PARAM_KEYS.filter((key) => filters[key]).length;
+    const activeFilterCount = FILTER_PARAM_KEYS.filter((key) => filters[key]).length + Object.keys(attrFilterValues).length;
 
     const stateLabel = (value) => STATE_CHOICES.find((s) => s.value === value)?.label || value?.replace(/[-_]/g, ' ');
 
     return (
         <>
             <Header />
-            <Spacer space="mb-20" />
+            <Spacer space="mb-36 md:mb-28" />
 
             <div className="min-h-screen bg-linear-to-b from-gray-50 to-white pb-16">
                 {/* Search Hero */}
@@ -352,6 +430,39 @@ const Products = () => {
                         <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-linear-to-l from-white to-transparent z-10" />
                     </div>
 
+                    {/* Subcategory chips for the active category */}
+                    {activeCategory && categories.find((c) => c.slug === activeCategory)?.sub_categories?.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto scroll-smooth pb-2 mb-4 scrollbar-hide" role="group" aria-label="Subcategories">
+                            <button
+                                type="button"
+                                onClick={() => handleSubCategoryClick(activeCategory, '')}
+                                aria-pressed={!activeSubCategory}
+                                className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-all ${
+                                    !activeSubCategory
+                                        ? 'border-brand bg-brand text-white'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-brand/40 hover:text-brand'
+                                }`}
+                            >
+                                All in {categories.find((c) => c.slug === activeCategory)?.name}
+                            </button>
+                            {categories.find((c) => c.slug === activeCategory).sub_categories.map((sub) => (
+                                <button
+                                    key={sub.slug}
+                                    type="button"
+                                    onClick={() => handleSubCategoryClick(activeCategory, sub.slug)}
+                                    aria-pressed={activeSubCategory === sub.slug}
+                                    className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold border transition-all ${
+                                        activeSubCategory === sub.slug
+                                            ? 'border-brand bg-brand text-white'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:border-brand/40 hover:text-brand'
+                                    }`}
+                                >
+                                    {sub.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Toolbar: filters toggle + sort */}
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                         <button
@@ -459,6 +570,123 @@ const Products = () => {
                                         className="mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
                                     />
                                 </div>
+
+                                {/* Dynamic category-specific attribute filters */}
+                                {filterDefinitions.map((definition) => {
+                                    const exactKey = `attr_${definition.slug}`;
+                                    const minKey = `attr_${definition.slug}_min`;
+                                    const maxKey = `attr_${definition.slug}_max`;
+                                    const current = draft.attr || {};
+                                    const inputClass = "mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none";
+                                    return (
+                                        <div key={definition.slug}>
+                                            <label htmlFor={`filter_${definition.slug}`} className="text-xs font-bold text-gray-600">
+                                                {definition.label}
+                                            </label>
+                                            {definition.data_type === 'select' && (
+                                                <select
+                                                    id={`filter_${definition.slug}`}
+                                                    value={current[exactKey] || ''}
+                                                    onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [exactKey]: e.target.value } })}
+                                                    className={`${inputClass} appearance-none`}
+                                                >
+                                                    <option value="">Any</option>
+                                                    {(definition.options || []).map((option) => {
+                                                        const count = fetchProducts.data?.facets?.[definition.slug]?.[option.value];
+                                                        return (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}{typeof count === 'number' && count > 0 ? ` (${count.toLocaleString()})` : ''}
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                            )}
+                                            {definition.data_type === 'multiselect' && (
+                                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                                    {(definition.options || []).map((option) => {
+                                                        const active = (current[`attr_${definition.slug}__in`] || '').split(',').includes(option.value);
+                                                        return (
+                                                            <button
+                                                                key={option.value}
+                                                                type="button"
+                                                                aria-pressed={active}
+                                                                onClick={() => {
+                                                                    const selected = new Set((current[`attr_${definition.slug}__in`] || '').split(',').filter(Boolean));
+                                                                    if (selected.has(option.value)) selected.delete(option.value);
+                                                                    else selected.add(option.value);
+                                                                    setDraft({ ...draft, attr: { ...draft.attr, [`attr_${definition.slug}__in`]: [...selected].join(',') } });
+                                                                }}
+                                                                className={`rounded-full border px-3 py-1 text-xs font-bold transition-all ${active ? 'border-brand bg-brand text-white' : 'border-gray-200 text-gray-600 hover:border-brand/40'}`}
+                                                            >
+                                                                {option.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            {definition.data_type === 'boolean' && (
+                                                <label className="mt-1.5 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-600 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={current[exactKey] === 'true'}
+                                                        onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [exactKey]: e.target.checked ? 'true' : '' } })}
+                                                        className="h-4 w-4 rounded border-gray-300 text-brand"
+                                                    />
+                                                    Yes
+                                                </label>
+                                            )}
+                                            {(definition.data_type === 'number' || definition.data_type === 'decimal') && (
+                                                <div className="mt-1.5 flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        aria-label={`${definition.label} minimum`}
+                                                        placeholder={definition.min_value != null ? String(definition.min_value) : 'Min'}
+                                                        value={current[minKey] || ''}
+                                                        onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [minKey]: e.target.value } })}
+                                                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
+                                                    />
+                                                    <span className="text-gray-300">–</span>
+                                                    <input
+                                                        type="number"
+                                                        aria-label={`${definition.label} maximum`}
+                                                        placeholder={definition.max_value != null ? String(definition.max_value) : 'Max'}
+                                                        value={current[maxKey] || ''}
+                                                        onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [maxKey]: e.target.value } })}
+                                                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
+                                                    />
+                                                </div>
+                                            )}
+                                            {definition.data_type === 'date' && (
+                                                <div className="mt-1.5 flex items-center gap-2">
+                                                    <input
+                                                        type="date"
+                                                        aria-label={`${definition.label} from`}
+                                                        value={current[minKey] || ''}
+                                                        onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [minKey]: e.target.value } })}
+                                                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
+                                                    />
+                                                    <span className="text-gray-300">–</span>
+                                                    <input
+                                                        type="date"
+                                                        aria-label={`${definition.label} to`}
+                                                        value={current[maxKey] || ''}
+                                                        onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [maxKey]: e.target.value } })}
+                                                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none"
+                                                    />
+                                                </div>
+                                            )}
+                                            {definition.data_type === 'text' && (
+                                                <input
+                                                    id={`filter_${definition.slug}`}
+                                                    type="text"
+                                                    value={current[exactKey] || ''}
+                                                    onChange={(e) => setDraft({ ...draft, attr: { ...draft.attr, [exactKey]: e.target.value } })}
+                                                    className={inputClass}
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })}
 
                                 <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-x-6 gap-y-2 self-end">
                                     <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
@@ -627,6 +855,21 @@ const Products = () => {
                                     </button>
                                 </span>
                             )}
+
+                                                        {Object.entries(attrFilterValues).map(([key, value]) => {
+                                const slug = key.replace(/^attr_/, '').replace(/_(min|max)$/, '').replace(/__in$/, '');
+                                const definition = definitionBySlug[slug];
+                                const label = definition?.label || slug;
+                                const option = definition?.options?.find((o) => o.value === value);
+                                return (
+                                    <span key={key} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-brand border border-blue-100 text-xs font-bold">
+                                        {label}: {option?.label || value}
+                                        <button onClick={() => updateParams({ [key]: '' })} className="hover:text-gray-900" aria-label={`Remove ${label} filter`}>
+                                            <HiOutlineX size={12} />
+                                        </button>
+                                    </span>
+                                );
+                            })}
 
                             <button
                                 onClick={clearAll}

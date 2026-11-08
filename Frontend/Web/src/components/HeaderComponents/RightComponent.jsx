@@ -6,11 +6,23 @@ import { FaUserAlt, FaShoppingCart, FaPhoneAlt, FaChevronDown, FaChevronUp } fro
 import { RiLogoutCircleRLine } from "react-icons/ri";
 import { FiMenu, FiX } from "react-icons/fi";
 import { useLogoutMutation } from '@/hooks/UseMutation.js';
+import { useFetchUnreadCounts } from '@/hooks/UseQuery.js';
 import { useSelector } from 'react-redux';
+import { HiOutlineChatAlt2, HiOutlineCollection } from 'react-icons/hi';
+
+const Badge = ({ count }) =>
+    count > 0 ? (
+        <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-black text-white">
+            {count > 9 ? '9+' : count}
+        </span>
+    ) : null;
 
 const RightComponent = () => {
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const user = useSelector((state) => state.user.user);
+    const unread = useFetchUnreadCounts(isAuthenticated);
+    const unreadMessages = unread.data?.unread_messages ?? 0;
+    const unreadNotifications = unread.data?.unread_notifications ?? 0;
 
     const [toggleProfile, setToggleProfile] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,9 +60,16 @@ const RightComponent = () => {
 
                 {isAuthenticated ? (
                     <div className="relative flex items-center gap-0.5" ref={menuRef}>
+                        <NavLink to="/messages" className={navLinkClass}>
+                            <HiOutlineChatAlt2 size={18} />
+                            <span>Messages</span>
+                            <Badge count={unreadMessages} />
+                        </NavLink>
+
                         <NavLink to="/notifications" className={navLinkClass}>
                             <GoBellFill size={17} />
                             <span>Notifications</span>
+                            <Badge count={unreadNotifications} />
                         </NavLink>
 
                         <button
@@ -93,6 +112,9 @@ const RightComponent = () => {
                                 <div className="py-1">
                                     <NavLink to="/profile" onClick={() => setToggleProfile(false)} className={dropdownItem}>
                                         <FaUserAlt size={15} className="text-gray-400" /> Profile
+                                    </NavLink>
+                                    <NavLink to="/my-ads" onClick={() => setToggleProfile(false)} className={dropdownItem}>
+                                        <HiOutlineCollection size={15} className="text-gray-400" /> My Ads
                                     </NavLink>
                                     <NavLink to="/sell" onClick={() => setToggleProfile(false)} className={dropdownItem}>
                                         <FaShoppingCart size={15} className="text-gray-400" /> Sell
@@ -186,14 +208,22 @@ const RightComponent = () => {
                                     <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
                                         <FaUserAlt size={15} className="text-gray-400" /> Profile
                                     </NavLink>
+                                    <NavLink to="/my-ads" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
+                                        <HiOutlineCollection size={15} className="text-gray-400" /> My Ads
+                                    </NavLink>
                                     <NavLink to="/sell" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
                                         <FaShoppingCart size={15} className="text-gray-400" /> Sell
                                     </NavLink>
                                 </div>
 
                                 <div className="border-t border-gray-100 py-1">
+                                    <NavLink to="/messages" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
+                                        <HiOutlineChatAlt2 size={15} className="text-gray-400" /> Messages
+                                        {unreadMessages > 0 && <Badge count={unreadMessages} />}
+                                    </NavLink>
                                     <NavLink to="/notifications" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
                                         <GoBellFill size={15} className="text-gray-400" /> Notifications
+                                        {unreadNotifications > 0 && <Badge count={unreadNotifications} />}
                                     </NavLink>
                                 </div>
 

@@ -7,28 +7,30 @@ const Footer = () => {
   const footerLinks = {
     about: [
       { label: 'About NaijaBay', href: '/about' },
-      { label: 'Terms & Conditions', href: '/terms' },
-      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms & Conditions', href: '/about' },
+      { label: 'Privacy Policy', href: '/about' },
     ],
     support: [
-      { label: 'Help Center', href: '/' },
-      { label: 'Report a Product', href: '/' },
+      { label: 'Help Center', href: '/contact' },
+      { label: 'Report a Product', href: '/products' },
     ],
     sell: [
       { label: 'Sell on NaijaBay', href: '/sell' },
-      { label: 'Seller Guidelines', href: '/seller/guidelines' },
+      { label: 'My Ads', href: '/my-ads' },
+      { label: 'Messages', href: '/messages' },
+      { label: 'Seller Guidelines', href: '/about' },
     ],
     categories: [
-      { label: 'Electronics', href: '/products?category=electronics' },
-      { label: 'Fashion', href: '/products?category=fashion' },
-      { label: 'Home & Garden', href: '/products?category=real-estate' },
-      { label: 'Vehicles', href: '/products?category=vehicles' },
-      { label: 'Phones & Tablets', href: '/products?category=phones-tablets' },
+      { label: 'Electronics', href: '/electronics' },
+      { label: 'Fashion', href: '/fashion' },
+      { label: 'Home & Garden', href: '/home-garden' },
+      { label: 'Vehicles', href: '/vehicles' },
+      { label: 'Phones & Tablets', href: '/phones-tablets' },
     ],
   };
 
   return (
-    <footer className="bg-brand text-gray-300">
+    <footer className="bg-brand text-gray-300 pb-20 lg:pb-0">
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
@@ -154,8 +156,8 @@ const Footer = () => {
               © {currentYear} NaijaBay. All rights reserved.
             </p>
             <div className="flex space-x-6 text-sm text-white">
-              <Link to="/terms" className="hover:font-semibold transition-transform">Terms</Link>
-              <Link to="/privacy" className="hover:font-semibold transition-transform">Privacy</Link>
+              <Link to="/about" className="hover:font-semibold transition-transform">Terms</Link>
+              <Link to="/about" className="hover:font-semibold transition-transform">Privacy</Link>
             </div>
           </div>
         </div>

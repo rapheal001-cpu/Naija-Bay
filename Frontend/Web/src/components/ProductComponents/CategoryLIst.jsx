@@ -51,10 +51,15 @@ const CategoryList = () => {
 
     const handleSubCategory = (sub_category_slug) => {
         navigate(
-            sub_category_slug
-                ? `/products?sub_category=${encodeURIComponent(sub_category_slug)}`
+            selectedCategory && sub_category_slug
+                ? `/${selectedCategory.slug}/${encodeURIComponent(sub_category_slug)}`
                 : '/products'
         );
+        setOpenCategory(false);
+    };
+
+    const handleViewAll = () => {
+        navigate(selectedCategory ? `/${selectedCategory.slug}` : '/products');
         setOpenCategory(false);
     };
 
@@ -164,6 +169,13 @@ const CategoryList = () => {
 
                         {/* Subcategory Grid */}
                         <div className="max-h-[60vh] overflow-y-auto p-5">
+                            <button
+                                type="button"
+                                onClick={handleViewAll}
+                                className="mb-4 w-full rounded-xl border border-brand/30 bg-brand/5 px-4 py-3 text-sm font-bold text-brand transition-colors hover:bg-brand/10"
+                            >
+                                View all in {selectedCategory?.name}
+                            </button>
                             {sub_categories.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-14 text-gray-400 gap-2">
                                     <BiSolidCategory size={28} className="text-gray-300" />

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from .models import State, City, Category, SubCategory
+from .models import State, City, Category, SubCategory, AttributeDefinition, AttributeOption
 
 # =============================================================================
 # STATE ADMIN
@@ -55,4 +55,25 @@ class SubCategoryAdmin(admin.ModelAdmin):
     search_fields = ("name", "slug", "category__name")
     readonly_fields = ("slug", "created_at")
     autocomplete_fields = ("category",)
+
+
+# =============================================================================
+# ATTRIBUTE DEFINITION ADMIN
+# =============================================================================
+
+
+class AttributeOptionInline(admin.TabularInline):
+    model = AttributeOption
+    extra = 0
+    list_display = ("value", "label", "sort_order")
+
+
+@admin.register(AttributeDefinition)
+class AttributeDefinitionAdmin(admin.ModelAdmin):
+    list_display = ("label", "slug", "category", "sub_category", "data_type", "required", "filterable")
+    list_filter = ("category", "data_type", "required", "filterable")
+    search_fields = ("name", "slug", "label")
+    readonly_fields = ("slug", "created_at", "updated_at")
+    autocomplete_fields = ("category", "sub_category")
+    inlines = [AttributeOptionInline]
     date_hierarchy = "created_at"

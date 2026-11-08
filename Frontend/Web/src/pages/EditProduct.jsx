@@ -50,7 +50,7 @@ const EditProduct = () => {
         return (
             <>
                 <Header />
-                <Spacer space={'mb-20'} />
+                <Spacer space={'mb-36 md:mb-28'} />
                 <div className="min-h-screen bg-linear-to-b from-gray-50 to-white flex items-center justify-center">
                     <div className="flex flex-col items-center gap-3">
                         <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
@@ -64,7 +64,7 @@ const EditProduct = () => {
     return (
         <>
             <Header />
-            <Spacer space={'mb-20'} />
+            <Spacer space={'mb-36 md:mb-28'} />
 
             <div className="min-h-screen bg-linear-to-b from-gray-50 to-white py-10 sm:py-14 relative overflow-hidden">
                 {/* Decorative background */}

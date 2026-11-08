@@ -3,8 +3,13 @@ from django.db import models
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from accounts.models import User
-from core.models import Category, SubCategory, State, City
-from .models import Product, ProductImage, ProductReport, ProductRating
+import datetime
+from decimal import Decimal
+from django.db import transaction
+from django.db.models import Q
+
+from core.models import AttributeDefinition, Category, City, State, SubCategory
+from .models import Product, ProductAttribute, ProductImage, ProductReport, ProductRating
 from phonenumber_field.serializerfields import PhoneNumberField
 from NaijaBay.utils import (
     CONTACT_METHOD_CHOICES,
@@ -76,6 +81,13 @@ class ProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField(read_only=True)
     total_ratings = serializers.SerializerMethodField(read_only=True)
     user_rating = serializers.SerializerMethodField(read_only=True)
+    # Write: {'year': 2019, 'make': 'toyota'} — validated against the
+    # category's AttributeDefinitions. Read: list of saved values.
+    attributes = serializers.DictField(
+        required=False,
+        allow_null=True,
+        help_text="Category-specific specifications keyed by attribute slug (e.g. {'year': 2019, 'make': 'toyota'}). Values are validated against GET /api/v1/core/attributes/?category=...&sub_category=.... Sending null clears an attribute on update.",
+    )
 
     class Meta:
         model = Product
@@ -120,6 +132,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "is_favorited",
+            "attributes",
         ]
         read_only_fields = (
             "product_user",
@@ -196,6 +209,201 @@ class ProductSerializer(serializers.ModelSerializer):
                 request.build_absolute_uri(img.image.url) for img in obj.images.all()
             ]
         return [img.image.url for img in obj.images.all()]
+
+    # -------------------------------------------------------------------------
+    # Category-specific attributes (write + read)
+    # -------------------------------------------------------------------------
+
+    def _definitions_scope(self, category_value, sub_category_value):
+        """AttributeDefinitions for a category (category-wide + subcategory)."""
+        category = None
+        if category_value:
+            normalized = _normalize(category_value).replace("_", "-")
+            category = Category.objects.filter(slug=normalized).first()
+        if category is None:
+            return [], None, None
+
+        sub_category = None
+        if sub_category_value:
+            normalized = _normalize(sub_category_value).replace("_", "-")
+            sub_category = SubCategory.objects.filter(category=category, slug=normalized).first()
+
+        qs = (
+            AttributeDefinition.objects.filter(category=category)
+            .prefetch_related("options")
+        )
+        if sub_category is not None:
+            qs = qs.filter(Q(sub_category__isnull=True) | Q(sub_category=sub_category))
+        else:
+            qs = qs.filter(sub_category__isnull=True)
+        return list(qs.order_by("sort_order", "name")), category, sub_category
+
+    def _coerce_attribute_value(self, definition, raw):
+        """Validate one submitted value against its definition.
+
+        Returns ``{"value_text": ..., "value_number": ..., ...}`` kwargs, or raises
+        a ValidationError keyed by the attribute slug.
+        """
+        dtype = definition.data_type
+
+        if dtype in ("number", "decimal"):
+            if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+                raise serializers.ValidationError(f"'{definition.label}' must be a number.")
+            try:
+                number = Decimal(str(raw))
+            except Exception:
+                raise serializers.ValidationError(f"'{definition.label}' must be a number.")
+            if definition.min_value is not None and number < definition.min_value:
+                raise serializers.ValidationError(f"'{definition.label}' is below the minimum of {definition.min_value:g}.")
+            if definition.max_value is not None and number > definition.max_value:
+                raise serializers.ValidationError(f"'{definition.label}' is above the maximum of {definition.max_value:g}.")
+            return {"value_text": None, "value_number": number, "value_bool": None, "value_date": None, "value_list": None}
+
+        if dtype == "boolean":
+            if isinstance(raw, bool):
+                value = raw
+            elif isinstance(raw, str) and raw.lower() in ("true", "false"):
+                value = raw.lower() == "true"
+            else:
+                raise serializers.ValidationError(f"'{definition.label}' must be true or false.")
+            return {"value_text": None, "value_number": None, "value_bool": value, "value_date": None, "value_list": None}
+
+        if dtype == "date":
+            if not isinstance(raw, str):
+                raise serializers.ValidationError(f"'{definition.label}' must be an ISO date (YYYY-MM-DD).")
+            try:
+                value = datetime.date.fromisoformat(raw)
+            except ValueError:
+                raise serializers.ValidationError(f"'{definition.label}' must be an ISO date (YYYY-MM-DD).")
+            return {"value_text": None, "value_number": None, "value_bool": None, "value_date": value, "value_list": None}
+
+        if dtype in ("select", "multiselect"):
+            allowed = set(definition.options.values_list("value", flat=True))
+            if dtype == "select":
+                if raw not in allowed:
+                    raise serializers.ValidationError(
+                        f"'{definition.label}' must be one of: {', '.join(sorted(allowed)) or '—'}."
+                    )
+                return {"value_text": raw, "value_number": None, "value_bool": None, "value_date": None, "value_list": None}
+            if not isinstance(raw, list):
+                raise serializers.ValidationError(f"'{definition.label}' must be a list of options.")
+            invalid = [v for v in raw if v not in allowed]
+            if invalid:
+                raise serializers.ValidationError(
+                    f"'{definition.label}' has invalid option(s): {', '.join(str(v) for v in invalid)}."
+                )
+            return {"value_text": None, "value_number": None, "value_bool": None, "value_date": None, "value_list": list(raw)}
+
+        # text
+        text = str(raw).strip()
+        if not text:
+            raise serializers.ValidationError(f"'{definition.label}' cannot be empty.")
+        return {"value_text": text, "value_number": None, "value_bool": None, "value_date": None, "value_list": None}
+
+    def _validate_attributes(self, attrs):
+        """Validate the optional ``attributes`` dict against the category scope."""
+        attributes = attrs.get("attributes")
+        if attributes is None:
+            return attrs  # legacy payloads stay untouched
+
+        category = attrs.get("category", getattr(self.instance, "category", ""))
+        sub_category = attrs.get("sub_category", getattr(self.instance, "sub_category", ""))
+        definitions, _, _ = self._definitions_scope(category, sub_category)
+        by_slug = {d.slug: d for d in definitions}
+
+        errors = {}
+        for slug, raw in attributes.items():
+            if raw is None:
+                continue  # explicit clear (update path handles the delete)
+            definition = by_slug.get(slug)
+            if definition is None:
+                errors[slug] = "Unknown attribute for this category."
+                continue
+            try:
+                self._coerce_attribute_value(definition, raw)
+            except serializers.ValidationError as exc:
+                errors[slug] = exc.detail
+
+        # Required definitions must be supplied whenever attributes are posted.
+        for definition in definitions:
+            if definition.required and attributes.get(definition.slug) in (None, "", []):
+                errors[definition.slug] = f"'{definition.label}' is required for this category."
+
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
+    def _save_attributes(self, product, attributes):
+        """Upsert submitted attributes; ``None`` clears an attribute."""
+        if attributes is None:
+            return
+        definitions, _, _ = self._definitions_scope(product.category, product.sub_category)
+        by_slug = {d.slug: d for d in definitions}
+        for slug, raw in attributes.items():
+            if raw is None:
+                ProductAttribute.objects.filter(product=product, definition__slug=slug).delete()
+                continue
+            definition = by_slug[slug]
+            values = self._coerce_attribute_value(definition, raw)
+            ProductAttribute.objects.update_or_create(
+                product=product, definition=definition, defaults=values
+            )
+
+    def _resolve_fk_fields(self, attrs):
+        """Keep the relational FKs in sync with the legacy string fields."""
+        category = attrs.get("category")
+        if category:
+            normalized = _normalize(category).replace("_", "-")
+            cat = Category.objects.filter(slug=normalized).first()
+            if cat:
+                attrs["category_obj"] = cat
+                sub_value = attrs.get("sub_category")
+                if sub_value:
+                    sub = SubCategory.objects.filter(
+                        category=cat, slug=_normalize(sub_value).replace("_", "-")
+                    ).first()
+                    if sub:
+                        attrs["subcategory_obj"] = sub
+        state = attrs.get("state")
+        if state:
+            st = State.objects.filter(slug=str(state).strip().lower()).first()
+            if st:
+                attrs["state_obj"] = st
+                city = attrs.get("city")
+                if city:
+                    city_obj = City.objects.filter(
+                        state=st, slug=_normalize(city).replace("_", "-")
+                    ).first()
+                    if city_obj:
+                        attrs["city_obj"] = city_obj
+        return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        values = getattr(instance, "attribute_values", None)
+        output = []
+        if values is not None:
+            for row in values.select_related("definition") if hasattr(values, "select_related") else values:
+                d = row.definition
+                if d.data_type in ("number", "decimal"):
+                    value = float(row.value_number) if row.value_number is not None else None
+                elif d.data_type == "boolean":
+                    value = row.value_bool
+                elif d.data_type == "date":
+                    value = row.value_date.isoformat() if row.value_date else None
+                elif d.data_type == "multiselect":
+                    value = row.value_list
+                else:
+                    value = row.value_text
+                output.append({
+                    "slug": d.slug,
+                    "label": d.label,
+                    "data_type": d.data_type,
+                    "unit": d.unit,
+                    "value": value,
+                })
+        data["attributes"] = output
+        return data
 
     # -------------------------------------------------------------------------
     # Field validators
@@ -295,6 +503,7 @@ class ProductSerializer(serializers.ModelSerializer):
     # -------------------------------------------------------------------------
 
     def validate(self, attrs):
+        attrs = self._validate_attributes(attrs)
         category = attrs.get("category", getattr(self.instance, 'category', ''))
         sub_category = attrs.get("sub_category", getattr(self.instance, 'sub_category', ''))
 
@@ -347,15 +556,23 @@ class ProductSerializer(serializers.ModelSerializer):
     # Create / Update
     # -------------------------------------------------------------------------
 
+    @transaction.atomic
     def create(self, validated_data):
+        attributes = validated_data.pop("attributes", None)
+        validated_data = self._resolve_fk_fields(validated_data)
         product = Product.objects.create(**validated_data)
+        self._save_attributes(product, attributes)
         return product
 
+    @transaction.atomic
     def update(self, instance, validated_data):
+        attributes = validated_data.pop("attributes", None)
+        validated_data = self._resolve_fk_fields(validated_data)
         for key, value in validated_data.items():
             setattr(instance, key, value)
 
         instance.save()
+        self._save_attributes(instance, attributes)
         return instance
 
 

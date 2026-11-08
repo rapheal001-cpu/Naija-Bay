@@ -14,6 +14,8 @@ import {
     categories, CATEGORY_SUBCATEGORY_MAP, CONDITION_CHOICES,
     CONTACT_METHOD_CHOICES, STATE_CHOICES, STATE_CITY_MAP
 } from "../../dummyData.js";
+import AttributeFields from "./AttributeFields.jsx";
+import { useFetchAttributeDefinitions } from '../../hooks/UseQuery.js';
 import { useUpdateProductMutation } from '../../hooks/UseMutation.js';
 
 
@@ -35,6 +37,7 @@ const buildDefaultValues = (data) => ({
     negotiable: !!data?.negotiable,
     state: data?.state || '',
     city: data?.city || '',
+    attributes: Object.fromEntries((data?.attributes || []).map((a) => [a.slug, a.value])),
     contact_methods: data?.contact_methods || [],
     contact_number: data?.contact_number || '',
     active: data?.active ?? true,
@@ -79,6 +82,10 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
     const selectedCategory = watch('category');
     const subCategories = selectedCategory ? CATEGORY_SUBCATEGORY_MAP[selectedCategory] : [];
+    const selectedSubCategory = watch('sub_category');
+
+    const definitionsQuery = useFetchAttributeDefinitions(selectedCategory, selectedSubCategory);
+    const definitions = definitionsQuery.data || [];
 
     useEffect(() => {
         if (initialData) {
@@ -93,6 +100,11 @@ const EditProductForm = ({ productSlug, initialData }) => {
             setIsSubmitting(true);
             setSubmitError('');
             setServerError([]);
+
+            const attributeValues = data.attributes || {};
+            const attributes = Object.fromEntries(
+                Object.entries(attributeValues).filter(([, v]) => v !== '' && v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0))
+            );
 
             const payload = {
                 product_name: data.product_name,
@@ -110,6 +122,7 @@ const EditProductForm = ({ productSlug, initialData }) => {
                 active: data.active,
                 sold: data.sold,
                 contact_methods: data.contact_methods,
+                ...(definitions.length > 0 || Object.keys(attributes).length > 0 ? { attributes } : {}),
                 ...(needsPhone && data.contact_number ? { contact_number: data.contact_number } : {}),
             };
 
@@ -444,6 +457,14 @@ const EditProductForm = ({ productSlug, initialData }) => {
                 </div>
 
                 <div className="w-full h-px bg-gray-100" />
+
+                {/* Section: Specifications (dynamic, per category) */}
+                {definitions.length > 0 && (
+                    <>
+                        <AttributeFields definitions={definitions} register={register} errors={errors} />
+                        <div className="w-full h-px bg-gray-100" />
+                    </>
+                )}
 
                 {/* Section: Location */}
                 <div className="space-y-5">

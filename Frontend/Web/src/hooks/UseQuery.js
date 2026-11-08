@@ -1,6 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
     fetchCategoriesFn,
+    fetchAttributeDefinitionsFn,
     fetchOtherUserFn,
     fetchFeaturedProductDataFn,
     fetchFlashDealsFn,
@@ -141,6 +142,23 @@ export const useFetchCategories = () => {
         refetchOnWindowFocus: false,
         retry: 1,
         meta: { hookName: 'useFetchCategories' },
+    });
+};
+
+// =============================================================================
+// ATTRIBUTE DEFINITIONS
+// =============================================================================
+
+export const useFetchAttributeDefinitions = (category, subCategory) => {
+    return useQuery({
+        queryKey: ['attribute-definitions', category || '', subCategory || ''],
+        queryFn: () => fetchAttributeDefinitionsFn({ category, subCategory }),
+        enabled: Boolean(category),
+        staleTime: 1000 * 60 * 30,
+        gcTime: 1000 * 60 * 60,
+        refetchOnWindowFocus: false,
+        retry: 1,
+        meta: { hookName: 'useFetchAttributeDefinitions' },
     });
 };
 

@@ -1,9 +1,12 @@
+import datetime
 from datetime import timedelta
 
 from django.db import models, transaction
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
 from rest_framework import status
+from decimal import Decimal
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
     get_object_or_404,
     ListAPIView,
@@ -28,7 +31,7 @@ from .serializers import (
     ProductRatingSerializer,
 )
 from .models import Product, ProductImage, ProductReport, ProductRating
-from core.models import Category
+from core.models import AttributeDefinition, Category
 from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOrReadOnly, IsOwnerOnly
 from payments.services import expire_boosts_if_due
@@ -69,7 +72,7 @@ class ProductsListAPIView(ListAPIView):
             Product.objects.filter(active=True, sold=False)
             .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
             .select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .annotate(
                 _average_rating=Avg("ratings__value"),
                 _total_ratings=Count("ratings", distinct=True),
@@ -77,8 +80,273 @@ class ProductsListAPIView(ListAPIView):
             .order_by("-created_at")
         )
 
+    # ------------------------------------------------------------------
+    # Dynamic attribute filters (Stage 3B)
+    # ------------------------------------------------------------------
+    # Query shapes (all optional, combined with AND):
+    #   attr_<slug>=value              exact match (select/text/number/boolean/date)
+    #   attr_<slug>__in=a,b,c          any-of (select/text; multiselect: contains)
+    #   attr_<slug>_min= / _max=       numeric/date range
+    # Only definitions marked filterable=True are honored; unknown or
+    # non-filterable params are ignored (never a 400 for typos).
+
+    def _attribute_definitions(self):
+        """Filterable definitions for the current request's category scope."""
+        qs = AttributeDefinition.objects.filter(filterable=True)
+        raw_category = self.request.query_params.get("category") or self.request.query_params.get("category_obj")
+        if raw_category:
+            normalized = str(raw_category).strip().lower().replace("_", "-")
+            category = Category.objects.filter(slug=normalized).first()
+            if category:
+                qs = qs.filter(category=category)
+                raw_sub = self.request.query_params.get("sub_category")
+                if raw_sub:
+                    sub_slug = str(raw_sub).strip().lower().replace("_", "-")
+                    qs = qs.filter(
+                        Q(sub_category__isnull=True)
+                        | Q(sub_category__slug=sub_slug, sub_category__category=category)
+                    )
+                else:
+                    qs = qs.filter(sub_category__isnull=True)
+        return qs
+
+    def _parse_number(self, param, raw):
+        try:
+            return Decimal(str(raw))
+        except Exception:
+            raise ValidationError({param: "Must be a number."})
+
+    def _parse_date(self, param, raw):
+        try:
+            return datetime.date.fromisoformat(str(raw))
+        except ValueError:
+            raise ValidationError({param: "Must be an ISO date (YYYY-MM-DD)."})
+
+    def _filter_attributes(self, queryset):
+        params = self.request.query_params
+        attr_params = {
+            key: value
+            for key, value in params.items()
+            if key.startswith("attr_")
+        }
+        if not attr_params:
+            return queryset
+
+        definitions = {
+            f"attr_{d.slug}": d for d in self._attribute_definitions()
+        }
+        # Build lookup including suffixed keys (handled below per definition).
+        base_by_slug = {d.slug: d for d in self._attribute_definitions()}
+
+        for key, raw in attr_params.items():
+            slug = key[len("attr_"):]
+            if slug.endswith("__in"):
+                slug, mode = slug[: -len("__in")], "in"
+            elif slug.endswith("_min"):
+                slug, mode = slug[: -len("_min")], "min"
+            elif slug.endswith("_max"):
+                slug, mode = slug[: -len("_max")], "max"
+            else:
+                mode = "exact"
+
+            definition = base_by_slug.get(slug)
+            if definition is None:
+                continue  # unknown or non-filterable: ignore silently
+
+            join = "attribute_values"
+            typed = {
+                "number": "value_number",
+                "decimal": "value_number",
+                "boolean": "value_bool",
+                "date": "value_date",
+                "select": "value_text",
+                "multiselect": "value_list",
+                "text": "value_text",
+            }[definition.data_type]
+            field = f"{join}__{typed}"
+
+            if mode == "min":
+                if definition.data_type in ("number", "decimal"):
+                    queryset = queryset.filter(**{f"{field}__gte": self._parse_number(key, raw)})
+                elif definition.data_type == "date":
+                    queryset = queryset.filter(**{f"{field}__gte": self._parse_date(key, raw)})
+                else:
+                    continue
+            elif mode == "max":
+                if definition.data_type in ("number", "decimal"):
+                    queryset = queryset.filter(**{f"{field}__lte": self._parse_number(key, raw)})
+                elif definition.data_type == "date":
+                    queryset = queryset.filter(**{f"{field}__lte": self._parse_date(key, raw)})
+                else:
+                    continue
+            elif mode == "in":
+                values = [v.strip() for v in str(raw).split(",") if v.strip()]
+                if definition.data_type == "multiselect":
+                    cond = Q()
+                    for v in values:
+                        cond |= Q(**{f"{field}__icontains": v})
+                    queryset = queryset.filter(cond)
+                elif typed == "value_number":
+                    numbers = [self._parse_number(key, v) for v in values]
+                    queryset = queryset.filter(**{f"{field}__in": numbers})
+                elif typed == "value_bool":
+                    bools = [self._parse_bool(key, v) for v in values]
+                    queryset = queryset.filter(**{f"{field}__in": bools})
+                else:
+                    queryset = queryset.filter(**{f"{field}__in": values})
+            else:  # exact
+                if typed == "value_number":
+                    queryset = queryset.filter(**{field: self._parse_number(key, raw)})
+                elif typed == "value_bool":
+                    queryset = queryset.filter(**{field: self._parse_bool(key, raw)})
+                elif typed == "value_date":
+                    queryset = queryset.filter(**{field: self._parse_date(key, raw)})
+                elif typed == "value_list":
+                    queryset = queryset.filter(**{f"{field}__icontains": str(raw).strip()})
+                else:
+                    queryset = queryset.filter(**{field: str(raw).strip()})
+
+        return queryset.distinct()
+
+    def _parse_bool(self, param, raw):
+        lowered = str(raw).strip().lower()
+        if lowered in ("true", "1", "yes"):
+            return True
+        if lowered in ("false", "0", "no"):
+            return False
+        raise ValidationError({param: "Must be true or false."})
+
+    # ------------------------------------------------------------------
+    # Facet counts (Stage 3C): {slug: {option_value: product_count}}
+    # ------------------------------------------------------------------
+
+    def _apply_attr_param(self, queryset, definition, mode, key, raw):
+        """Apply one attr_* param for one definition; returns queryset."""
+        typed = {
+            "number": "value_number",
+            "decimal": "value_number",
+            "boolean": "value_bool",
+            "date": "value_date",
+            "select": "value_text",
+            "multiselect": "value_list",
+            "text": "value_text",
+        }[definition.data_type]
+        field = f"attribute_values__{typed}"
+
+        if mode == "min":
+            if definition.data_type in ("number", "decimal"):
+                return queryset.filter(**{f"{field}__gte": self._parse_number(key, raw)})
+            if definition.data_type == "date":
+                return queryset.filter(**{f"{field}__gte": self._parse_date(key, raw)})
+            return queryset
+        if mode == "max":
+            if definition.data_type in ("number", "decimal"):
+                return queryset.filter(**{f"{field}__lte": self._parse_number(key, raw)})
+            if definition.data_type == "date":
+                return queryset.filter(**{f"{field}__lte": self._parse_date(key, raw)})
+            return queryset
+        if mode == "in":
+            values = [v.strip() for v in str(raw).split(",") if v.strip()]
+            if definition.data_type == "multiselect":
+                cond = Q()
+                for v in values:
+                    cond |= Q(**{f"{field}__icontains": v})
+                return queryset.filter(cond)
+            if typed == "value_number":
+                return queryset.filter(**{f"{field}__in": [self._parse_number(key, v) for v in values]})
+            if typed == "value_bool":
+                return queryset.filter(**{f"{field}__in": [self._parse_bool(key, v) for v in values]})
+            return queryset.filter(**{f"{field}__in": values})
+
+        # exact
+        if typed == "value_number":
+            return queryset.filter(**{field: self._parse_number(key, raw)})
+        if typed == "value_bool":
+            return queryset.filter(**{field: self._parse_bool(key, raw)})
+        if typed == "value_date":
+            return queryset.filter(**{field: self._parse_date(key, raw)})
+        if typed == "value_list":
+            return queryset.filter(**{f"{field}__icontains": str(raw).strip()})
+        return queryset.filter(**{field: str(raw).strip()})
+
+    def _attr_param_groups(self):
+        """Group attr_* query params by definition slug."""
+        groups = {}
+        for key, value in self.request.query_params.items():
+            if not key.startswith("attr_"):
+                continue
+            slug = key[len("attr_"):]
+            if slug.endswith("__in"):
+                slug, mode = slug[: -len("__in")], "in"
+            elif slug.endswith("_min"):
+                slug, mode = slug[: -len("_min")], "min"
+            elif slug.endswith("_max"):
+                slug, mode = slug[: -len("_max")], "max"
+            else:
+                mode = "exact"
+            groups.setdefault(slug, []).append((mode, key, value))
+        return groups
+
+    def _compute_facets(self, base_queryset):
+        """Per-option tallies for filterable select definitions in scope.
+
+        Standard faceted-search semantics: each definition is counted over
+        the base queryset (filterset filters) plus every attr filter EXCEPT
+        its own, so toggling an option never collapses its own counts.
+        Numbers/dates are excluded — they render as ranges in the UI.
+        """
+        from products.models import ProductAttribute
+
+        groups = self._attr_param_groups()
+        by_slug = {d.slug: d for d in self._attribute_definitions()}
+        facets = {}
+        for slug, definition in by_slug.items():
+            if definition.data_type not in ("select", "multiselect"):
+                continue
+            qs = base_queryset
+            for other_slug, specs in groups.items():
+                if other_slug == slug:
+                    continue
+                other_def = by_slug.get(other_slug)
+                if other_def is None:
+                    continue
+                for mode, key, raw in specs:
+                    qs = self._apply_attr_param(qs, other_def, mode, key, raw)
+            options = definition.options.values_list("value", flat=True)
+            if definition.data_type == "multiselect":
+                counts = {}
+                for option_value in options:
+                    counts[option_value] = ProductAttribute.objects.filter(
+                        product_id__in=qs.values("id"),
+                        definition=definition,
+                        value_list__icontains=option_value,
+                    ).count()
+                facets[slug] = counts
+                continue
+            rows = (
+                ProductAttribute.objects.filter(
+                    product_id__in=qs.values("id"),
+                    definition=definition,
+                    value_text__isnull=False,
+                )
+                .values("value_text")
+                .annotate(n=Count("id"))
+            )
+            counts = {row["value_text"]: row["n"] for row in rows}
+            facets[slug] = {v: counts.get(v, 0) for v in options}
+        return {k: facets[k] for k in sorted(facets)}
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        if getattr(self, "_pending_facets", None) is not None and hasattr(response.data, "keys"):
+            response.data["facets"] = self._pending_facets
+        return response
+
     def filter_queryset(self, queryset):
-        queryset = super().filter_queryset(queryset)
+        base = super().filter_queryset(queryset)
+        if (self.request.query_params.get("facets") or "").lower() in ("1", "true"):
+            self._pending_facets = self._compute_facets(base)
+        queryset = self._filter_attributes(base)
         sort = (self.request.query_params.get("sort") or "").lower()
 
         if sort == "price_asc":
@@ -119,7 +387,7 @@ class FeaturedProductsListAPIView(ListAPIView):
                 sold=False,
             )
             .select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .order_by("-created_at")[:50]
         )
 
@@ -144,7 +412,7 @@ class FlashDealsListAPIView(ListAPIView):
             .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
             .filter(original_price__gt=models.F("price"))
             .select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .annotate(
                 _average_rating=Avg("ratings__value"),
                 _total_ratings=Count("ratings", distinct=True),
@@ -229,7 +497,7 @@ class ProductsDetailAPIView(RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return (
             Product.objects.select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .annotate(
                 _average_rating=Avg("ratings__value"),
                 _total_ratings=Count("ratings", distinct=True),
@@ -343,7 +611,7 @@ class MyProductsListAPIView(ListAPIView):
         queryset = (
             Product.objects.filter(product_user=self.request.user)
             .select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
         )
 
         status_filter = (self.request.query_params.get("status") or "").lower()
@@ -385,7 +653,7 @@ class FavoriteProductsListAPIView(ListAPIView):
         return (
             self.request.user.favorite_products.filter(active=True, sold=False)
             .select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .order_by("-created_at")
         )
 
@@ -406,7 +674,7 @@ class RecentlyViewedProductsListAPIView(ListAPIView):
         return (
             self.request.user.viewed_products.filter(active=True, sold=False)
             .select_related("product_user")
-            .prefetch_related("views", "favorites", "images")
+            .prefetch_related("views", "favorites", "images", "attribute_values__definition")
             .order_by("-created_at")
         )
 

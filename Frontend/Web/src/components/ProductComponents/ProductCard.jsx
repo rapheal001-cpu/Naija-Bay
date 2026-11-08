@@ -5,6 +5,7 @@ import { LuMapPin } from "react-icons/lu";
 import { useSelector } from "react-redux";
 import { useToggleFavoriteMutation } from '../../hooks/UseMutation';
 import { Stars } from './StarRating';
+import { timeAgo } from '../../dummyData.js';
 
 
 const ProductCard = ({ 
@@ -30,6 +31,7 @@ const ProductCard = ({
     delivery_available,
     sold,
     listing_status,
+    created_at,
 }) => {
 
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -199,6 +201,9 @@ const ProductCard = ({
                                 <FaEye size={11} className="text-gray-300" />
                                 {views_count.toLocaleString()}
                             </span>
+                        )}
+                        {created_at && (
+                            <span className="text-[11px] text-gray-400 font-medium">{timeAgo(created_at)}</span>
                         )}
                     </div>
                 </div>

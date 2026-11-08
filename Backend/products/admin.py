@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Product, ProductImage, ProductReport, ProductRating
+from .models import Product, ProductImage, ProductReport, ProductRating, ProductAttribute
+
+
+class ProductAttributeInline(admin.TabularInline):
+    model = ProductAttribute
+    extra = 0
+    autocomplete_fields = ("definition",)
 
 # =============================================================================
 # PRODUCT ADMIN
@@ -56,6 +62,7 @@ class ProductAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     autocomplete_fields = ("product_user",)
     list_select_related = ("product_user",)
+    inlines = [ProductAttributeInline]
 
     # Removed prepopulated_fields because your model's save() already handles
     # slug generation with collision detection. The admin prepopulate would

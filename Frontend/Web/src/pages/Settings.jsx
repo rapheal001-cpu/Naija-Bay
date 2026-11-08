@@ -55,7 +55,7 @@ const Settings = () => {
     return (
         <>
             <Header />
-            <Spacer space="mb-20" />
+            <Spacer space="mb-36 md:mb-28" />
 
             <div className="min-h-[85vh] bg-linear-to-b from-gray-50 to-white py-10">
                 <div className="max-w-2xl mx-auto px-4 sm:px-6">

@@ -55,7 +55,7 @@ const About = () => {
     return (
         <>
             <Header />
-            <Spacer space="mb-20" />
+            <Spacer space="mb-36 md:mb-28" />
 
             <div className="max-w-6xl mx-auto px-4 py-6 pb-16 space-y-16">
                 {/* ── Hero ───────────────────────────────────────── */}

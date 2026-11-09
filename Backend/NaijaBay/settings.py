@@ -129,6 +129,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "axes",
     "allauth",
     "allauth.account",
     "auth_kit",
@@ -143,6 +144,7 @@ SITE_ID = config("SITE_ID", default=1, cast=int)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
@@ -164,7 +166,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "NaijaBay.middleware.OwnerOnlyDjangoAdminMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "axes.middleware.AxesMiddleware",
     "NaijaBay.middleware.TrustedOriginMiddleware",
+    "NaijaBay.middleware.CsrfGuardMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -548,6 +552,20 @@ AUTH_KIT = {
     "JWT_TOKEN_CLAIMS_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
     "JWT_REFRESH_VIEW": "auth_kit.views.jwt.RefreshViewWithCookieSupport",
 }
+
+
+# =============================================================================
+# DJANGO-AXES (login brute-force lockout, S4)
+# =============================================================================
+# For JSON APIs (DRF Auth Kit) the login body is JSON, so axes can only read
+# the client IP (AXES_USE_CLIENT_IP_GET_CLIENT? no — see get_client_username
+# falling back to IP). Thresholds below are per-IP + per-username when a
+# username is extractable. Cool-off is time-based, not a permanent lockout.
+# Production tuning: see final report.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=30)
+AXES_LOCK_OUT_AT_FAILURE = False
+AXES_COOLOFF_MODE = "immediately"
 
 
 # =============================================================================

@@ -658,9 +658,25 @@ class ProductImageSerializer(serializers.ModelSerializer):
             image_key.strip(), getattr(self.context.get("request"), "user", None).pk if self.context.get("request") else None
         ):
             raise serializers.ValidationError({"image_key": "This file was not uploaded by you."})
+        if image_key:
+            # Direct-upload keys must resolve to a real object: existence is
+            # confirmed against storage (owner-prefixed keys cannot be forged
+            # into someone else's files, but a typo'd key would 404 anyway).
+            from django.core.files.storage import default_storage
+
+            try:
+                exists = default_storage.exists(image_key.strip())
+            except Exception:
+                exists = False
+            if not exists:
+                raise serializers.ValidationError(
+                    {"image_key": "The uploaded file was not found. Please upload it again."}
+                )
         return attrs
 
     def validate_image(self, image):
+        from PIL import Image, UnidentifiedImageError
+
         name = image.name.lower()
         size = image.size
 
@@ -674,6 +690,29 @@ class ProductImageSerializer(serializers.ModelSerializer):
             mb = size / (1024 * 1024)
             raise serializers.ValidationError(
                 f"Max image size is 2MB. This file is {mb:.1f}MB"
+            )
+
+        # Sniff the actual bytes (extension/MIME are client-declared).
+        try:
+            image.seek(0)
+            with Image.open(image) as sniffed:
+                sniffed.verify()
+            image.seek(0)
+            with Image.open(image) as reopened:
+                format_name = (reopened.format or "").lower()
+                width, height = reopened.size
+        except (UnidentifiedImageError, OSError, ValueError) as exc:
+            raise serializers.ValidationError(
+                "The uploaded file is not a valid image."
+            ) from exc
+
+        if format_name not in ("jpeg", "png"):
+            raise serializers.ValidationError(
+                "Image content looks invalid. Only JPG and PNG are accepted."
+            )
+        if width < 1 or height < 1 or width > 8192 or height > 8192:
+            raise serializers.ValidationError(
+                "Invalid image dimensions (max 8192×8192 px)."
             )
 
         return image

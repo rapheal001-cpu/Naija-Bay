@@ -29,14 +29,18 @@ const ReportModal = ({ open, onClose, productSlug, productName = 'this listing' 
         (message) => setError(message)
     );
 
-    useEffect(() => {
+    // Reset the form when the modal (re)opens — derived during render,
+    // the recommended pattern for prop-driven state resets.
+    const [prevOpen, setPrevOpen] = useState(open);
+    if (prevOpen !== open) {
+        setPrevOpen(open);
         if (open) {
             setReason('');
             setDetails('');
             setError('');
             setSubmitted(false);
         }
-    }, [open]);
+    }
 
     useEffect(() => {
         if (!open) return undefined;

@@ -16,12 +16,16 @@ const StartChatModal = ({ open, onClose, product }) => {
 
     const startConversation = useStartConversationMutation();
 
-    useEffect(() => {
+    // Reset the draft when the modal (re)opens — derived during render,
+    // the recommended pattern for prop-driven state resets.
+    const [prevOpen, setPrevOpen] = useState(open);
+    if (prevOpen !== open) {
+        setPrevOpen(open);
         if (open) {
             setMessage('Hi, is this still available?');
             setError('');
         }
-    }, [open]);
+    }
 
     useEffect(() => {
         if (!open) return undefined;

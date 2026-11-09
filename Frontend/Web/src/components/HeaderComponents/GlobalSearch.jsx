@@ -26,8 +26,6 @@ const GlobalSearch = ({ compact = false }) => {
         navigate(qs ? `/products?${qs}` : '/products');
     };
 
-    const selectedState = STATE_CHOICES.find((s) => s.value === state);
-
     return (
         <form
             onSubmit={handleSubmit}

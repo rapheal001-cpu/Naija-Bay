@@ -1,1 +1,7 @@
 .opencode
+
+# Environment files (secrets) — never commit
+.env
+.env.*
+!.env.example
+!.env.production.example

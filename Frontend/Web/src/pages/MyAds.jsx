@@ -2,11 +2,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { HiOutlineCollection, HiOutlineEye, HiOutlineHeart, HiOutlinePencilAlt, HiOutlineTrash, HiOutlineCheckCircle, HiOutlinePlusCircle } from 'react-icons/hi';
-import Header from '../components/HeaderComponents/Header.jsx';
 import AppLayout from '../components/AppLayout.jsx';
 import InfiniteListSentinel from '../components/InfiniteListSentinel.jsx';
-import Spacer from '../components/Spacer.jsx';
-import Footer from '../components/FooterComponents/Footer.jsx';
 import { useSelector } from 'react-redux';
 import { useFetchMyListings, useInfiniteMyListings } from '../hooks/UseQuery.js';
 import { deleteProductFn, updateProductFn } from '../service/Endpoints.js';

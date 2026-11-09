@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { HiOutlineShieldCheck, HiOutlineLockClosed, HiOutlineChatAlt2, HiOutlineCash } from 'react-icons/hi';
+import { HiOutlineShieldCheck, HiOutlineLockClosed, HiOutlineChatAlt2 } from 'react-icons/hi';
 
 /**
  * Professional split-screen shell for all auth pages.

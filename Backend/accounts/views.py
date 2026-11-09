@@ -1,3 +1,5 @@
+from django.db.models import Sum
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.generics import (
@@ -95,6 +97,32 @@ class CustomResendEmailVerificationView(ResendEmailVerificationView):
 class CustomLoginView(LoginView):
     throttle_classes = [LoginThrottling]
 
+    def post(self, request, *args, **kwargs):
+        # django-axes grind: for this JSON-based DRF API, axes cannot derive
+        # the username from request.POST, so its middleware-based lockout
+        # can't engage. Suppress: enforce the lockout here against the
+        # attempts axes faithfully records (username = submitted email).
+        email = (request.data.get("email") or "").strip().lower()
+        if email:
+            from axes.models import AccessAttempt
+
+            from django.utils import timezone
+
+            from NaijaBay.settings import AXES_COOLOFF_TIME, AXES_FAILURE_LIMIT
+            cutoff = timezone.now() - AXES_COOLOFF_TIME
+            failures = (
+                AccessAttempt.objects.filter(username=email, attempt_time__gte=cutoff)
+                .aggregate(total=Sum("failures_since_start"))
+                .get("total")
+                or 0
+            )
+            if failures >= AXES_FAILURE_LIMIT:
+                return Response(
+                    {"detail": "Too many failed login attempts. Please try again later."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+        return super().post(request, *args, **kwargs)
+
     def create_response_with_cookies(self, serializer):
         response = super().create_response_with_cookies(serializer)
         data = serializer.data
@@ -111,6 +139,19 @@ class CustomLoginView(LoginView):
 @extend_schema_view(post=extend_schema(tags=["Auth"], operation_id="Logout"))
 class CustomLogoutView(LogoutView):
     throttle_classes = [LogoutThrottling]
+
+    def initial(self, request, *args, **kwargs):
+        # auth_kit's LogoutView mutates request.data (sets "refresh").
+        # Frontend logout posts with no body, which DRF parses as an
+        # immutable form QueryDict — hand it a mutable copy so the
+        # mutation works (prevents an HTTP 500 on logout).
+        # NB: DRF caches parsed data in "_full_data" (the effective cache).
+        from django.http import QueryDict
+
+        data = request.data
+        if isinstance(data, QueryDict):
+            request._full_data = data.copy()
+        super().initial(request, *args, **kwargs)
 
 
 @extend_schema_view(post=extend_schema(tags=["Auth"], operation_id="Password Change"))

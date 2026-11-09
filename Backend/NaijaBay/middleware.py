@@ -6,9 +6,79 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.urls import reverse
+from django.middleware.csrf import get_token
+
+try:
+    # Django's own token matcher (handles masked or raw tokens).
+    from django.middleware.csrf import _check_token_format, _does_token_match
+    from django.middleware.csrf import InvalidTokenFormat
+
+    def _valid_csrf_token(request):
+        cookie = request.COOKIES.get("csrftoken", "")
+        header = request.META.get("HTTP_X_CSRFTOKEN", "")
+        if not cookie or not header:
+            return False
+        try:
+            _check_token_format(header)
+            return bool(_does_token_match(header, cookie))
+        except (ValueError, TypeError):
+            return False
+        except Exception:
+            return False
+
+except ImportError:
+    from django.middleware.csrf import _unmask_cipher_token  # noqa: F401
 from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
+
+# Auth cookies issued by DRF Auth Kit (see settings.AUTH_KIT) — their mere
+# presence means the request MIGHT be exercised by a browser, so CSRF
+# validation applies. Requests without them (Authorization-header API
+# clients) cannot be driven by a browser form and are left to auth.
+AUTH_COOKIE_NAMES = ("access", "refresh")
+
+# Unsafe /api/ paths CSRF validation must never break:
+# - the Paystack webhook authenticates via HMAC signature, not cookies.
+CSRF_EXEMPT_PATH_PREFIXES = ("/api/v1/payments/webhook/",)
+
+
+class CsrfGuardMiddleware:
+    """Enforces double-submit CSRF tokens for cookie-authenticated unsafe API calls.
+
+    The JWT auth is cookie-based, so a browser can be tricked into sending a
+    forged request (form POST / fetch with cookies). DRF APIViews are
+    CSRF-exempt by design, hence this guard. It also issues the
+    ``csrftoken`` cookie on every response (via ``get_token``) so the SPA
+    can read it and send ``X-CSRFToken`` back. Unauthenticated or
+    Authorization-header requests are not browser-exercisable and pass.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Issue/refresh the csrftoken cookie the SPA reads into X-CSRFToken.
+        get_token(request)
+
+        if request.method not in SAFE_METHODS and request.path.startswith("/api/"):
+            if not request.path.startswith(CSRF_EXEMPT_PATH_PREFIXES):
+                if any(name in request.COOKIES for name in AUTH_COOKIE_NAMES):
+                    if not _valid_csrf_token(request):
+                        logger.warning(
+                            "Blocked cookie-authenticated %s to %s without a valid CSRF token",
+                            request.method,
+                            request.path,
+                        )
+                        return JsonResponse(
+                            {
+                                "code": "csrf_failed",
+                                "detail": "CSRF verification failed.",
+                                "status": 403,
+                            },
+                            status=403,
+                        )
+        return self.get_response(request)
 
 VERSION_HEADERS = (
     "Server",
@@ -84,6 +154,25 @@ class TrustedOriginMiddleware:
             else:
                 source = None
                 present = False
+
+                # Approved Option A: browser cookie-authenticated unsafe
+                # requests must arrive with an Origin or Referer (browsers
+                # always send one; a request without either is suspicious).
+                # Token-less non-cookie API clients are untouched here.
+                if any(name in request.COOKIES for name in AUTH_COOKIE_NAMES):
+                    logger.warning(
+                        "Blocked cookie-authenticated %s to %s without Origin/Referer",
+                        request.method,
+                        request.path,
+                    )
+                    return JsonResponse(
+                        {
+                            "code": "missing_origin",
+                            "detail": "Origin or Referer header required.",
+                            "status": 403,
+                        },
+                        status=403,
+                    )
 
             if present and source not in self._trusted_origins(request):
                 logger.warning(

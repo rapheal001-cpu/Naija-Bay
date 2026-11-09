@@ -729,17 +729,44 @@ class ListQueryCountTests(ProductAPITestCase):
         self.assertLessEqual(len(ctx.captured_queries), 25, f"{len(ctx.captured_queries)} queries: N+1 regressed")
 
     def test_create_image_by_direct_upload_key(self):
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
+
         product = make_product(self.seller)
+        key = f"naijabay/{self.seller.pk}/0123abcd.jpg"
+        default_storage.save(key, ContentFile(PNG_BYTES))
         self.client.force_authenticate(self.seller)
         response = self.client.post(
             reverse("create-product-images"),
-            {"product": product.id, "key": f"naijabay/{self.seller.pk}/0123abcd.jpg"},
+            {"product": product.id, "key": key},
             format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         image = ProductImage.objects.filter(product=product).first()
-        self.assertEqual(image.image.name, f"naijabay/{self.seller.pk}/0123abcd.jpg")
+        self.assertEqual(image.image.name, key)
         image.delete()
+        default_storage.delete(key)
+
+    def test_create_image_rejects_missing_direct_key(self):
+        product = make_product(self.seller)
+        self.client.force_authenticate(self.seller)
+        response = self.client.post(
+            reverse("create-product-images"),
+            {"product": product.id, "key": f"naijabay/{self.seller.pk}/never-uploaded.jpg"},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_non_image_upload_rejected_by_content_sniff(self):
+        product = make_product(self.seller)
+        self.client.force_authenticate(self.seller)
+        disguised = SimpleUploadedFile("photo.png", b"this is not an image", content_type="image/png")
+        response = self.client.post(
+            reverse("create-product-images"),
+            {"product": product.id, "images": [disguised]},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_image_rejects_foreign_key(self):
         product = make_product(self.seller)

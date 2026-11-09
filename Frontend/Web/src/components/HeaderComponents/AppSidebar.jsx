@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
     HiOutlineHome, HiOutlineSearch, HiOutlineCollection, HiOutlineChatAlt2,
@@ -17,7 +17,6 @@ const AppSidebar = () => {
     const categories = useSelector((state) => state.categories.categories) || [];
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const dispatch = useDispatch();
-    const location = useLocation();
     const unread = useFetchUnreadCounts(isAuthenticated);
     const fetchCategories = useFetchCategories();
 
@@ -26,8 +25,6 @@ const AppSidebar = () => {
             dispatch(setCategories(fetchCategories.data));
         }
     }, [fetchCategories.isSuccess, fetchCategories.data, dispatch]);
-
-    const isActive = (to) => location.pathname === to;
 
     const linkClass = ({ isActive: active }) =>
         `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors ${

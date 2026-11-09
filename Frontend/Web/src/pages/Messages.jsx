@@ -2,9 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { HiOutlineChatAlt2, HiOutlinePaperAirplane, HiOutlineArrowLeft, HiOutlineInbox, HiOutlinePaperClip, HiOutlineMicrophone, HiOutlineStop, HiOutlineX } from 'react-icons/hi';
-import Header from '../components/HeaderComponents/Header.jsx';
 import AppLayout from '../components/AppLayout.jsx';
-import Footer from '../components/FooterComponents/Footer.jsx';
 import { uploadProductImages } from '../core/utils/uploadImages.js';
 import {
     useFetchConversations,
@@ -28,13 +26,14 @@ const Messages = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [draft, setDraft] = useState('');
     const [sendError, setSendError] = useState('');
-    const [socketReady, setSocketReady] = useState(false);
+    const [socketOpen, setSocketOpen] = useState(false);
     const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
     const [pendingImages, setPendingImages] = useState([]); // {id, name, size, url(blob)}
-    const [recording, setRecording] = useState(null); // {stream, chunks, startedAt}
+    const [recording, setRecording] = useState(false); // UI flag; payload lives in recorderRef
     const fileInputRef = useRef(null);
     const scrollRef = useRef(null);
     const socketRef = useRef(null);
+    const recorderRef = useRef(null); // {stream, recorder, chunks, startedAt}
     const queryClient = useQueryClient();
 
     const activeId = useMemo(() => {
@@ -97,20 +96,24 @@ const Messages = () => {
         );
     }, [messagesQuery.data]);
 
+    // Socket readiness is derived (socket open AND a thread is selected
+    // AND the user is signed in) — never mirrored through effect state, so
+    // React never needs to "reset" it when auth or the thread changes.
+    const socketReady = Boolean(effectiveId && isAuthenticated && socketOpen);
+
     // ---- Live chat socket (WebSocket; REST polling remains the fallback) ----
     useEffect(() => {
         if (!effectiveId || !isAuthenticated) {
-            setSocketReady(false);
             return undefined;
         }
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/chat/${effectiveId}/`);
         socketRef.current = socket;
 
-        socket.onopen = () => setSocketReady(true);
-        socket.onclose = () => setSocketReady(false);
+        socket.onopen = () => setSocketOpen(true);
+        socket.onclose = () => setSocketOpen(false);
         socket.onerror = () => {
-            setSocketReady(false);
+            setSocketOpen(false);
         };
         socket.onmessage = (event) => {
             let frame;
@@ -137,7 +140,7 @@ const Messages = () => {
             socket.onclose = null;
             socket.close();
             socketRef.current = null;
-            setSocketReady(false);
+            setSocketOpen(false);
         };
     }, [effectiveId, isAuthenticated, queryClient]);
 
@@ -178,16 +181,19 @@ const Messages = () => {
             const chunks = [];
             recorder.ondataavailable = (event) => chunks.push(event.data);
             recorder.start();
-            setRecording({ stream, recorder, chunks, startedAt: Date.now() });
+            recorderRef.current = { stream, recorder, chunks, startedAt: Date.now() };
+            setRecording(true);
         } catch {
             setSendError('Microphone is unavailable. Voice notes are not supported on this device.');
         }
     };
 
     const stopRecording = (keep = true) => {
-        if (!recording) return;
-        const { stream, recorder, chunks, startedAt } = recording;
-        setRecording(null);
+        const session = recorderRef.current;
+        if (!session) return;
+        const { stream, recorder, chunks, startedAt } = session;
+        recorderRef.current = null;
+        setRecording(false);
         stream.getTracks().forEach((track) => track.stop());
         recorder.onstop = () => {};
         recorder.stop();

@@ -10,8 +10,25 @@ export const axiosInstance = axios.create({
     // timeout: 10000,
 });
 
+const UNSAFE_METHODS = new Set(['post', 'put', 'patch', 'delete']);
+
+// Double-submit CSRF: the API sets a readable `csrftoken` cookie on every
+// response; mirror it back as X-CSRFToken for unsafe requests.
+const readCsrfCookie = () => {
+    const match = document.cookie
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith('csrftoken='));
+    return match ? decodeURIComponent(match.slice('csrftoken='.length)) : null;
+};
 
 axiosInstance.interceptors.request.use((config) => {
+    if (UNSAFE_METHODS.has((config.method || 'get').toLowerCase())) {
+        const token = readCsrfCookie();
+        if (token) {
+            config.headers['X-CSRFToken'] = token;
+        }
+    }
     return config;
 });
 

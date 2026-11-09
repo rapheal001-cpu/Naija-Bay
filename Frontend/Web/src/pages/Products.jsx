@@ -3,23 +3,16 @@ import { HiOutlineFunnel, HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2
 import { HiOutlineSearch, HiOutlineX } from "react-icons/hi";
 import { BiSolidCategory } from 'react-icons/bi';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import Header from '../components/HeaderComponents/Header.jsx';
 import AppLayout from '../components/AppLayout.jsx';
 import InfiniteListSentinel from '../components/InfiniteListSentinel.jsx';
-import Spacer from '../components/Spacer.jsx';
 import ProductCard from '../components/ProductComponents/ProductCard.jsx';
-import Pagination from '../components/Pagination.jsx';
 import SkeletonProductCard from '../skeletons/SkeletonProductCard.jsx';
 import { useFetchAttributeDefinitions, useFetchCategories, useInfiniteProducts } from '../hooks/UseQuery.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setProducts } from '../slice/ProductSlice.js';
 import { setCategories } from '../slice/CategorySlice.js';
 import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { categoryIconsMap, STATE_CHOICES, CONDITION_CHOICES } from '../dummyData.js';
-import Footer from '../components/FooterComponents/Footer.jsx';
 
-
-const PAGE_SIZE = 24;
 
 const SORT_OPTIONS = [
     { value: '', label: 'Newest first' },
@@ -103,7 +96,6 @@ const Products = () => {
     const activeCategory = routeCategory || filters.category || '';
     const activeSubCategory = routeSubCategory || filters.sub_category || '';
     const activeSort = filters.sort || '';
-    const page = filters.page || 1;
 
     const categories = useSelector((state) => state.categories.categories);
 
@@ -134,8 +126,25 @@ const Products = () => {
         [filterDefinitions]
     );
 
-    // Keep local inputs in sync when the URL changes (back button, chip removal).
-    useEffect(() => {
+    // Keep local inputs in sync when the URL changes (back button, chip
+    // removal). Derived during render instead of an effect, so typing in
+    // the inputs (which does not touch the URL) is never overwritten.
+    const syncKey = JSON.stringify({
+        searchQuery,
+        condition: filters.condition || '',
+        state: filters.state || '',
+        city: filters.city || '',
+        minPrice: filters.min_price || '',
+        maxPrice: filters.max_price || '',
+        delivery: Boolean(filters.delivery_available),
+        verified: Boolean(filters.verified_seller),
+        negotiable: Boolean(filters.negotiable),
+        discounted: Boolean(filters.discounted),
+        attr: attrFilterValues,
+    });
+    const [syncedKey, setSyncedKey] = useState(null);
+    if (syncedKey !== syncKey) {
+        setSyncedKey(syncKey);
         setSearchInput(searchQuery);
         setDraft({
             condition: filters.condition || '',
@@ -149,19 +158,7 @@ const Products = () => {
             discounted: Boolean(filters.discounted),
             attr: attrFilterValues,
         });
-    }, [
-        searchQuery,
-        filters.condition,
-        filters.state,
-        filters.city,
-        filters.min_price,
-        filters.max_price,
-        filters.delivery_available,
-        filters.verified_seller,
-        filters.negotiable,
-        filters.discounted,
-        attrFilterValues,
-    ]);
+    }
 
     // Infinite-scroll aggregation (DRF page results flattened below)
     const infiniteResults = useMemo(

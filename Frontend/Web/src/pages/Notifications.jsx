@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { LuCheckCheck, LuTrash2, LuBell, LuInbox } from 'react-icons/lu';
-import Header from '../components/HeaderComponents/Header.jsx';
 import AppLayout from '../components/AppLayout.jsx';
-import Spacer from '../components/Spacer.jsx';
 import NotificationCard from '../components/UserComponents/NotificationCard.jsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';

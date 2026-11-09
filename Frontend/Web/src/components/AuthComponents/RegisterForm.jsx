@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { RiLoader3Line } from "react-icons/ri";
-import { HiOutlineShieldCheck, HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 import { HiOutlineUser, HiOutlineEnvelope, HiOutlineLockClosed, HiOutlineExclamationCircle } from "react-icons/hi2";
 import { useState } from 'react';
 import { useRegisterMutation } from '@/hooks/UseMutation.js';

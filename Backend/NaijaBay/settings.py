@@ -7,6 +7,40 @@ from django.core.exceptions import ImproperlyConfigured
 from datetime import timedelta
 
 
+def _load_env_file(candidate: Path) -> bool:
+    """Load ``KEY=VALUE`` pairs from ``candidate`` without overriding the real
+    process environment. Returns True if the file was read."""
+    if not candidate.exists():
+        return False
+    for line in candidate.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+    return True
+
+
+def _load_env_files():
+    """Environment layering:
+    - The process environment always wins.
+    - When ENVIRONMENT=production, ``.env.production`` replaces ``.env``
+      entirely (production must never silently inherit development values).
+    - Otherwise the development ``.env`` is used.
+    """
+    base = Path(__file__).resolve().parent.parent
+    if os.environ.get("ENVIRONMENT") == "production":
+        if _load_env_file(base / ".env.production"):
+            return
+    _load_env_file(base / ".env")
+
+
+_load_env_files()
+
+
 # =============================================================================
 # ENVIRONMENT
 # =============================================================================
@@ -30,7 +64,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 try:
     SECRET_KEY = config("SECRET_KEY", cast=str)
-    if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
+    _SECRET_PLACEHOLDERS = ("django-insecure", "CHANGE_ME", "YOUR_")
+    if not SECRET_KEY or any(p in SECRET_KEY for p in _SECRET_PLACEHOLDERS):
         if IS_PRODUCTION:
             raise ValueError("SECRET_KEY must be set to a secure value in production.")
 except Exception as e:
@@ -166,9 +201,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "NaijaBay.middleware.OwnerOnlyDjangoAdminMiddleware",
     "allauth.account.middleware.AccountMiddleware",
-    "axes.middleware.AxesMiddleware",
     "NaijaBay.middleware.TrustedOriginMiddleware",
     "NaijaBay.middleware.CsrfGuardMiddleware",
+    "axes.middleware.AxesMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -236,6 +271,9 @@ WSGI_APPLICATION = "NaijaBay.wsgi.application"
 # =============================================================================
 
 DATABASE_URL = config("DATABASE_URL", default=None)
+
+if IS_PRODUCTION and DATABASE_URL and "CHANGE_ME" in DATABASE_URL:
+    raise ValueError("DATABASE_URL contains placeholder values; ".format(DATABASE_URL))
 
 if DATABASE_URL:
     import dj_database_url

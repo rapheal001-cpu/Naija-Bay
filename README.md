@@ -40,10 +40,122 @@ Captured with REA from the live app (see [UNDERSTAND.md](UNDERSTAND.md#15-screen
 | ![Sell](Backend/images/sell.png) | ![Messages](Backend/images/messages.png) |
 | ![My Ads](Backend/images/my-ads.png) | |
 
-**Want the product story, architecture diagrams, and handover checklist?**
+**Want the product story, architecture, and handover checklist?**
 Read [UNDERSTAND.md](UNDERSTAND.md) first. For production setup see
 [SCALLING.md](SCALLING.md), [Backend/ENDPOINTS.md](Backend/ENDPOINTS.md),
 and [Backend/PRODUCTION.md](Backend/PRODUCTION.md).
+
+## Setup & Environment Guide
+
+### Prerequisites
+Windows or WSL/Linux with **Python 3.14**, **Node.js 20+**, and Git. Redis
+is optional in development (the backend uses in-memory fallbacks).
+
+### Backend installation
+
+```powershell
+cd Backend
+py -m venv venv
+.\venv\Scripts\Activate.ps1          # Windows; Linux: source venv/bin/activate
+pip install -r requirements.txt
+copy .env.example .env                # first time only
+```
+
+### Frontend installation
+
+```powershell
+cd Frontend\Web
+npm install
+```
+
+### The six environment files
+
+**Backend** (`Backend/`): `.env` (local dev), `.env.production` (production —
+loaded **only** when the OS environment has `ENVIRONMENT=production`),
+`.env.example` (template, tracked). Values in any of these files never
+override real process environment variables.
+
+**Frontend** (`Frontend/Web/`): `.env` (local dev), `.env.production`
+(production build), `.env.example` (tracked). Vite inlines Vite variables **at
+build time** — rebuild after changing them. Frontend files contain **public
+values only**; never put secrets there. A `.env.local` file is not used.
+
+### Variable inventory
+
+Backend (all read by `NaijaBay/settings.py` via python-decouple):
+
+| Variable | Purpose |
+| --- | --- |
+| `ENVIRONMENT` | `development` / `production` — drives secure-cookie/HTTPS guard rails |
+| `SECRET_KEY` | Signing secret for cookies/tokens. **Never reuse dev values in prod** |
+| `DEBUG` | Must be `False` in production (fail-fast guard) |
+| `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS` | Frontend/API domains |
+| `DATABASE_URL` | PostgreSQL URL (empty = local SQLite) |
+| `SITE_ID`, `TIME_ZONE`, `LANGUAGE_CODE` | Site/locale defaults |
+| `JWT_ACCESS_TOKEN_LIFETIME` (min), `JWT_REFRESH_TOKEN_LIFETIME` (days) | Cookie session lengths |
+| `MEDIA_STORAGE_BACKEND` | `local` (dev) \| `s3` \| `cloudinary` (production only) |
+| `CLOUD_NAME`, `CLOUD_API_KEY`, `CLOUD_API_SECRET` | Cloudinary direct uploads |
+| `AWS_*` (6 vars) | S3/R2-compatible storage (production only) |
+| `EMAIL_*`, `DEFAULT_FROM_EMAIL` | SMTP (production; dev uses the console backend) |
+| `PAYSTACK_SECRET_KEY` | Paystack (empty in dev = simulated test checkout) |
+| `FRONTEND_URL` | Where Paystack sends buyers back after payment |
+| `DELIVERY_FEE` | Flat delivery fee per order, in naira |
+| `REDIS_URL` | Cache + Channels layer (empty = in-memory in dev) |
+
+Frontend (public, build-time): `VITE_BASE_URL` (API origin) is the only
+supported variable.
+
+### Development vs production
+Development: SQLite, `MEDIA_STORAGE_BACKEND=local`, console email, empty
+`PAYSTACK_SECRET_KEY` (simulated checkout), `DEBUG=True`. Production:
+PostgreSQL (`DATABASE_URL`), Redis, `DEBUG=False`, secure cookies + HTTPS
+redirects, `PAYSTACK_SECRET_KEY=sk_live_…`, storage `cloudinary`/`s3`.
+
+### Paystack test mode & local webhooks
+Set a `sk_test_…` key in your `.env` to exercise the real checkout. Webhook
+callbacks require a reachable HTTPS URL — record them from
+`dashboard.paystack.com/#/settings/developers` at
+`POST /api/v1/payments/webhook/` (signature verified HMAC-SHA512).
+
+### Storage
+`local` = `mediafiles/` on disk. `cloudinary`/`s3` = direct browser→provider
+uploads with signed params; the backend stores only the key. Never enable AWS
+backends in development.
+
+### Database setup
+`python manage.py migrate` — fresh DBs use the single `0001_cutover_baseline`
+per app. Seed with `python manage.py seed_all` and
+`python manage.py attribute_definitions`.
+
+### Starting servers
+Backend: `.\venv\Scripts\python.exe -m daphne -p 8000 NaijaBay.asgi:application`
+(HTTP + WebSockets on one server). Frontend: `npm run dev` at
+`http://localhost:5173`. Use the **same** hostname (`localhost`) for both —
+cookies are scope-bound (see present-day notes on local auth).
+
+### Tests
+`python manage.py test payments` (32 tests, ~4 min, Paystack mocked),
+`accounts`, `products`, `messaging`, `orders`, plus CSRF/axes suites.
+Frontend: `npm run lint`, `npm run build`.
+
+### Security notes
+- Never commit `.env` / `.env.production` (root `gitignore` covers them).
+- Rotate the dev `SECRET_KEY` if it was ever shared; rotate **all** payment/
+  storage secrets on any suspected leak.
+- Track the `django-axes` cool-off values in `settings.py`
+  (`AXES_FAILURE_LIMIT`, `AXES_COOLOFF_TIME`) — see production guide.
+
+### Production prerequisites
+PostgreSQL, Redis, HTTPS (Cloudflare or host TLS), `MEDIA_STORAGE_BACKEND`,
+SMTP, `PAYSTACK_SECRET_KEY=sk_live_…`, `ALLOWED_HOSTS`/origins set, backup
+tested. Full checklist: [Backend/PRODUCTION.md](Backend/PRODUCTION.md).
+
+### Troubleshooting
+- `Not Found: /health` in server logs — harmless health-probe traffic.
+- CSRF 403s in dev: open the app via `http://localhost:5173` (not `127.0.0.1`),
+  and check `CORS/CSRF` origins match.
+- Port already in use: `Get-NetTCPConnection -LocalPort 8000 | Stop-Process`.
+- Lost seeded data: `python run_server.py --reset-db` (backs up the old DB).
 
 ## Quick start
 

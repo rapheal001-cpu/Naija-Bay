@@ -33,11 +33,11 @@ pip install -r requirements.txt
 
 ### 3. Confirm the `.env` file
 
-The backend ships with a `.env` file in the project root. For development, ensure the values below are present and that the `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, and `CORS_ALLOWED_ORIGINS` entries match the frontend origin you are actually using:
+The backend ships with a `.env` file in the project root. For development, ensure the values below are present and that the `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, and `CORS_ALLOWED_ORIGINS` entries match the frontend origin you are actually using (`copy .env.example .env` to recreate it):
 
 ```env
 ENVIRONMENT=development
-SECRET_KEY=django-insecure-dev-only-key-change-in-production
+SECRET_KEY=CHANGE_ME_GENERATE_A_NEW_DEVELOPMENT_SECRET
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost,your-ngrok-host
 CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://your-ngrok-host

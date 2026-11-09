@@ -56,6 +56,17 @@ class ProductUserSerializer(serializers.ModelSerializer):
         }
 
 class ProductSerializer(serializers.ModelSerializer):
+    """Product read/write contract.
+
+    READ: seller (`product_user`), images, counts, ratings and attribute
+    values are served from queryset caches (``with_listing_context`` /
+    ``to_attr``) so list responses never issue per-row queries.
+
+    WRITE: category/state/city accept the legacy underscore strings and are
+    resolved to relational FKs (single source of truth post-cutover);
+    ``attributes`` is optional and validated against AttributeDefinition.
+    """
+
     product_user = ProductUserSerializer(read_only=True)
     color = serializers.CharField(style={"input_type": "color"})
     price = serializers.DecimalField(decimal_places=2,max_digits=15, min_value=Decimal("1000.00"),max_value=Decimal("999999999.99"))

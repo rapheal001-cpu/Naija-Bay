@@ -10,7 +10,7 @@ import SkeletonProductCard from '../skeletons/SkeletonProductCard.jsx';
 import { useFetchAttributeDefinitions, useFetchCategories, useInfiniteProducts } from '../hooks/UseQuery.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCategories } from '../slice/CategorySlice.js';
-import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom';
 import { categoryIconsMap, STATE_CHOICES, CONDITION_CHOICES } from '../dummyData.js';
 
 
@@ -871,15 +871,38 @@ const Products = () => {
                         </div>
                     )}
 
-                    {/* Results count */}
+                    {/* Jiji-style breadcrumb + results count */}
+                    <nav aria-label="Breadcrumb" className="mb-2 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-500">
+                        <Link to="/" className="hover:text-brand">Home</Link>
+                        <span aria-hidden="true" className="text-slate-300">/</span>
+                        {activeCategory ? (
+                            <>
+                                <Link to={`/${activeCategory}`} className="capitalize hover:text-brand">
+                                    {activeCategory.replace(/[-_]/g, ' ')}
+                                </Link>
+                                {activeSubCategory && (
+                                    <>
+                                        <span aria-hidden="true" className="text-slate-300">/</span>
+                                        <span className="capitalize text-slate-700">{activeSubCategoryName}</span>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <span className="text-slate-700">All ads</span>
+                        )}
+                        <span aria-hidden="true" className="text-slate-300">/</span>
+                        <span className="text-slate-700">Nigeria</span>
+                    </nav>
+
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold text-gray-900">
+                        <h2 className="text-xl font-black text-gray-900">
                             {activeSubCategory
                                 ? activeSubCategoryName
                                 : activeCategory
                                     ? activeCategory.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                                     : 'All Products'
                             }
+                            {searchQuery && <span className="ml-2 text-sm font-medium text-slate-400">matching “{searchQuery}”</span>}
                         </h2>
                         {!fetchProducts.isLoading && (
                             <span className="text-sm font-medium text-gray-400">
@@ -890,7 +913,7 @@ const Products = () => {
 
                     {/* Grid */}
                     {fetchProducts.isLoading ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                             <SkeletonProductCard />
                             <SkeletonProductCard />
                             <SkeletonProductCard />
@@ -926,7 +949,7 @@ const Products = () => {
                                 isFetching={fetchProducts.isFetchingNextPage}
                                 onLoadMore={handlePageChange}
                             />
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {results.map((product) => (
                                     <ProductCard key={product.id} {...product} />
                                 ))}

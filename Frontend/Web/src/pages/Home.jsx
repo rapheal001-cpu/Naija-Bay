@@ -16,6 +16,7 @@ import SkeletonProductCard from '../skeletons/SkeletonProductCard';
 const Home = () => {
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const featuredProducts = useSelector((state) => state.products.featuredProducts);
+    const categories = useSelector((state) => state.categories.categories) || [];
 
     const dispatch = useDispatch();
 
@@ -53,10 +54,10 @@ const Home = () => {
                 <div className="flex items-end justify-between mb-8">
                     <div>
                         <p className="text-xs font-bold text-brand uppercase tracking-[0.15em] mb-1.5">
-                            Curated for you
+                            Popular right now
                         </p>
                         <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-                            Featured Ads
+                            Trending ads
                             <span className="ml-2 text-lg font-medium text-gray-400">
                                 ({featuredProducts.length})
                             </span>
@@ -118,7 +119,7 @@ const Home = () => {
                             Just posted
                         </p>
                         <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-                            Latest Ads
+                            New ads
                         </h2>
                     </div>
 
@@ -209,6 +210,28 @@ const Home = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            {/* Jiji-style popular searches / browse links */}
+            <section className="pb-12">
+                <div className="border-t border-gray-100 pt-8">
+                    <h2 className="text-lg font-black text-gray-900 mb-4">Popular searches</h2>
+                    {categories.length > 0 ? (
+                        <div className="flex flex-wrap gap-x-6 gap-y-2">
+                            {categories.slice(0, 12).map((category) => (
+                                <Link
+                                    key={category.slug}
+                                    to={`/${category.slug}`}
+                                    className="text-sm text-slate-600 hover:text-brand hover:underline"
+                                >
+                                    {category.name}
+                                </Link>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-slate-400">Browse ads by category above.</p>
+                    )}
                 </div>
             </section>
         </AppLayout>

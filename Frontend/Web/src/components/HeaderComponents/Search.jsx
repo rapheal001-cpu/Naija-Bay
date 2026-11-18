@@ -32,7 +32,7 @@ const Search = () => {
                     What are you looking for?
                 </h1>
                 <p className="text-white/70 text-sm sm:text-base mb-8 max-w-md mx-auto">
-                    Discover amazing deals on products, brands, and more across Naija Bay.
+                    Search thousands of ads from sellers all over Nigeria.
                 </p>
 
                 {/* Search Bar */}
@@ -48,7 +48,7 @@ const Search = () => {
 
                     <input
                         type="text"
-                        placeholder="Search for products, brands, and more..."
+                        placeholder="I am looking for..."
                         className="w-full px-3 py-4 sm:py-5 text-sm sm:text-base text-gray-800 placeholder:text-gray-400 bg-transparent focus:outline-none"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}

@@ -7,202 +7,168 @@ import { useToggleFavoriteMutation } from '../../hooks/UseMutation';
 import { Stars } from './StarRating';
 import { timeAgo } from '../../dummyData.js';
 
+// Jiji-style tier colours, derived from the backend `badge` field.
+const BADGE_STYLES = {
+    VIP: 'bg-amber-400 text-amber-950',
+    PREMIUM: 'bg-sky-500 text-white',
+    DIAMOND: 'bg-violet-600 text-white',
+    ENTERPRISE: 'bg-rose-600 text-white',
+};
 
-const ProductCard = ({ 
-    product_user, 
-    product_name,  
-    product_slug, 
-    images, 
+const ProductCard = ({
+    product_user,
+    product_name,
+    product_slug,
+    images,
     price,
     original_price,
     discount_percent,
     average_rating,
     total_ratings,
-    sold_count,
     description,
     condition,
     state,
     city,
     views_count,
-    favorites_count,
     is_favorited,
-    color,
     promoted,
+    badge,
+    posted_ago,
+    location_label,
     created_at,
 }) => {
-
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const user = useSelector((state) => state.user.user);
-
     const navigate = useNavigate();
-    
     const toggleFavoriteMutation = useToggleFavoriteMutation();
 
     const handleFavorite = (e) => {
         e.preventDefault();
         e.stopPropagation();
-
         if (!isAuthenticated && !user) {
             navigate('/sign-in');
-            alert('Please sign in to save this product to your favorites.');
             return;
         }
-
         toggleFavoriteMutation.mutate(product_slug);
     };
 
-    // Check if user is the owner (hide favorite button)
     const isOwner = user?.id && product_user?.id && user.id === product_user.id;
+    const tier = badge || (promoted ? 'PREMIUM' : null);
+    const location = location_label || (city && state ? `${city}, ${state}` : city || state || '');
+    const age = posted_ago || (created_at ? timeAgo(created_at) : '');
 
     return (
         <Link
             to={`/product/detail/${encodeURIComponent(product_slug)}`}
-            className="group flex flex-col h-full bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300"
+            className="group flex h-full flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition-shadow hover:shadow-lg"
         >
-            {/* Image Container */}
-            <div className="relative w-full aspect-5/5 bg-gray-100 overflow-hidden">
+            {/* Image */}
+            <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                 <img
                     src={images?.[0] || null}
                     alt={product_name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
 
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Jiji-style tier badge */}
+                {tier && (
+                    <span className={`absolute left-0 top-2 rounded-r px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow-sm ${BADGE_STYLES[tier] || BADGE_STYLES.PREMIUM}`}>
+                        {tier}
+                    </span>
+                )}
 
-                {/* Favorite Button — hidden for owner */}
+                {Number(discount_percent) > 0 && (
+                    <span className="absolute bottom-2 left-2 rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                        -{discount_percent}%
+                    </span>
+                )}
+
                 {isAuthenticated && !isOwner && (
                     <button
                         type="button"
                         onClick={handleFavorite}
                         aria-label="Save to favorites"
                         disabled={toggleFavoriteMutation.isPending}
-                        className="absolute top-3 right-3 flex items-center justify-center w-9 h-9 rounded-full bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-md hover:scale-110 active:scale-90 transition-all duration-200 disabled:opacity-50"
+                        className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-110 disabled:opacity-50"
                     >
                         <FaHeart
-                            size={16}
-                            className={`transition-colors duration-200 ${is_favorited ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-400'}`}
+                            size={15}
+                            className={is_favorited ? 'fill-red-500 text-red-500' : 'text-slate-400'}
                         />
                     </button>
                 )}
-
-                {/* Condition Badge */}
-                {condition && (
-                    <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-gray-800 text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm uppercase tracking-normal">
-                        {condition}
-                    </span>
-                )}
-
-                {/* Discount Badge */}
-                {discount_percent > 0 && (
-                    <span className="absolute bottom-3 left-3 bg-red-500 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm uppercase tracking-wide">
-                        -{discount_percent}%
-                    </span>
-                )}
-
-                {promoted && (
-                    <span className="absolute top-3 right-3 mt-11 bg-amber-400 text-gray-900 text-[9px] font-extrabold px-2 py-1 rounded-md shadow-sm uppercase tracking-wide">
-                        Boosted
-                    </span>
-                )}
-
-                {/* Color Badge */}
-                {color && (
-                    <span
-                        className="absolute bottom-3 right-3 w-5 h-5 rounded-full border-2 border-white shadow-md ring-1 ring-black/5"
-                        style={{ backgroundColor: color }}
-                        aria-label={`Color: ${color}`}
-                    />
-                )}
             </div>
 
-            {/* Content */}
-            <div className="flex flex-col flex-1 p-4">
-                {/* Price Row */}
-                <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-lg font-extrabold text-gray-900 tracking-tight">
+            {/* Body */}
+            <div className="flex flex-1 flex-col p-3">
+                <div className="flex items-baseline gap-2">
+                    <p className="text-base font-extrabold text-slate-900">
                         ₦{Number(price).toLocaleString()}
                     </p>
                     {Number(original_price) > Number(price) && (
-                        <p className="text-xs text-gray-400 line-through font-medium">
+                        <p className="text-[11px] text-slate-400 line-through">
                             ₦{Number(original_price).toLocaleString()}
                         </p>
                     )}
                 </div>
 
-                {/* Rating + sold row */}
-                {total_ratings > 0 && (
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                        <Stars value={average_rating} size={11} />
-                        <span className="text-[11px] text-gray-400 font-medium">
-                            {average_rating} ({total_ratings})
-                        </span>
-                        {sold_count > 0 && (
-                            <span className="text-[11px] text-gray-300">•</span>
-                        )}
-                        {sold_count > 0 && (
-                            <span className="text-[11px] text-gray-400 font-medium">
-                                {sold_count.toLocaleString()}+ sold
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {/* Product Name */}
-                <h3 className="text-sm font-semibold text-gray-800 line-clamp-1 mt-1.5 group-hover:text-brand transition-colors duration-200">
+                <h3 className="mt-1 line-clamp-2 min-h-[36px] text-[13px] font-semibold leading-snug text-slate-800 group-hover:text-brand">
                     {product_name}
                 </h3>
 
-                {/* Description */}
                 {description && (
-                    <p className="text-xs text-gray-400 line-clamp-2 mt-1 leading-relaxed">
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
                         {description}
                     </p>
                 )}
 
-                {/* Seller Row */}
-                {product_user && (
-                    <div className="flex items-center gap-2 mt-3">
-                        <img
-                            src={product_user?.avatar || null}
-                            alt={product_user.full_name || product_user.username}
-                            className="w-5 h-5 rounded-full object-cover bg-gray-100 ring-1 ring-gray-100"
-                        />
-                        <span className="text-xs text-gray-500 font-medium truncate">
-                            {product_user.full_name || product_user.username}
+                {/* Rating row, like Jiji */}
+                {Number(total_ratings) > 0 && (
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                        <Stars value={Number(average_rating) || 0} size={11} />
+                        <span className="text-[11px] font-semibold text-slate-600">
+                            {Number(average_rating).toFixed(1)}
                         </span>
-                        {(product_user.verified || product_user.store?.verified) && (
-                            <HiBadgeCheck size={14} className="text-blue-500 shrink-0" aria-label="Verified seller" />
-                        )}
+                        <span className="text-[10px] text-slate-400">({total_ratings})</span>
                     </div>
                 )}
 
-                {/* Footer */}
-                <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
-                    {(city || state) && (
-                        <p className="flex items-center gap-1 text-[11px] text-gray-400 line-clamp-1">
-                            <LuMapPin size={11} className="shrink-0 text-gray-300" />
-                            <span className="truncate">{city && state ? `${city}, ${state}` : city || state}</span>
-                        </p>
+                {/* Condition + seller trust cue */}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {condition && (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                            {condition}
+                        </span>
                     )}
+                    {product_user?.verified && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-blue-600">
+                            <HiBadgeCheck size={12} /> Verified ID
+                        </span>
+                    )}
+                </div>
 
-                    <div className="flex items-center gap-3 shrink-0 ml-2">
-                        {typeof favorites_count === 'number' && (
-                            <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                                <FaHeart size={10} className={is_favorited ? 'text-red-500 fill-red-500' : 'text-gray-300'} />
-                                {favorites_count.toLocaleString()}
-                            </span>
-                        )}
+                {/* Seller name */}
+                {product_user && (
+                    <p className="mt-2 truncate text-[11px] font-medium text-slate-500">
+                        {product_user.store?.name || product_user.full_name || product_user.username}
+                    </p>
+                )}
+
+                {/* Footer: location + age + views */}
+                <div className="mt-auto flex items-center justify-between gap-1 border-t border-slate-100 pt-2 text-[10px] text-slate-400">
+                    <span className="flex min-w-0 items-center gap-1 truncate">
+                        <LuMapPin size={10} className="shrink-0" />
+                        <span className="truncate">{location}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
                         {typeof views_count === 'number' && (
-                            <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                                <FaEye size={11} className="text-gray-300" />
-                                {views_count.toLocaleString()}
+                            <span className="flex items-center gap-0.5">
+                                <FaEye size={10} /> {views_count.toLocaleString()}
                             </span>
                         )}
-                        {created_at && (
-                            <span className="text-[11px] text-gray-400 font-medium">{timeAgo(created_at)}</span>
-                        )}
-                    </div>
+                        {age && <span>{age}</span>}
+                    </span>
                 </div>
             </div>
         </Link>

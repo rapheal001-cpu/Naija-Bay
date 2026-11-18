@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.db import models
+from django.utils import timezone
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from accounts.models import User
@@ -92,6 +93,10 @@ class ProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField(read_only=True)
     total_ratings = serializers.SerializerMethodField(read_only=True)
     user_rating = serializers.SerializerMethodField(read_only=True)
+    # Jiji-style read fields, derived from existing data (no migration needed).
+    badge = serializers.SerializerMethodField(read_only=True)
+    posted_ago = serializers.SerializerMethodField(read_only=True)
+    location_label = serializers.SerializerMethodField(read_only=True)
     # Write: {'year': 2019, 'make': 'toyota'} — validated against the
     # category's AttributeDefinitions. Read: list of saved values.
     attributes = serializers.DictField(
@@ -121,6 +126,9 @@ class ProductSerializer(serializers.ModelSerializer):
             "average_rating",
             "total_ratings",
             "user_rating",
+            "badge",
+            "posted_ago",
+            "location_label",
             "state",
             "city",
             "contact_methods",
@@ -161,6 +169,54 @@ class ProductSerializer(serializers.ModelSerializer):
     # -------------------------------------------------------------------------
     # Read-only computed fields
     # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    # Jiji-style presentation fields (derived, no schema change)
+    # -------------------------------------------------------------------------
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_badge(self, obj):
+        """A Jiji-like seller tier label derived from the existing boost data."""
+        level = int(getattr(obj, "boost_level", 0) or 0)
+        promoted = bool(getattr(obj, "promoted", False))
+        if not promoted and level == 0:
+            return None
+        if level >= 3:
+            return "ENTERPRISE"
+        if level >= 2:
+            return "DIAMOND"
+        if level >= 1:
+            return "VIP"
+        return "PREMIUM"
+
+    @extend_schema_field(serializers.CharField())
+    def get_posted_ago(self, obj):
+        """Human-readable age, e.g. '2 hours ago' — matches Jiji ad cards."""
+        created = getattr(obj, "created_at", None)
+        if not created:
+            return ""
+        seconds = max(0, int((timezone.now() - created).total_seconds()))
+        if seconds < 60:
+            return "just now"
+        minutes = seconds // 60
+        if minutes < 60:
+            return f"{minutes} min ago"
+        hours = minutes // 60
+        if hours < 24:
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        days = hours // 24
+        if days < 30:
+            return f"{days} day{'s' if days != 1 else ''} ago"
+        months = days // 30
+        if months < 12:
+            return f"{months} month{'s' if months != 1 else ''} ago"
+        years = days // 365
+        return f"{years} year{'s' if years != 1 else ''} ago"
+
+    @extend_schema_field(serializers.CharField())
+    def get_location_label(self, obj):
+        parts = [p for p in (getattr(obj, "city", None), getattr(obj, "state", None)) if p]
+        return ", ".join(str(p) for p in parts)
 
     @extend_schema_field(serializers.BooleanField(default=False))
     def get_is_favorited(self, obj):

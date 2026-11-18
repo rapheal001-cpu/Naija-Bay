@@ -32,6 +32,15 @@ const Product = () => {
         .filter((item) => item.product_slug !== product?.product_slug && !item.sold)
         .slice(0, 4);
 
+    // Jiji-style "Market price" hint, estimated from similar ads in the same category.
+    const marketPrices = similarAds
+        .map((item) => Number(item.price) || 0)
+        .filter((n) => n > 0)
+        .sort((a, b) => a - b);
+    const marketLow = marketPrices.length ? marketPrices[Math.floor(marketPrices.length * 0.25)] : 0;
+    const marketHigh = marketPrices.length ? marketPrices[Math.floor(marketPrices.length * 0.75)] : 0;
+    const compactNaira = (n) => n >= 1000 ? `₦${Math.round(n / 1000)} K` : `₦${n}`;
+
     const navigate = useNavigate();
 
     const toggleFavoriteMutation = useToggleFavoriteMutation();
@@ -232,6 +241,15 @@ const Product = () => {
                                         Negotiable
                                     </span>
                                 )}
+                                {marketLow > 0 && marketHigh >= marketLow && (
+                                    <button
+                                        type="button"
+                                        className="mt-2 block rounded border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:border-brand hover:text-brand"
+                                        title="Estimated from similar ads in this category"
+                                    >
+                                        Market price: {compactNaira(marketLow)} ~ {compactNaira(marketHigh)}
+                                    </button>
+                                )}
                             </div>
                             {product?.product_user?.verified && (
                                 <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
@@ -398,24 +416,28 @@ const Product = () => {
                             </Link>
                         )}
 
-                        {/* Safety Warning */}
-                        <div className="mt-6 flex gap-3.5 bg-amber-50/70 border border-amber-100 rounded-2xl p-4">
-                            <TbAlertTriangleFilled size={22} className="text-amber-500 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-bold text-amber-800">Stay safe when buying</p>
-                                <p className="text-xs text-amber-700/80 leading-relaxed mt-1">
-                                    Meet at a public location and inspect the item before payment. Never transfer money before confirming the product.
-                                </p>
-                                {isAuthenticated && !isOwner && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setReportOpen(true)}
-                                        className="mt-2.5 text-xs font-bold text-amber-800 underline underline-offset-2 hover:text-amber-900"
-                                    >
-                                        Report this ad
-                                    </button>
-                                )}
+                        {/* Jiji-style safety block */}
+                        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+                            <div className="flex items-center gap-2">
+                                <TbAlertTriangleFilled size={18} className="text-amber-500" />
+                                <p className="text-sm font-bold text-slate-800">Safety tips</p>
                             </div>
+                            <ul className="mt-2 list-disc space-y-1 pl-5 text-[12px] leading-relaxed text-slate-500">
+                                <li>Avoid paying in advance, even for delivery.</li>
+                                <li>Meet the seller at a safe public place.</li>
+                                <li>Inspect the item and make sure it is exactly what you want.</li>
+                                <li>Make sure the packed item is the one you inspected.</li>
+                                <li>Only pay when you are satisfied.</li>
+                            </ul>
+                            {isAuthenticated && !isOwner && (
+                                <button
+                                    type="button"
+                                    onClick={() => setReportOpen(true)}
+                                    className="mt-3 text-xs font-bold text-red-600 underline underline-offset-2 hover:text-red-700"
+                                >
+                                    Report this ad
+                                </button>
+                            )}
                         </div>
 
                         {/* Contact Actions — MULTI-METHOD */}

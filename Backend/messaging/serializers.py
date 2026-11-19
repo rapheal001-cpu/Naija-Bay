@@ -4,7 +4,7 @@ from drf_spectacular.utils import extend_schema_field
 from accounts.models import Store, User
 from products.models import Product
 
-from .models import Conversation, Message
+from .models import Conversation, Message, UserBlock
 
 
 # =============================================================================
@@ -124,6 +124,31 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 # =============================================================================
+# USER BLOCK
+# =============================================================================
+
+class UserBlockCreateSerializer(serializers.Serializer):
+    user = serializers.IntegerField(help_text="ID of the user to block")
+
+    def validate_user(self, value):
+        request = self.context.get("request")
+        if request and value == request.user.id:
+            raise serializers.ValidationError("You cannot block yourself.")
+        if not User.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("User not found.")
+        return value
+
+
+class UserBlockSerializer(serializers.ModelSerializer):
+    blocked_user = ChatUserSerializer(read_only=True)
+
+    class Meta:
+        model = UserBlock
+        fields = ["id", "blocker", "blocked_user", "created_at"]
+        read_only_fields = fields
+
+
+# =============================================================================
 # CONVERSATION
 # =============================================================================
 
@@ -134,6 +159,7 @@ class ConversationSerializer(serializers.ModelSerializer):
     counterpart = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
+    is_blocked = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
@@ -145,10 +171,15 @@ class ConversationSerializer(serializers.ModelSerializer):
             "counterpart",
             "last_message",
             "unread_count",
+            "is_blocked",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(serializers.BooleanField(default=False))
+    def get_is_blocked(self, obj):
+        return bool(obj.has_block())
 
     @extend_schema_field(ChatUserSerializer(allow_null=True))
     def get_counterpart(self, obj):
@@ -198,6 +229,10 @@ class ConversationCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "You cannot start a conversation about your own listing."
             )
+        from .services import block_between
+
+        if block_between(request.user, product.product_user):
+            raise serializers.ValidationError("Messaging is blocked between these users.")
         return product
 
     def validate_message(self, value):

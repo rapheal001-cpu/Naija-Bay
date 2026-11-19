@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { HiOutlineChatAlt2, HiOutlinePaperAirplane, HiOutlineArrowLeft, HiOutlineInbox, HiOutlinePaperClip, HiOutlineMicrophone, HiOutlineStop, HiOutlineX } from 'react-icons/hi';
 import AppLayout from '../components/AppLayout.jsx';
@@ -16,6 +16,18 @@ import {
 import { fetchMessagesFn } from '../service/Endpoints.js';
 import { useSelector } from 'react-redux';
 import { formatDate } from '../dummyData.js';
+import { useConversationSocket } from '../components/messages/hooks/useConversationSocket.js';
+import { useChatListSocket } from '../components/messages/hooks/useChatListSocket.js';
+import TypingIndicator from '../components/messages/TypingIndicator.jsx';
+import ReadReceipt from '../components/messages/ReadReceipt.jsx';
+import {
+    blockUserFn,
+    clearConversationFn,
+    markMessagesReadInCache,
+    prependChatMessage,
+    removeConversationFromCache,
+    updateConversationInCache,
+} from '../core/api/messagingApi.js';
 
 const displayName = (user) =>
     user?.full_name || user?.username || 'Unknown user';
@@ -27,13 +39,17 @@ const Messages = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [draft, setDraft] = useState('');
     const [sendError, setSendError] = useState('');
-    const [socketOpen, setSocketOpen] = useState(false);
+    const [typingNames, setTypingNames] = useState([]);
+    const [olderPages, setOlderPages] = useState([]);
     const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
     const [pendingImages, setPendingImages] = useState([]); // {id, name, size, url(blob)}
     const [recording, setRecording] = useState(false); // UI flag; payload lives in recorderRef
     const fileInputRef = useRef(null);
     const scrollRef = useRef(null);
     const socketRef = useRef(null);
+    const typingTimerRef = useRef(null);
+    const typingSentRef = useRef(0);
+    const optimisticIdRef = useRef(0);
     const recorderRef = useRef(null); // {stream, recorder, chunks, startedAt}
     const queryClient = useQueryClient();
 
@@ -89,61 +105,92 @@ const Messages = () => {
         retry: 1,
         meta: { hookName: 'useFetchMessages' },
     });
+    // Older pages are fetched on demand ("Load older messages").
+    const olderQueries = useQueries({
+        queries: olderPages.map((page) => ({
+            queryKey: ['messages', effectiveId, page],
+            queryFn: () => fetchMessagesFn({ conversationId: effectiveId, page, pageSize: 100 }),
+            enabled: Boolean(effectiveId),
+            staleTime: 1000 * 60 * 5,
+            retry: 1,
+        })),
+    });
+
     const messages = useMemo(() => {
-        const results = messagesQuery.data?.results || [];
-        // Ascending order from the API: keep newest at the bottom.
-        return [...results].sort(
-            (a, b) => new Date(a.created_at) - new Date(b.created_at)
-        );
-    }, [messagesQuery.data]);
+        const all = [
+            ...olderQueries.flatMap((q) => q.data?.results || []),
+            ...(messagesQuery.data?.results || []),
+        ];
+        const seen = new Set();
+        return all
+            .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)))
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    }, [messagesQuery.data, olderQueries]);
 
-    // Socket readiness is derived (socket open AND a thread is selected
-    // AND the user is signed in) — never mirrored through effect state, so
-    // React never needs to "reset" it when auth or the thread changes.
-    const socketReady = Boolean(effectiveId && isAuthenticated && socketOpen);
-
-    // ---- Live chat socket (WebSocket; REST polling remains the fallback) ----
     useEffect(() => {
-        if (!effectiveId || !isAuthenticated) {
-            return undefined;
-        }
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const socket = new WebSocket(`${protocol}//${window.location.host}/ws/chat/${effectiveId}/`);
-        socketRef.current = socket;
+        const timer = window.setTimeout(() => {
+            setOlderPages([]);
+            setTypingNames([]);
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [effectiveId]);
 
-        socket.onopen = () => setSocketOpen(true);
-        socket.onclose = () => setSocketOpen(false);
-        socket.onerror = () => {
-            setSocketOpen(false);
-        };
-        socket.onmessage = (event) => {
-            let frame;
-            try {
-                frame = JSON.parse(event.data);
-            } catch {
-                return;
-            }
-            if (frame.type === 'message' && frame.message) {
-                const incoming = frame.message;
-                queryClient.setQueryData(['messages', effectiveId, 1], (cached) => {
-                    if (!cached) return cached;
-                    const results = cached.results || [];
-                    if (results.some((m) => m.id === incoming.id)) return cached;
-                    return { ...cached, results: [...results, incoming], count: (cached.count || results.length) + 1 };
-                });
-                queryClient.invalidateQueries({ queryKey: ['conversations'] });
-                queryClient.invalidateQueries({ queryKey: ['conversation', effectiveId] });
-                queryClient.invalidateQueries({ queryKey: ['unread-counts'] });
-            }
-        };
+    // ---- Live sockets (reconnecting; REST polling remains the fallback) ----
+    const handleIncomingMessage = (incoming) => {
+        if (!incoming) return;
+        queryClient.setQueryData(['messages', effectiveId, 1], (cached) => {
+            const withoutPending = {
+                ...cached,
+                results: (cached?.results || []).filter((m) => !m.pending),
+            };
+            return prependChatMessage(withoutPending, incoming);
+        });
+        updateConversationInCache(queryClient, effectiveId, (conv) => ({
+            ...conv,
+            last_message: incoming,
+            unread_count: 0,
+        }));
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-counts'] });
+    };
 
-        return () => {
-            socket.onclose = null;
-            socket.close();
-            socketRef.current = null;
-            setSocketOpen(false);
-        };
-    }, [effectiveId, isAuthenticated, queryClient]);
+    const handleTypingFrame = (frame) => {
+        setTypingNames((prev) => {
+            const name = frame.username || 'Someone';
+            const next = frame.is_typing ? Array.from(new Set([...prev, name])) : prev.filter((n) => n !== name);
+            return next;
+        });
+        if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = window.setTimeout(() => setTypingNames([]), 3500);
+    };
+
+    const { status: socketStatus, error: socketError } = useConversationSocket({
+        conversationId: effectiveId,
+        enabled: isAuthenticated,
+        socketRef,
+        onMessage: handleIncomingMessage,
+        onTyping: handleTypingFrame,
+        onRead: (frame) => {
+            markMessagesReadInCache(queryClient, frame.conversation_id);
+            queryClient.invalidateQueries({ queryKey: ['conversation', frame.conversation_id] });
+        },
+        onBlocked: () => {
+            setSendError('Messaging is blocked between these users.');
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        },
+        onRemoved: () => {
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        },
+    });
+
+    useChatListSocket({
+        enabled: isAuthenticated,
+        queryClient,
+        onTyping: handleTypingFrame,
+        onBlocked: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
+    });
+
+    const socketReady = socketStatus === 'connected';
 
     // ---- Mark the open thread as read ----
     const markRead = useMarkConversationReadMutation(effectiveId);
@@ -236,6 +283,22 @@ const Messages = () => {
         if (!text && !attachmentType) return;
         setSendError('');
 
+        // Optimistic insert — replaced by the server message when it arrives.
+        const optimistic = {
+            id: `tmp-${optimisticIdRef.current++}`,
+            conversation: effectiveId,
+            sender: user,
+            body: text,
+            attachment_type: attachmentType,
+            attachment_url: attachmentUrls[0] || '',
+            duration_ms: duration,
+            created_at: new Date().toISOString(),
+            is_mine: true,
+            read: false,
+            pending: true,
+        };
+        queryClient.setQueryData(['messages', effectiveId, 1], (cached) => prependChatMessage(cached, optimistic));
+
         const socket = socketRef.current;
         if (socket && socketReady && socket.readyState === WebSocket.OPEN) {
             try {
@@ -248,6 +311,7 @@ const Messages = () => {
                 }));
                 setDraft('');
                 setPendingImages([]);
+                sendTypingFrame(false);
                 return;
             } catch {
                 // fall through to the REST mutation below
@@ -263,7 +327,12 @@ const Messages = () => {
                 duration_ms: duration,
             },
             {
-                onSuccess: () => { setDraft(''); setPendingImages([]); },
+                onSuccess: () => {
+                    setDraft('');
+                    setPendingImages([]);
+                    sendTypingFrame(false);
+                    queryClient.invalidateQueries({ queryKey: ['messages', effectiveId, 1] });
+                },
                 onError: (err) => {
                     const data = err?.response?.data;
                     setSendError(
@@ -283,6 +352,44 @@ const Messages = () => {
             handleSend(event);
         }
     };
+
+    const sendTypingFrame = (isTyping) => {
+        const socket = socketRef.current;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'typing', is_typing: isTyping }));
+        }
+    };
+
+    const handleDraftChange = (event) => {
+        setDraft(event.target.value);
+        const now = Date.now();
+        if (now - typingSentRef.current > 1200) {
+            typingSentRef.current = now;
+            sendTypingFrame(Boolean(event.target.value));
+        }
+    };
+
+    // Block / clear actions
+    const blockMutation = useMutation({
+        mutationFn: blockUserFn,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            setSendError('User blocked. The conversation has been closed.');
+            closeThreadOnMobile();
+        },
+        onError: () => setSendError('Could not block this user. Try again.'),
+    });
+
+    const clearMutation = useMutation({
+        mutationFn: clearConversationFn,
+        onSuccess: (_data, id) => {
+            removeConversationFromCache(queryClient, id);
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            setSendError('Conversation cleared from your inbox.');
+            closeThreadOnMobile();
+        },
+        onError: () => setSendError('Could not clear this conversation.'),
+    });
 
     const counterpart = conversation?.counterpart;
     const product = conversation?.product;
@@ -449,13 +556,44 @@ const Messages = () => {
                                                     className={`inline-block h-1.5 w-1.5 rounded-full ${socketReady ? 'bg-emerald-500' : 'bg-gray-300'}`}
                                                     aria-hidden="true"
                                                 />
-                                                {socketReady ? 'Live' : 'Refreshing automatically'}
+                                                {socketStatus === 'connected'
+                                                    ? 'Live'
+                                                    : socketStatus === 'reconnecting'
+                                                        ? 'Reconnecting…'
+                                                        : 'Refreshing automatically'}
+                                                {socketError && ` • ${socketError}`}
                                             </p>
                                             {counterpart?.store && (
                                                 <p className="text-[11px] text-gray-400 truncate">
                                                     Store: {counterpart.store.name}
                                                     {counterpart.store.verified ? ' • Verified' : ''}
                                                 </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <button
+                                                type="button"
+                                                title="Clear chat for me"
+                                                disabled={clearMutation.isPending}
+                                                onClick={() => clearMutation.mutate(effectiveId)}
+                                                className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-[11px] font-bold text-gray-500 hover:text-brand hover:border-brand/40 disabled:opacity-50"
+                                            >
+                                                Clear
+                                            </button>
+                                            {counterpart?.id && (
+                                                <button
+                                                    type="button"
+                                                    title="Block this user"
+                                                    disabled={blockMutation.isPending}
+                                                    onClick={() => {
+                                                        if (window.confirm(`Block ${displayName(counterpart)}? This closes the conversation.`)) {
+                                                            blockMutation.mutate(counterpart.id);
+                                                        }
+                                                    }}
+                                                    className="rounded-lg border border-red-100 px-2.5 py-1.5 text-[11px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
+                                                >
+                                                    Block
+                                                </button>
                                             )}
                                         </div>
                                         {product && (
@@ -478,6 +616,17 @@ const Messages = () => {
 
                                     {/* Messages */}
                                     <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50/50 space-y-3">
+                                        {messagesQuery.data?.next && (
+                                            <div className="flex justify-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOlderPages((prev) => [...prev, prev.length + 2])}
+                                                    className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-500 hover:text-brand hover:border-brand/40"
+                                                >
+                                                    Load older messages
+                                                </button>
+                                            </div>
+                                        )}
                                         {messagesQuery.isLoading ? (
                                             <div className="space-y-3">
                                                 {[0, 1, 2].map((i) => (
@@ -514,12 +663,13 @@ const Messages = () => {
                                                         {message.body && <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.body}</p>}
                                                         <p className={`text-[10px] mt-1 text-right ${message.is_mine ? 'text-white/60' : 'text-gray-400'}`}>
                                                             {formatDate(message.created_at)}
-                                                            {message.is_mine && (message.read ? ' • Read' : ' • Sent')}
+                                                            <ReadReceipt isMine={message.is_mine} read={message.read} />
                                                         </p>
                                                     </div>
                                                 </div>
                                             ))
                                         )}
+                                        <TypingIndicator names={typingNames} />
                                     </div>
 
                                     {/* Composer */}
@@ -577,7 +727,7 @@ const Messages = () => {
                                             </button>
                                             <textarea
                                                 value={draft}
-                                                onChange={(event) => setDraft(event.target.value)}
+                                                onChange={handleDraftChange}
                                                 onKeyDown={handleKeyDown}
                                                 rows={2}
                                                 maxLength={4000}

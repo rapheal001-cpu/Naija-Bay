@@ -110,9 +110,26 @@ object keys. **Out:** `201`. Keys must be `product-image` keys owned by the call
 `{attachment_type: image|audio, attachment_url, duration_ms}` → `201`.
 Chat object keys must be owned `chat-image`/`chat-audio` keys.
 
-### WebSocket `/ws/chat/<conversation_id>/`
-Cookie JWT auth. Close codes: 4401 unauthenticated, 4404 missing conversation,
-4403 non-participant. REST remains the source of truth.
+### POST `/<id>/read/` and `/<id>/clear/`
+**Auth:** participant · **Out:** `200`. `read` marks incoming messages read and
+emits `messages_read` to the other party. `clear` hides the thread only for the
+caller (`ConversationUserState.deleted_at`); a new message restores it.
+
+### GET/POST `/blocks/` and DELETE `/blocks/<id>/`
+**Auth:** Yes · **POST body:** `{"user": <id>}` → `201`
+`{id, blocker, blocked_user, created_at}`. Blocking hides the conversation for
+both users, closes live sockets with 4403, prevents new conversations and new
+messages. DELETE → `204`.
+
+### WebSocket `/ws/chat/<conversation_id>/` and `/ws/chat/`
+Cookie JWT auth. Client: `message`, `typing` (`is_typing`), `read`. Server:
+`message`, `typing`, `messages_read`, `conversation_blocked`, `error`; inbox:
+`message`, `unread`, `messages_read`, `conversation_cleared`,
+`conversation_blocked`. Close codes: 4401 unauthenticated, 4404 missing
+conversation, 4403 access revoked mid-session, 1013 channel layer unavailable.
+Membership **and block state are re-checked on every event**. Per-socket rate
+limits: messages 20/10s, typing 40/10s, read 30/10s. REST remains the source of
+truth; the frontend falls back to it when a socket is unavailable.
 
 ---
 

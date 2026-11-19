@@ -91,17 +91,37 @@ rejected with 400.
 
 | Method | Path | Permission | Purpose |
 |---|---|---|---|
-| GET | `/conversations/` | user | List conversations (unread counts, last-message preview; image attachments show a thumbnail + `Photo` label, voice notes show `Voice note`) |
-| POST | `/conversations/` | user | Start/open a conversation |
-| GET | `/conversations/<id>/messages/` | participant | List messages (page size 100) |
-| POST | `/conversations/<id>/messages/` | participant | Send text **or** attachment message |
+| GET | `/` | user | List conversations (unread counts, last-message preview; blocked and cleared threads are hidden) |
+| POST | `/` | user | Start/open a conversation |
+| GET | `/<id>/` | user | Conversation detail |
+| GET | `/<id>/messages/` | participant | List messages (`?page=`, `?page_size=` default 50, max 100) |
+| POST | `/<id>/messages/` | participant | Send text **or** attachment message |
+| POST | `/<id>/read/` | participant | Mark thread read |
+| POST | `/<id>/clear/` | participant | Clear/hide the thread **for this user only**; a new message restores it |
+| GET/POST | `/blocks/` | user | List my blocks / block a user (`{"user": <id>}`) |
+| DELETE | `/blocks/<id>/` | user | Unblock |
 
 **Send body.** Either text (`body`, 1–4000 chars) or an attachment message:
 `attachment_type` (`image`|`audio`), `attachment_url` (required with a
 type), `duration_ms` (voice notes). Empty text with no attachment is
-rejected (400). WebSocket: `ws://<host>/ws/chat/<conversation_id>/` with
-the same payload shape; cookie-JWT auth. Close codes: 4401
-unauthenticated, 4404 missing conversation, 4403 non-participant.
+rejected (400).
+
+**Sockets** (cookie-JWT auth):
+- `ws://<host>/ws/chat/<conversation_id>/` — room socket
+- `ws://<host>/ws/chat/` — per-user inbox socket
+
+Client events: `message` (same shape as REST), `typing` (`is_typing`), `read`.
+Server events: `message`, `typing`, `messages_read`, `conversation_blocked`,
+`error`. Inbox events: `message`, `unread`, `messages_read`,
+`conversation_cleared`, `conversation_blocked`.
+
+Close codes: **4401** unauthenticated, **4404** no access to the conversation,
+**4403** access revoked mid-session (block/removal), **1013** channel layer
+unavailable. Membership and block state are re-checked on **every** event.
+
+Per-socket sliding-window limits: messages 20/10s, typing 40/10s, read 30/10s.
+Inbox broadcasts use a **per-recipient payload** so private state never leaks
+between participants.
 
 ### Orders (`/api/v1/orders/`)
 

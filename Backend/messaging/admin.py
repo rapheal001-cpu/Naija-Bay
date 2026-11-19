@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Conversation, Message
+from .models import Conversation, ConversationUserState, Message, UserBlock
 
 
 class MessageInline(admin.TabularInline):
@@ -22,3 +22,15 @@ class MessageAdmin(admin.ModelAdmin):
     list_display = ("id", "conversation", "sender", "read", "created_at")
     list_filter = ("read", "created_at")
     search_fields = ("sender__username", "body")
+
+
+@admin.register(UserBlock)
+class UserBlockAdmin(admin.ModelAdmin):
+    list_display = ("blocker", "blocked_user", "created_at")
+    search_fields = ("blocker__username", "blocked_user__username")
+
+
+@admin.register(ConversationUserState)
+class ConversationUserStateAdmin(admin.ModelAdmin):
+    list_display = ("conversation", "user", "deleted_at")
+    search_fields = ("user__username",)

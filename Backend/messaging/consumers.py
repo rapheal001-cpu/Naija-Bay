@@ -10,16 +10,23 @@ Room socket ``ws/chat/<conversation_id>/``:
   server → client
     {"type": "message", "message": {...}}  new/rest materialized message
     {"type": "typing", ...}
+    {"type": "messages_read", "conversation_id": n, "user_id": n}
+    {"type": "conversation_blocked"}        socket closes with 4403
     {"type": "error", "detail": "..."}
 
 Inbox socket ``ws/chat/``:
   server → client
     {"type": "message", "conversation_id": n, "message": {...}}
     {"type": "unread", "conversation_id": n, "unread_count": n}
+    {"type": "messages_read", ...}
+    {"type": "conversation_cleared", "conversation_id": n}
+    {"type": "conversation_blocked", ...}
 
 Close codes: 4401 unauthenticated, 4404 no access to the conversation,
 4403 access revoked mid-session, 1013 channel layer unavailable.
 """
+
+import time
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -32,6 +39,7 @@ from NaijaBay.realtime import (
 
 from .models import Conversation, Message
 from .serializers import MessageSerializer
+from .services import can_use_conversation, conversation_has_block, user_inbox_group_name
 
 
 def chat_group_name(conversation_id):
@@ -45,6 +53,28 @@ def user_inbox_group_name(user_id):
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     """Live chat room for one conversation."""
 
+    # (max events, window seconds) — sliding window per socket connection.
+    RATE_LIMITS = {
+        "message": (20, 10.0),
+        "typing": (40, 10.0),
+        "read": (30, 10.0),
+    }
+
+    def _allow_event(self, kind):
+        limit, window = self.RATE_LIMITS[kind]
+        buckets = getattr(self, "_rate_buckets", None)
+        if buckets is None:
+            buckets = self._rate_buckets = {}
+        bucket = buckets.setdefault(kind, [])
+        now = time.monotonic()
+        cutoff = now - window
+        while bucket and bucket[0] <= cutoff:
+            bucket.pop(0)
+        if len(bucket) >= limit:
+            return False
+        bucket.append(now)
+        return True
+
     async def connect(self):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
@@ -52,7 +82,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
 
         self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
-        if not await self.is_participant():
+        if not await self.can_use():
             await self.close(code=4404)
             return
 
@@ -74,9 +104,13 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
 
         event_type = content.get("type")
+        if not await self.can_use():
+            await self.close(code=4403)
+            return
+
         if event_type == "message":
-            if not await self.is_participant():
-                await self.close(code=4403)
+            if not self._allow_event("message"):
+                await self.send_json({"type": "error", "detail": "You are sending messages too quickly."})
                 return
             body = (content.get("body") or "").strip()
             attachment_type = content.get("attachment_type") or ""
@@ -99,7 +133,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if event_type == "typing":
-            if await self.is_participant():
+            if self._allow_event("typing"):
                 await async_safe_group_send(
                     self.channel_layer,
                     self.room_group_name,
@@ -116,13 +150,37 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if event_type == "read":
-            await self.mark_read()
+            if self._allow_event("read") and await self.mark_read():
+                await self.broadcast_read()
             return
 
         await self.send_json({"type": "error", "detail": "Unknown chat event."})
 
     async def chat_event(self, event):
-        await self.send_json({"type": event["event"], **event.get("payload", {})})
+        event_name = event["event"]
+        await self.send_json({"type": event_name, **event.get("payload", {})})
+        if event_name == "conversation_blocked":
+            await self.close(code=4403)
+            return
+        if not await self.can_use():
+            await self.close(code=4403)
+
+    async def broadcast_read(self):
+        payload = {
+            "conversation_id": self.conversation_id,
+            "user_id": self.scope["user"].pk,
+        }
+        await async_safe_group_send(
+            self.channel_layer,
+            self.room_group_name,
+            {"type": "chat.event", "event": "messages_read", "payload": payload},
+        )
+        for member_id in await self.other_member_ids():
+            await async_safe_group_send(
+                self.channel_layer,
+                user_inbox_group_name(member_id),
+                {"type": "chat.list.event", "event": "messages_read", "payload": payload},
+            )
 
     async def broadcast(self, room_extra=None):
         room_extra = room_extra or {}
@@ -160,6 +218,11 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         return [other.pk] if other else []
 
     @database_sync_to_async
+    def can_use(self):
+        conversation = Conversation.objects.filter(pk=self.conversation_id).first()
+        return can_use_conversation(self.scope["user"], conversation)
+
+    @database_sync_to_async
     def is_participant(self):
         conversation = Conversation.objects.filter(pk=self.conversation_id).first()
         return bool(conversation and conversation.is_participant(self.scope["user"]))
@@ -167,7 +230,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def save_message(self, body, attachment_type="", attachment_url="", duration_ms=0):
         conversation = Conversation.objects.filter(pk=self.conversation_id).first()
-        if conversation is None or not conversation.is_participant(self.scope["user"]):
+        if not can_use_conversation(self.scope["user"], conversation):
             return None
         # Message.save() notifies the recipient (existing Signal-free logic
         # in the model) — no extra paths to keep in sync.
@@ -212,4 +275,7 @@ class InboxConsumer(AsyncJsonWebsocketConsumer):
             await safe_group_discard(self.channel_layer, group_name, self.channel_name)
 
     async def chat_list_event(self, event):
-        await self.send_json({"type": event["event"], **event.get("payload", {})})
+        event_name = event["event"]
+        await self.send_json({"type": event_name, **event.get("payload", {})})
+        if event_name == "conversation_blocked":
+            await self.close(code=4403)

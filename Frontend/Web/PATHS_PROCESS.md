@@ -76,8 +76,11 @@ Static content pages. `/safety` links to the profile's Safe Deal panel.
 
 | Step | Detail |
 |---|---|
-| Data | Conversations + messages via `fetchConversationsFn` / `fetchMessagesFn` |
-| Transport | WebSocket `/ws/chat/<conversation_id>/` with REST fallback |
+| Data | Conversations + messages via `fetchConversationsFn` / `fetchMessagesFn`; older pages fetched on demand |
+| Transport | Two sockets: `useConversationSocket` (`/ws/chat/<id>/`) and `useChatListSocket` (`/ws/chat/`), each with exponential-backoff reconnect (6 tries, 30s cap) and close-code-aware status. REST fallback when offline |
+| Live events | `message`, `typing` (3.5s auto-clear), `messages_read` (single/double tick), `unread`, `conversation_cleared`, `conversation_blocked` |
+| Sending | Optimistic insert with pending state; replaced by the server message on arrival; REST mutation fallback |
+| Safety | Block button (`POST /blocks/`) closes the chat; Clear button (`POST /<id>/clear/`) hides it only for this user; new messages restore it |
 | Attachments | `uploadMediaFile` with `chat-image` / `chat-audio` purpose; returned key sent as `attachment_url` |
 
 ### `/my-ads`, `/sell`, `/product/:slug/edit`

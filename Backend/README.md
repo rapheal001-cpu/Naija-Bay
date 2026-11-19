@@ -1,6 +1,6 @@
 # NaijaBay Backend API
 
-NaijaBay is a Django REST Framework marketplace backend for Nigerian classifieds and local buying/selling flows, modeled after Jiji.ng (classifieds) and Temu (flash deals, discounts, ratings). The backend powers authentication, profile/stores, product discovery with filters, discounts and flash deals, product ratings, favorites, reports, notifications, and buyer–seller messaging over REST (the frontend polls; there is no websocket layer).
+NaijaBay is a Django REST Framework marketplace backend for Nigerian classifieds and local buying/selling flows, modeled after Jiji.ng (classifieds) and Temu (flash deals, discounts, ratings). The backend powers authentication, profile/stores, product discovery with filters, discounts and flash deals, product ratings, favorites, reports, notifications, and buyer–seller messaging over REST **and WebSockets** (Channels/Daphne).
 
 ## What the backend does
 
@@ -13,7 +13,7 @@ The current API supports:
 - Jiji-style product ratings: 1–5 star `ProductRating` per user per product with average/total/user rating in the serializer
 - product detail retrieval, product create/update/delete, and image upload handling
 - favorite toggling, product views, and product reports (moderation)
-- buyer–seller messaging (conversations, messages, read receipts, unread counts) over REST
+- buyer–seller messaging (conversations, attachments, typing, read receipts, unread counts) over REST + WebSockets, with user blocks and per-user clear chat
 - notification creation and mark-as-read workflows
 - OpenAPI/schema generation and interactive docs through drf-spectacular
 
@@ -45,7 +45,7 @@ Backend/
 │   ├── serializers/        # User, store, follow, notification, registration serializers
 │   ├── urls.py
 │   └── views.py
-├── messaging/              # Conversation + Message models and REST views
+├── messaging/              # Conversation/Message/Block/Clear models, REST views, Channels consumers
 │   ├── models.py
 │   ├── serializers.py
 │   ├── urls.py
@@ -123,8 +123,14 @@ These routes are routed through the auth_kit integration and cover the normal au
 - `GET /api/v1/messaging/<id>/` — conversation detail
 - `GET/POST /api/v1/messaging/<id>/messages/` — list or send messages
 - `POST /api/v1/messaging/<id>/read/` — mark the thread read
+- `POST /api/v1/messaging/<id>/clear/` — hide the thread for this user only
+- `GET/POST /api/v1/messaging/blocks/`, `DELETE /api/v1/messaging/blocks/<id>/` — blocks
 
-Messaging is REST-only; the frontend refreshes threads on a polling interval. There is no Django Channels/websocket layer yet.
+WebSockets (cookie-JWT auth): `/ws/chat/<id>/` (room) and `/ws/chat/` (inbox).
+Events: `message`, `typing`, `messages_read`, `conversation_blocked`,
+`conversation_cleared`; close codes 4401/4404/4403/1013. Membership and block
+state are re-checked on every event, with per-socket rate limits. REST remains
+the source of truth and is the fallback when a socket is unavailable.
 
 ### Documentation routes
 

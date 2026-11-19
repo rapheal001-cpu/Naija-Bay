@@ -185,17 +185,28 @@ registered in the Paystack dashboard — see [Backend/PRODUCTION.md](Backend/PRO
 
 ## 10. Real-time chat
 
-- **Transport**: WebSocket-first (`/ws/chat/<conversation_id>/`) with a
-  REST fallback when the socket is unavailable; the REST API stays the
-  source of truth.
+- **Transport**: two WebSockets — a per-conversation room
+  (`/ws/chat/<conversation_id>/`) and a per-user inbox (`/ws/chat/`) — with a
+  REST fallback when a socket is unavailable; the REST API stays the source of
+  truth. The web client reconnects with exponential backoff and shows
+  close-code-aware status (sign in again / no access / reconnecting).
 - **Auth**: cookie JWT via `JWTAuthMiddlewareStack`; close codes are
   documented in `messaging/consumers.py` (4401 unauthenticated, 4404 missing,
-  4403 non-participant).
+  4403 access revoked mid-session, 1013 channel layer unavailable). Membership
+  **and block state are re-checked on every socket event**, and per-socket
+  sliding-window limits throttle messages, typing and read events.
+- **Live UX**: typing indicators, `messages_read` receipts to the sender,
+  optimistic sends, live unread badges/previews, and per-recipient inbox
+  payloads so private state never leaks between participants.
 - **Attachments**: `Message.attachment_type` (`image`/`audio`),
   `attachment_url`, and `duration_ms`. The browser records voice notes with
   `MediaRecorder`; images upload through the direct-to-storage pipe.
+- **Safety**: either party can block a user (`UserBlock`) — this hides the
+  conversation, prevents new messages and closes live sockets. "Clear chat"
+  (`ConversationUserState`) hides a thread only for the caller; a new message
+  restores it for both.
 - **Lifecycle**: sending a message marks the thread read for the sender and
-  notifies the recipient.
+  notifies the recipient. Older messages can be fetched page by page.
 
 ## 11. Media uploads and storage
 

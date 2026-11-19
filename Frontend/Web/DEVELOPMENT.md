@@ -55,6 +55,7 @@ src/
     HeaderComponents/   header, search, category nav, mobile bottom nav
     ProductComponents/  cards, forms, ratings, report/chat modals
     JijiComponents/     feedback, offers, Verified ID, seller tools, Safe Deal, video
+    messages/           socket hooks (conversation + inbox), typing/read UI
     ShopComponents/     cart/checkout UI
     UserComponents/     profile UI
   pages/                route-level screens

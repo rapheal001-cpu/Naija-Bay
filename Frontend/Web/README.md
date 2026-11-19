@@ -15,7 +15,7 @@ The frontend currently supports:
 - user authentication with sign-in and registration
 - seller listing flows for posting a product (with optional original price for discounts) and editing/deleting listings
 - profile, update profile, business detail, notifications, and message views
-- buyer–seller messaging over WebSockets with a REST fallback, including image and voice-note attachments
+- buyer–seller messaging over **two WebSockets** (conversation + inbox) with REST fallback: auto-reconnect with backoff, close-code-aware UI, typing indicators, live read receipts, optimistic sends, live unread badges, image/voice attachments, "load older messages", user blocking and per-user "clear chat"
 - favorites and protected navigation
 
 ## Tech stack

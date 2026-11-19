@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -92,6 +93,19 @@ class Conversation(models.Model):
     def touch(self):
         Conversation.objects.filter(pk=self.pk).update(updated_at=timezone.now())
 
+    def has_block(self):
+        """True when either participant has blocked the other."""
+        return UserBlock.objects.filter(
+            Q(blocker_id=self.buyer_id, blocked_user_id=self.seller_id)
+            | Q(blocker_id=self.seller_id, blocked_user_id=self.buyer_id)
+        ).exists()
+
+    def is_cleared_for(self, user):
+        state = ConversationUserState.objects.filter(
+            conversation=self, user=user
+        ).first()
+        return bool(state and state.deleted_at)
+
 
 # =============================================================================
 # MESSAGE
@@ -149,6 +163,10 @@ class Message(models.Model):
             Conversation.objects.filter(pk=self.conversation_id).update(
                 updated_at=timezone.now()
             )
+            # A new message restores a conversation cleared by either participant.
+            ConversationUserState.objects.filter(
+                conversation_id=self.conversation_id
+            ).update(deleted_at=None)
 
             # Notify the recipient (never the sender).
             from accounts.models import Notifications
@@ -172,3 +190,74 @@ class Message(models.Model):
                         f"{product_name}."
                     ),
                 )
+
+
+# =============================================================================
+# USER BLOCK
+# =============================================================================
+
+class UserBlock(models.Model):
+    """A one-way block. Either direction blocks the conversation entirely."""
+
+    blocker = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocks_made",
+        verbose_name=_("Blocker"), db_index=True,
+    )
+    blocked_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocks_received",
+        verbose_name=_("Blocked User"), db_index=True,
+    )
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("User Block")
+        verbose_name_plural = _("User Blocks")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["blocker", "blocked_user"], name="unique_user_block"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(blocker=models.F("blocked_user")),
+                name="prevent_self_block",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["blocker", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.blocker_id} blocked {self.blocked_user_id}"
+
+
+# =============================================================================
+# PER-USER CLEAR STATE
+# =============================================================================
+
+class ConversationUserState(models.Model):
+    """Per-user 'clear chat' marker: hides the thread only for that user."""
+
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name="user_states",
+        verbose_name=_("Conversation"), db_index=True,
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="conversation_states",
+        verbose_name=_("User"), db_index=True,
+    )
+    deleted_at = models.DateTimeField(_("Cleared At"), null=True, blank=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("Conversation User State")
+        verbose_name_plural = _("Conversation User States")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conversation", "user"], name="unique_conversation_user_state"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "deleted_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} in conversation {self.conversation_id}"

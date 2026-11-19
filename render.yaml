@@ -1,0 +1,18 @@
+# Render Blueprint for the NaijaBay web client (static site).
+# The Django backend must be deployed separately as an ASGI service (Daphne)
+# so the chat WebSockets work, and its host must be set in VITE_BASE_URL.
+
+services:
+  - type: web
+    name: naijabay-web
+    runtime: static
+    rootDir: Frontend/Web
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_BASE_URL
+        value: https://api.naijabay.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

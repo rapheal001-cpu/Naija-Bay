@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { buildSocketUrl } from "../../../service/socketUrl.js";
 import {
     removeConversationFromCache,
     updateConversationInCache,
@@ -6,10 +7,7 @@ import {
 
 const MAX_ATTEMPTS = 6;
 
-const listSocketUrl = () => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${window.location.host}/ws/chat/`;
-};
+const listSocketUrl = () => buildSocketUrl("/ws/chat/");
 
 /** Inbox socket: live previews, unread counts, typing, clear and block events. */
 export const useChatListSocket = ({ enabled, queryClient, onTyping, onBlocked }) => {

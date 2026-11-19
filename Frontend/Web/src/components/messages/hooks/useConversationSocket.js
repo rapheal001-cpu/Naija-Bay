@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { buildSocketUrl } from "../../../service/socketUrl.js";
 
 const MAX_ATTEMPTS = 6;
 
-const socketUrl = (conversationId) => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${window.location.host}/ws/chat/${conversationId}/`;
-};
+const socketUrl = (conversationId) =>
+    buildSocketUrl(`/ws/chat/${conversationId}/`);
 
 /** Per-conversation socket: messages, typing, read receipts, block events. */
 export const useConversationSocket = ({

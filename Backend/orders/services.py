@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 MAX_PER_ITEM = 99
 
-# Forward-only transitions a seller may apply to an item of a PAID order.
 ITEM_TRANSITIONS = {
     "pending": ["processing", "cancelled"],
     "processing": ["shipped", "cancelled"],
@@ -44,9 +43,6 @@ def delivery_fee():
     return Decimal(str(getattr(settings, "DELIVERY_FEE", 0) or 0))
 
 
-# =============================================================================
-# CART
-# =============================================================================
 
 def get_cart(user):
     cart, _ = Cart.objects.get_or_create(user=user)
@@ -177,9 +173,6 @@ def clear_cart(user):
     return cart
 
 
-# =============================================================================
-# ORDERS
-# =============================================================================
 
 def _signature(rows):
     return sorted(rows, key=lambda row: (row[0] or 0, row[1]))
@@ -210,8 +203,6 @@ def create_order_from_cart(user, shipping):
     fee = delivery_fee()
     wanted = _signature([(i.product_id, i.quantity, i.product.price) for i in items])
 
-    # Never leave duplicate unpaid orders around: reuse an identical one,
-    # cancel any other unpaid pending order from this buyer.
     reusable = None
     stale = Order.objects.filter(
         buyer=user, status="pending", payment_status="unpaid"
@@ -295,7 +286,6 @@ def mark_order_paid(order_id):
         product_ids.append(product.pk)
         take = min(item.quantity, product.quantity)
         if take < item.quantity:
-            # Stock ran out between checkout and payment. Needs manual follow-up/refund.
             logger.warning(
                 "Order %s oversold %s: wanted %s, had %s",
                 order.reference, product.pk, item.quantity, product.quantity,
@@ -314,7 +304,6 @@ def mark_order_paid(order_id):
     order.payment_status = "paid"
     order.paid_at = timezone.now()
     if order.status == "cancelled":
-        # Money arrived for an order we had auto-cancelled: honour it.
         order.status = "pending"
     order.save(update_fields=["payment_status", "paid_at", "status", "updated_at"])
 

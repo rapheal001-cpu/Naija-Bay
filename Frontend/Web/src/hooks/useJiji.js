@@ -20,9 +20,6 @@ const useQ = (key, fn, enabled = true) => useQuery({
     retry: 1,
 });
 
-// ---------------------------------------------------------------------------
-// FEEDBACK
-// ---------------------------------------------------------------------------
 export const useFeedback = (sellerId, enabled = true) =>
     useQ(['feedback', sellerId], () => fetchFeedbackFn(sellerId), Boolean(sellerId && enabled));
 
@@ -66,9 +63,6 @@ export const useRespondFeedback = () => {
     });
 };
 
-// ---------------------------------------------------------------------------
-// SAVED SEARCHES / VERIFICATION
-// ---------------------------------------------------------------------------
 export const useSavedSearches = (enabled = true) => useQ(['saved-searches'], fetchSavedSearchesFn, enabled);
 
 export const useCreateSavedSearch = () => {
@@ -100,9 +94,6 @@ export const useSubmitVerification = () => {
     });
 };
 
-// ---------------------------------------------------------------------------
-// OFFERS / CALLBACKS / VIDEOS
-// ---------------------------------------------------------------------------
 export const useOffers = (slug, enabled = true) => useQ(['offers', slug], () => fetchOffersFn(slug), Boolean(slug && enabled));
 
 export const useCreateOffer = () => {
@@ -133,9 +124,6 @@ export const useUploadVideo = () => {
     });
 };
 
-// ---------------------------------------------------------------------------
-// SAFE DEAL
-// ---------------------------------------------------------------------------
 export const useSafeDeals = (enabled = true) => useQ(['safe-deals'], fetchSafeDealsFn, enabled);
 
 export const useSafeDealAction = () => {
@@ -149,9 +137,6 @@ export const useSafeDealAction = () => {
     });
 };
 
-// ---------------------------------------------------------------------------
-// MONETISATION
-// ---------------------------------------------------------------------------
 export const useCredit = (enabled = true) => useQ(['credit'], fetchCreditFn, enabled);
 export const useCreditTransactions = (enabled = true) => useQ(['credit-transactions'], fetchCreditTransactionsFn, enabled);
 export const useReferrals = (enabled = true) => useQ(['referrals'], fetchReferralsFn, enabled);

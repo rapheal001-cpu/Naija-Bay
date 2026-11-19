@@ -3,10 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { HiOutlineSearch, HiOutlineLocationMarker } from 'react-icons/hi';
 import { STATE_CHOICES } from '../../dummyData.js';
 
-/**
- * Professional header search: keyword + Nigerian state selector.
- * Preserves the existing `/products` query-param contract (search, state).
- */
 const GlobalSearch = ({ compact = false }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -16,7 +12,6 @@ const GlobalSearch = ({ compact = false }) => {
     const handleSubmit = (event) => {
         event.preventDefault();
         const params = new URLSearchParams(location.search);
-        // Start a fresh browse context for header searches.
         params.delete('page');
         if (keyword.trim()) params.set('search', keyword.trim());
         else params.delete('search');

@@ -2,9 +2,6 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from .models import State, City, Category, SubCategory, AttributeDefinition, AttributeOption
 
-# =============================================================================
-# STATE ADMIN
-# =============================================================================
 
 
 @admin.register(State)
@@ -15,9 +12,6 @@ class StateAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
-# =============================================================================
-# CITY ADMIN
-# =============================================================================
 
 
 @admin.register(City)
@@ -30,9 +24,6 @@ class CityAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
-# =============================================================================
-# CATEGORY ADMIN
-# =============================================================================
 
 
 @admin.register(Category)
@@ -43,9 +34,6 @@ class CategoryAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
-# =============================================================================
-# SUB CATEGORY ADMIN
-# =============================================================================
 
 
 @admin.register(SubCategory)
@@ -57,9 +45,6 @@ class SubCategoryAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category",)
 
 
-# =============================================================================
-# ATTRIBUTE DEFINITION ADMIN
-# =============================================================================
 
 
 class AttributeOptionInline(admin.TabularInline):

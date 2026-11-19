@@ -32,9 +32,6 @@ from ._catalog import (
 from ._images import attach_images_to_product
 
 
-# =============================================================================
-# COMMAND
-# =============================================================================
 
 class Command(BaseCommand):
     help = (
@@ -99,7 +96,6 @@ class Command(BaseCommand):
                     user, needed, options["images"]
                 )
 
-            # Give any existing product that still has no photos some images.
             if options["images"]:
                 for product in Product.objects.filter(
                     product_user=user, images__isnull=True
@@ -190,8 +186,6 @@ class Command(BaseCommand):
                     Decimal(str(price)) * Decimal(str(random.uniform(1.10, 1.35)))
                 ).quantize(Decimal("1"))
 
-            # Cutover: resolve relational FKs (run `categories` + `nigeria_states`
-            # or `seed_all` first so the lookup tables exist).
             category_obj = Category.objects.filter(slug=category.replace("_", "-")).first()
             subcategory_obj = (
                 SubCategory.objects.filter(

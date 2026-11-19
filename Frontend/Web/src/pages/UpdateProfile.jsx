@@ -26,17 +26,14 @@ const UpdateProfile = () => {
     const watchedFirstName = watch('first_name');
     const watchedLastName = watch('last_name');
 
-    // Strip +234 for display (backend stores international, user sees local)
     const stripCountryCode = (phone) => {
         if (!phone) return '';
         return String(phone).replace(/^\+234/, '0');
     };
 
-    // Build full avatar URL if backend returns relative path
     const getAvatarUrl = (avatarPath) => {
         if (!avatarPath) return null;
         if (avatarPath.startsWith('http')) return avatarPath;
-        // Adjust this to match your API base URL
         const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         return `${baseUrl}${avatarPath}`;
     };
@@ -81,7 +78,6 @@ const UpdateProfile = () => {
         setServerError('');
     };
 
-    // Avatar fallback: initials from first + last name
     const initials = useMemo(() => {
         const f = watchedFirstName?.trim()?.[0] ?? '';
         const l = watchedLastName?.trim()?.[0] ?? '';
@@ -92,7 +88,6 @@ const UpdateProfile = () => {
         setServerMessage('');
         setServerError('');
 
-        // Clean payload to match backend expectations
         const payload = {
             ...data,
             phone_number: stripCountryCode(data.phone_number),
@@ -156,7 +151,6 @@ const UpdateProfile = () => {
                     </div>
 
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 sm:p-10">
-                        {/* Success message */}
                         {serverMessage && (
                             <div className="flex items-start gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 mb-6">
                                 <HiOutlineCheckCircle size={20} className="text-emerald-600 shrink-0 mt-0.5" />
@@ -164,7 +158,6 @@ const UpdateProfile = () => {
                             </div>
                         )}
 
-                        {/* Server-level error */}
                         {serverError && (
                             <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                                 <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
@@ -173,7 +166,6 @@ const UpdateProfile = () => {
                         )}
 
                         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-                            {/* Avatar with initials fallback */}
                             <div className="flex flex-col items-center gap-3 mb-2">
                                 <div className="relative">
                                     {avatarPreview && !imgError ? (
@@ -201,7 +193,6 @@ const UpdateProfile = () => {
                                 <span className="text-xs text-gray-500 font-medium">Change profile photo</span>
                             </div>
 
-                            {/* Name row */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-1.5">
                                     <label htmlFor="first_name" className="text-[13px] font-bold text-gray-700 ml-1">First name</label>
@@ -236,7 +227,6 @@ const UpdateProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Username — letters ONLY, no numbers/symbols */}
                             <div className="space-y-1.5">
                                 <label htmlFor="username" className="text-[13px] font-bold text-gray-700 ml-1">Username</label>
                                 <div className="relative">
@@ -267,7 +257,6 @@ const UpdateProfile = () => {
                                 {errors.username && <p className="text-red-500 text-xs font-semibold ml-1">{errors.username.message}</p>}
                             </div>
 
-                            {/* Phone — no +234, digits only, 11 chars */}
                             <div className="space-y-1.5">
                                 <label htmlFor="phone_number" className="text-[13px] font-bold text-gray-700 ml-1">Phone number</label>
                                 <div className="relative">
@@ -290,7 +279,6 @@ const UpdateProfile = () => {
                                 {errors.phone_number && <p className="text-red-500 text-xs font-semibold ml-1">{errors.phone_number.message}</p>}
                             </div>
 
-                            {/* State */}
                             <div className="space-y-1.5">
                                 <label htmlFor="state" className="text-[13px] font-bold text-gray-700 ml-1">State</label>
                                 <div className="relative">
@@ -312,7 +300,6 @@ const UpdateProfile = () => {
                                 {errors.state && <p className="text-red-500 text-xs font-semibold ml-1">{errors.state.message}</p>}
                             </div>
 
-                            {/* Address */}
                             <div className="space-y-1.5">
                                 <label htmlFor="address" className="text-[13px] font-bold text-gray-700 ml-1">Address</label>
                                 <div className="relative">

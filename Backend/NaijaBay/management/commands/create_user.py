@@ -11,9 +11,6 @@ from PIL import Image, ImageDraw, ImageFont
 from accounts.models import User
 from NaijaBay.utils import STATE_CITY_MAP
 
-# =============================================================================
-# AVATAR GENERATOR
-# =============================================================================
 
 AVATAR_BG_COLORS = [
     (241, 196, 15),
@@ -63,9 +60,6 @@ def attach_avatar_to_user(user):
     user.avatar.save(filename, ContentFile(buffer.read()), save=True)
 
 
-# =============================================================================
-# FAKE DATA
-# =============================================================================
 
 FIRST_NAMES = [
     "Chinedu", "Emeka", "Ifeanyi", "Obinna", "Chukwuma", "Tunde", "Femi",
@@ -137,9 +131,6 @@ def build_users_data(count, used_usernames, used_emails):
     return data
 
 
-# =============================================================================
-# COMMAND
-# =============================================================================
 
 ADMIN_DEFAULTS = {
     "first_name": "admin",
@@ -180,9 +171,6 @@ class Command(BaseCommand):
         parser.add_argument("--email", type=str, help="Email for single user (with --user)")
         parser.add_argument("--username", type=str, help="Username for single user (with --user)")
 
-    # -------------------------------------------------------------------------
-    # helpers
-    # -------------------------------------------------------------------------
     def _finalize_user(self, user):
         """Attach avatar + verified allauth email address."""
         attach_avatar_to_user(user)
@@ -217,9 +205,6 @@ class Command(BaseCommand):
         self._finalize_user(admin)
         return admin
 
-    # -------------------------------------------------------------------------
-    # modes
-    # -------------------------------------------------------------------------
     def _create_single_user(self, options):
         email = options.get("email")
         username = options.get("username")
@@ -248,8 +233,6 @@ class Command(BaseCommand):
 
         created_admin = self._create_admin()
 
-        # Top up to `total` users so re-running the command is idempotent
-        # instead of adding another batch every time.
         regular_needed = max(total - User.objects.count(), 0)
         if regular_needed == 0:
             self.stdout.write(

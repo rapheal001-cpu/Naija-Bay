@@ -2,20 +2,17 @@ import { Link } from 'react-router-dom';
 import { FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 
 const BADGE_STYLES = {
-    // order / item status
     pending: 'bg-amber-50 text-amber-700 border-amber-100',
     processing: 'bg-blue-50 text-blue-700 border-blue-100',
     shipped: 'bg-indigo-50 text-indigo-700 border-indigo-100',
     delivered: 'bg-emerald-50 text-emerald-700 border-emerald-100',
     cancelled: 'bg-gray-100 text-gray-500 border-gray-200',
-    // payment status
     paid: 'bg-emerald-50 text-emerald-700 border-emerald-100',
     unpaid: 'bg-amber-50 text-amber-700 border-amber-100',
     success: 'bg-emerald-50 text-emerald-700 border-emerald-100',
     failed: 'bg-red-50 text-red-600 border-red-100',
     abandoned: 'bg-gray-100 text-gray-500 border-gray-200',
     refunded: 'bg-gray-100 text-gray-500 border-gray-200',
-    // boosts
     active: 'bg-emerald-50 text-emerald-700 border-emerald-100',
     expired: 'bg-gray-100 text-gray-500 border-gray-200',
 };
@@ -111,7 +108,6 @@ export const PageButtons = ({ data, page, setPage }) => {
     );
 };
 
-/** Redirects signed-out visitors; returns true when the page may render. */
 export const Thumb = ({ src, alt }) =>
     src ? (
         <img src={src} alt={alt} className="w-full h-full object-cover" />

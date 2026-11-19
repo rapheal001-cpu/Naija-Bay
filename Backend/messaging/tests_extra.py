@@ -73,11 +73,9 @@ class MessagingSafetyTest(TestCase):
         self.assertEqual(r.status_code, 200, r.data)
         self.assertEqual(self.client.get("/api/v1/messaging/").data["count"], 0)
 
-        # Seller still sees the conversation.
         self.client.force_authenticate(user=self.seller)
         self.assertEqual(self.client.get("/api/v1/messaging/").data["count"], 1)
 
-        # A new message restores it for both.
         Message.objects.create(
             conversation_id=conversation_id, sender=self.seller, body="Still there?"
         )

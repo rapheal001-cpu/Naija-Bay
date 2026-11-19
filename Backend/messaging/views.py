@@ -29,9 +29,6 @@ from .serializers import (
 )
 
 
-# =============================================================================
-# HELPERS
-# =============================================================================
 
 def conversations_for(user):
     """Conversations the user takes part in, with the unread count annotated.
@@ -60,9 +57,6 @@ def get_conversation_or_404(user, conversation_id):
     return get_object_or_404(conversations_for(user), pk=conversation_id)
 
 
-# =============================================================================
-# CONVERSATIONS
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["Messaging"], operation_id="List Conversations"),
@@ -113,9 +107,6 @@ class ConversationDetailAPIView(RetrieveAPIView):
 conversation_detail_view = ConversationDetailAPIView.as_view()
 
 
-# =============================================================================
-# MESSAGES
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["Messaging"], operation_id="List Messages"),
@@ -146,7 +137,6 @@ class MessageListCreateAPIView(ListCreateAPIView):
             attachment_url=serializer.validated_data.get("attachment_url", ""),
             duration_ms=serializer.validated_data.get("duration_ms", 0),
         )
-        # Sending a message implicitly marks the thread as read for the sender.
         conversation.messages.filter(read=False).exclude(
             sender=self.request.user
         ).update(read=True)
@@ -227,9 +217,6 @@ class UnreadMessagesCountAPIView(APIView):
 unread_messages_count_view = UnreadMessagesCountAPIView.as_view()
 
 
-# =============================================================================
-# USER BLOCKS
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["Messaging"], operation_id="List blocked users"),
@@ -256,7 +243,6 @@ class UserBlockListCreateAPIView(ListCreateAPIView):
             blocker=request.user, blocked_user_id=other_id
         )
 
-        # Close any live rooms between these users and refresh both inboxes.
         for conversation in Conversation.objects.filter(
             Q(buyer=request.user, seller_id=other_id)
             | Q(seller=request.user, buyer_id=other_id)
@@ -296,9 +282,6 @@ class UserBlockDetailAPIView(APIView):
 user_block_detail_view = UserBlockDetailAPIView.as_view()
 
 
-# =============================================================================
-# CLEAR CONVERSATION (per user)
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(tags=["Messaging"], operation_id="Clear conversation for me")

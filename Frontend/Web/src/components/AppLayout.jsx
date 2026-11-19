@@ -2,10 +2,6 @@ import Header from './HeaderComponents/Header.jsx';
 import AppSidebar from './HeaderComponents/AppSidebar.jsx';
 import Footer from './FooterComponents/Footer.jsx';
 
-/**
- * Shared page chrome: header on top, optional full-width hero slot,
- * then a sticky sidebar beside the page content, footer below.
- */
 const AppLayout = ({ children, hero = null, withSidebar = true }) => (
     <>
         <Header />

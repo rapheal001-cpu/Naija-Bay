@@ -1,10 +1,5 @@
 import { useEffect, useRef } from 'react';
 
-/**
- * Infinite-scroll sentinel (SkillStream ChatWindow pattern):
- * fires `onLoadMore` when the marker scrolls into view (400px ahead of the
- * bottom), while `hasMore` is true and a fetch is not already in flight.
- */
 const InfiniteListSentinel = ({ hasMore, isFetching, onLoadMore, rootMargin = '400px 0px' }) => {
     const ref = useRef(null);
 

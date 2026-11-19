@@ -16,11 +16,9 @@ const Register = () => {
 
     return (
         <div className="min-h-screen bg-linear-to-b from-gray-50 to-white relative overflow-hidden">
-            {/* Decorative background blobs */}
             <div className="absolute top-0 left-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-120 h-120 bg-brand/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
 
-            {/* Top bar */}
             <div className="absolute top-0 left-0 right-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16 sm:h-20">
@@ -44,7 +42,6 @@ const Register = () => {
                 </div>
             </div>
 
-            {/* Form */}
             <div className="relative z-10 min-h-screen flex flex-col justify-center">
                 <RegisterForm />
             </div>

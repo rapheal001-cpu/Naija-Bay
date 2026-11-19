@@ -42,7 +42,6 @@ const NotificationCard = ({ notifications }) => {
                             ${!isLast ? 'border-b border-gray-50' : ''}
                         `}
                     >
-                        {/* Icon */}
                         <span className={`
                             flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-transform duration-200 group-hover:scale-105
                             ${config.bg} ${config.color}
@@ -50,7 +49,6 @@ const NotificationCard = ({ notifications }) => {
                             <Icon size={18} strokeWidth={2} />
                         </span>
 
-                        {/* Content */}
                         <div className="flex-1 min-w-0 pr-10">
                             <div className="flex items-center gap-2 mb-0.5">
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
@@ -76,7 +74,6 @@ const NotificationCard = ({ notifications }) => {
                             </p>
                         </div>
 
-                        {/* Delete */}
                         <button
                             type="button"
                             onClick={(e) => handleDelete(e, n.id)}

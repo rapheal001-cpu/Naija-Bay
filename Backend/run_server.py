@@ -129,7 +129,6 @@ def stop_process(managed: ManagedProcess, timeout: float = 8.0) -> None:
 def stop_all(processes: list[ManagedProcess]) -> None:
     if not processes:
         return
-    # Stop the Vite dev server first, then Daphne.
     order = {"Vite dev server": 0, "Daphne (ASGI)": 1}
     for managed in sorted(processes, key=lambda m: order.get(m.name, 99)):
         stop_process(managed)
@@ -193,7 +192,6 @@ def main() -> int:
         blocked.append(("Vite dev server", f"package.json not found at {FRONTEND_DIR / 'package.json'}."))
 
     try:
-        # 1) Vite dev server
         if args.no_frontend:
             blocked.append(("Vite dev server", "skipped (--no-frontend)."))
         elif not (FRONTEND_DIR / "package.json").exists():
@@ -205,7 +203,6 @@ def main() -> int:
         else:
             planned.append(("Vite dev server", [npm, "run", "dev"], FRONTEND_DIR))
 
-        # 2) Daphne (ASGI) — HTTP + WebSockets
         try:
             import daphne  # noqa: F401, PLC0415
 

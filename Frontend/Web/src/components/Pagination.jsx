@@ -1,10 +1,5 @@
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-/**
- * Reusable page-number pagination for DRF paginated responses.
- *
- * @param {{ page?: number, count?: number, pageSize?: number, onChange: (page:number) => void, className?: string }} props
- */
 const Pagination = ({ page = 1, count = 0, pageSize = 24, onChange, className = '' }) => {
     const totalPages = Math.max(1, Math.ceil(count / pageSize));
 

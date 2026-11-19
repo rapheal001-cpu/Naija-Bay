@@ -22,9 +22,6 @@ import {
     fetchFollowingFn,
 } from '../service/Endpoints.js';
 
-// =============================================================================
-// USER
-// =============================================================================
 
 export const useFetchUserData = (isAuthenticated) => {
     return useQuery({ 
@@ -39,10 +36,6 @@ export const useFetchUserData = (isAuthenticated) => {
     });
 };
 
-/**
- * @param {string|number} userId
- * @param {boolean} [isAuthenticated=true] — set to false if you want to block unauthenticated users
- */
 export const useFetchOtherUserData = (userId, isAuthenticated) => {
     return useQuery({
         queryKey: ['other-user', userId],
@@ -56,9 +49,6 @@ export const useFetchOtherUserData = (userId, isAuthenticated) => {
     });
 };
 
-// =============================================================================
-// NOTIFICATIONS
-// =============================================================================
 
 export const useFetchUserNotifications = (isAuthenticated) => {
     return useQuery({
@@ -74,9 +64,6 @@ export const useFetchUserNotifications = (isAuthenticated) => {
     });
 };
 
-// =============================================================================
-// PRODUCTS
-// =============================================================================
 
 export const useInfiniteProducts = (params = {}) => {
     return useInfiniteQuery({
@@ -143,9 +130,6 @@ export const useFetchProductDetailData = (productSlug) => {
     });
 };
 
-// =============================================================================
-// CATEGORIES
-// =============================================================================
 
 export const useFetchCategories = () => {
     return useQuery({
@@ -159,9 +143,6 @@ export const useFetchCategories = () => {
     });
 };
 
-// =============================================================================
-// ATTRIBUTE DEFINITIONS
-// =============================================================================
 
 export const useFetchAttributeDefinitions = (category, subCategory) => {
     return useQuery({
@@ -176,9 +157,6 @@ export const useFetchAttributeDefinitions = (category, subCategory) => {
     });
 };
 
-// =============================================================================
-// STORE
-// =============================================================================
 
 export const useFetchStoreDetail = (store_slug) => {
     return useQuery({
@@ -206,9 +184,6 @@ export const useFetchMyStore = (isAuthenticated) => {
     });
 };
 
-// =============================================================================
-// SELLER LISTS
-// =============================================================================
 
 export const useFetchFollowers = (userId, page = 1) => {
     return useQuery({
@@ -234,9 +209,6 @@ export const useFetchFollowing = (userId, page = 1) => {
     });
 };
 
-// =============================================================================
-// MY LISTINGS / FAVORITES / HISTORY
-// =============================================================================
 
 export const useFetchMyListings = (isAuthenticated, status = '', page = 1) => {
     return useQuery({
@@ -287,9 +259,6 @@ export const useFetchRecentlyViewed = (isAuthenticated, page = 1) => {
     });
 };
 
-// =============================================================================
-// MESSAGING
-// =============================================================================
 
 export const useFetchConversations = (isAuthenticated, page = 1) => {
     return useQuery({

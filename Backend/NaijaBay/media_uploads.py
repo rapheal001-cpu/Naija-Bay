@@ -60,9 +60,6 @@ IMAGE_FORMATS = "jpg,jpeg,png"
 VIDEO_FORMATS = "mp4,webm,mov,mkv"
 
 
-# ---------------------------------------------------------------------------
-# Schemas (drf-spectacular)
-# ---------------------------------------------------------------------------
 
 class UploadErrorSerializer(serializers.Serializer):
     detail = serializers.CharField()
@@ -141,9 +138,6 @@ class UploadCompleteSerializer(serializers.Serializer):
     parts = UploadPartSerializer(many=True, allow_empty=False)
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _int_or_error(value, field):
     try:
@@ -222,9 +216,6 @@ def _check_owned(request, key, upload_id=None):
     return True
 
 
-# ---------------------------------------------------------------------------
-# Views
-# ---------------------------------------------------------------------------
 
 class UploadInitiateView(APIView):
     permission_classes = [IsAuthenticated]

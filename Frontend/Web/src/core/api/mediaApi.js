@@ -1,7 +1,3 @@
-// Direct-to-storage media uploads (SkillStream pattern).
-// The browser sends bytes straight to Cloudinary/S3; Django only signs the
-// request and stores the returned object key. Falls back to the app-server
-// multipart path when storage is local or unreachable.
 
 import axios from "axios";
 import { axiosInstance } from "../../service/axiosInstance.js";

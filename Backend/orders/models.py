@@ -9,9 +9,6 @@ from django.utils.translation import gettext_lazy as _
 from NaijaBay.utils import STATE_CHOICES
 
 
-# =============================================================================
-# CART
-# =============================================================================
 
 class Cart(models.Model):
     """One persistent cart per authenticated user."""
@@ -37,7 +34,6 @@ class CartItem(models.Model):
     cart = models.ForeignKey(
         Cart, on_delete=models.CASCADE, related_name="items", verbose_name=_("Cart")
     )
-    # CASCADE: when a listing is deleted it silently disappears from carts.
     product = models.ForeignKey(
         "products.Product",
         on_delete=models.CASCADE,
@@ -64,9 +60,6 @@ class CartItem(models.Model):
         ]
 
 
-# =============================================================================
-# ORDER
-# =============================================================================
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -103,16 +96,12 @@ class Order(models.Model):
     total = models.DecimalField(_("Total"), max_digits=14, decimal_places=2, default=Decimal("0.00"))
     currency = models.CharField(_("Currency"), max_length=3, default="NGN")
 
-    # Delivery details
     recipient_name = models.CharField(_("Recipient Name"), max_length=80)
     phone = models.CharField(_("Phone"), max_length=20)
     address = models.TextField(_("Delivery Address"))
     state = models.CharField(_("State"), max_length=25, choices=STATE_CHOICES, blank=True)
     note = models.CharField(_("Note"), max_length=300, blank=True)
 
-    # -------------------------------------------------------------------------
-    # Safe Deal (escrow): money is held until the buyer confirms delivery.
-    # -------------------------------------------------------------------------
     seller = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -190,7 +179,6 @@ class OrderItem(models.Model):
         related_name="sales",
         verbose_name=_("Seller"),
     )
-    # Snapshots so the order stays correct if the listing changes or is deleted.
     product_name = models.CharField(_("Product Name"), max_length=200)
     product_slug = models.CharField(_("Product Slug"), max_length=200, blank=True)
     unit_price = models.DecimalField(_("Unit Price"), max_digits=15, decimal_places=2)

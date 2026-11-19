@@ -171,7 +171,6 @@ class OrderPaymentTests(APITestCase):
         self.assertEqual(ok.status_code, 200)
         skip = self.client.post(f"/api/v1/orders/sales/{item.id}/status/", {"status": "delivered"}, format="json")
         self.assertEqual(skip.status_code, 400)  # cannot skip steps
-        # a stranger cannot touch it
         self.client.force_authenticate(make_user("stranger"))
         self.assertEqual(
             self.client.post(f"/api/v1/orders/sales/{item.id}/status/", {"status": "shipped"}, format="json").status_code,
@@ -226,7 +225,6 @@ class WebhookTests(APITestCase):
         self.assertEqual(Order.objects.get(pk=self.order.pk).payment_status, "paid")
 
     def test_webhook_body_alone_is_not_trusted(self):
-        # Paystack says the charge was NOT successful -> body claiming success is ignored.
         with mock.patch(
             "payments.paystack.verify_transaction",
             return_value=gateway_success(self.payment, status="failed"),
@@ -370,7 +368,6 @@ class BoostTests(APITestCase):
         self.assertEqual(self.product.boost_level, 0)
         self.assertEqual(ListingBoost.objects.get().status, "expired")
         self.assertEqual(expire_boosts(), 0)  # idempotent
-        # and the seller can boost again afterwards
         self.assertEqual(self.start()[0].status_code, 201)
 
     def test_my_boosts_lists_active_and_expired(self):

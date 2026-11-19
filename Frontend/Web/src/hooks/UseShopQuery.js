@@ -74,11 +74,6 @@ export const useFetchMyBoosts = (isAuthenticated, status = '', page = 1) => {
     });
 };
 
-/**
- * Asks OUR backend to verify the payment with Paystack. While the backend still
- * reports "pending" we poll a few times; the result is only ever shown from the
- * backend's recorded status, never from the redirect URL.
- */
 export const useVerifyPayment = (isAuthenticated, reference) => {
     return useQuery({
         queryKey: ['payment-verify', reference],

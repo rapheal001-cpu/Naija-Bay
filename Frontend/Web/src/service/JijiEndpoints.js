@@ -5,9 +5,6 @@ const PRODUCTS = '/api/v1/products';
 const ORDERS = '/api/v1/orders';
 const PAYMENTS = '/api/v1/payments';
 
-// ---------------------------------------------------------------------------
-// SELLER FEEDBACK
-// ---------------------------------------------------------------------------
 export const fetchFeedbackFn = async (sellerId) => {
     const { data } = await axiosInstance.get(`${AUTH}/feedback/`, { params: { seller: sellerId } });
     return data;
@@ -33,9 +30,6 @@ export const respondFeedbackFn = async ({ id, response }) => {
     return data;
 };
 
-// ---------------------------------------------------------------------------
-// SAVED SEARCHES
-// ---------------------------------------------------------------------------
 export const fetchSavedSearchesFn = async () => {
     const { data } = await axiosInstance.get(`${AUTH}/saved-searches/`);
     return data;
@@ -49,9 +43,6 @@ export const deleteSavedSearchFn = async (id) => {
     return data;
 };
 
-// ---------------------------------------------------------------------------
-// VERIFIED ID
-// ---------------------------------------------------------------------------
 export const submitVerificationFn = async (formData) => {
     const { data } = await axiosInstance.post(`${AUTH}/verification/submit/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -63,9 +54,6 @@ export const fetchMyVerificationFn = async () => {
     return data;
 };
 
-// ---------------------------------------------------------------------------
-// OFFERS / CALLBACKS / VIDEOS
-// ---------------------------------------------------------------------------
 export const fetchOffersFn = async (slug) => {
     const { data } = await axiosInstance.get(`${PRODUCTS}/${encodeURIComponent(slug)}/offers/`);
     return data;
@@ -93,9 +81,6 @@ export const uploadVideoFn = async ({ slug, formData }) => {
     return data;
 };
 
-// ---------------------------------------------------------------------------
-// SAFE DEAL
-// ---------------------------------------------------------------------------
 export const fetchSafeDealsFn = async () => {
     const { data } = await axiosInstance.get(`${ORDERS}/safe-deal/`);
     return data;
@@ -105,9 +90,6 @@ export const safeDealActionFn = async ({ reference, action, payload = {} }) => {
     return data;
 };
 
-// ---------------------------------------------------------------------------
-// CREDITS / REFERRALS / AUTO-RENEW / PRO SALES
-// ---------------------------------------------------------------------------
 export const fetchCreditFn = async () => {
     const { data } = await axiosInstance.get(`${PAYMENTS}/credit/`);
     return data;

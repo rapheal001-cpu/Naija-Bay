@@ -7,9 +7,6 @@ from .models import (
 from django.utils.translation import gettext_lazy as _
 
 
-# =============================================================================
-# USER ADMIN
-# =============================================================================
 
 
 @admin.register(User)
@@ -79,9 +76,6 @@ class UserAdmin(admin.ModelAdmin):
         return obj.full_name
 
 
-# =============================================================================
-# NOTIFICATIONS ADMIN
-# =============================================================================
 
 
 @admin.register(Notifications)
@@ -103,9 +97,6 @@ class NotificationsAdmin(admin.ModelAdmin):
         updated = queryset.update(read=False)
         self.message_user(request, f"{updated} notification(s) marked as unread.")
 
-# =============================================================================
-# STORE ADMIN
-# =============================================================================
 
 
 @admin.register(Store)
@@ -127,9 +118,6 @@ class StoreAdmin(admin.ModelAdmin):
         return obj.products_count
 
 
-# =============================================================================
-# FOLLOW ADMIN
-# =============================================================================
 
 
 @admin.register(Follow)
@@ -142,9 +130,6 @@ class FollowAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
-# =============================================================================
-# SELLER FEEDBACK / SAVED SEARCH / VERIFICATION ADMIN
-# =============================================================================
 
 @admin.register(SellerFeedback)
 class SellerFeedbackAdmin(admin.ModelAdmin):

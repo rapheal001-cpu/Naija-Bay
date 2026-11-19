@@ -6,9 +6,6 @@ from products.models import Product
 from NaijaBay.utils import FILE_UPLOAD_ALLOWED_EXTENSIONS, STATE_CHOICES
 
 
-# =============================================================================
-# SHARED COMPACT USER
-# =============================================================================
 
 class StoreOwnerSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
@@ -48,9 +45,6 @@ class FollowUserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-# =============================================================================
-# STORE
-# =============================================================================
 
 class StoreSerializer(serializers.ModelSerializer):
     owner = StoreOwnerSerializer(read_only=True, source="user")
@@ -125,7 +119,6 @@ class StoreDetailSerializer(StoreSerializer):
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_products(self, obj):
-        # Imported lazily to avoid a circular import at module load time.
         from products.serializers import ProductSerializer
 
         products = (

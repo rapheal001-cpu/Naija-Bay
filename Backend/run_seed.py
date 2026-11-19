@@ -77,8 +77,6 @@ def main():
 
     images = args.images
 
-    # Dependency order: locations -> categories -> boost plans -> users ->
-    # products -> broad social activity -> attribute definitions.
     if args.clear:
         run_operation("seed_all", clear=True, images=images)
 

@@ -98,7 +98,6 @@ const MyAds = () => {
                         </Link>
                     </div>
 
-                    {/* Stats */}
                     <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                         {[
                             { label: 'Total ads', value: stats.total },
@@ -113,7 +112,6 @@ const MyAds = () => {
                         ))}
                     </div>
 
-                    {/* Status tabs */}
                     <div className="mb-5 flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Filter ads by status">
                         {TABS.map((tab) => (
                             <button
@@ -139,7 +137,6 @@ const MyAds = () => {
                         </p>
                     )}
 
-                    {/* Ads list */}
                     {listings.isLoading ? (
                         <div className="space-y-3">
                             {[0, 1, 2].map((i) => (

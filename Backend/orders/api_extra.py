@@ -149,7 +149,6 @@ class SafeDealExtendAPIView(_BaseSafeDealView):
             return Response({"detail": "Only the seller can extend a deadline."}, status=status.HTTP_403_FORBIDDEN)
         if getattr(order, "_deadline_extended", False):
             return Response({"detail": "Deadline can only be extended once."}, status=status.HTTP_400_BAD_REQUEST)
-        # One extension only: marker stored in dispute_reason-free note field via tracking prefix.
         if order.note and "deadline_extended" in order.note:
             return Response({"detail": "Deadline can only be extended once."}, status=status.HTTP_400_BAD_REQUEST)
         order.note = f"{order.note} deadline_extended".strip()

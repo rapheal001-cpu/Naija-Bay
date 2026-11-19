@@ -13,11 +13,6 @@ const REASONS = [
     { value: 'other', label: 'Something else' },
 ];
 
-/**
- * Report-abuse dialog for a single listing.
- *
- * @param {{ open: boolean, onClose: () => void, productSlug: string, productName?: string }} props
- */
 const ReportModal = ({ open, onClose, productSlug, productName = 'this listing' }) => {
     const [reason, setReason] = useState('');
     const [details, setDetails] = useState('');
@@ -29,8 +24,6 @@ const ReportModal = ({ open, onClose, productSlug, productName = 'this listing' 
         (message) => setError(message)
     );
 
-    // Reset the form when the modal (re)opens — derived during render,
-    // the recommended pattern for prop-driven state resets.
     const [prevOpen, setPrevOpen] = useState(open);
     if (prevOpen !== open) {
         setPrevOpen(open);

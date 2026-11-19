@@ -33,17 +33,10 @@ import { removeIsAuthenticated, setIsAuthenticated } from '../slice/AuthSlice';
 import { setUser, removeUserData } from '../slice/UserSlice.js';
 
 
-// =============================================================================
-// ERROR UTILITIES
-// =============================================================================
 
-/**
- * Maps server validation errors to react-hook-form's setError and a general
- */
 const handleFieldErrors = (error, setError, setServerError) => {
     const data = error.response?.data;
 
-    // Guard first — before touching Object.entries
     if (!data || typeof data !== 'object') {
         setServerError?.(error.message || 'An unexpected error occurred. Please try again.');
         return;
@@ -73,9 +66,6 @@ const handleFieldErrors = (error, setError, setServerError) => {
 };
 
 
-// =============================================================================
-// AUTHENTICATION
-// =============================================================================
 
 export const useSignInMutation = (setError, setServerError) => {
     const navigate = useNavigate();
@@ -176,9 +166,6 @@ export const useChangePasswordMutation = (setError, setServerError, setServerMes
 };
 
 
-// =============================================================================
-// USER
-// =============================================================================
 
 export const useUpdateProfileMutation = (setError, setServerError, setServerMessage) => {
     const dispatch = useDispatch();
@@ -212,9 +199,6 @@ export const useUpdateProfileMutation = (setError, setServerError, setServerMess
     });
 };
 
-// =============================================================================
-// PRODUCTS
-// =============================================================================
 
 export const useCreateProductMutation = (setError, setServerError) => {
     const queryClient = useQueryClient();
@@ -529,9 +513,6 @@ export const useToggleFavoriteMutation = () => {
     });
 };
 
-// =============================================================================
-// NOTIFICATIONS
-// =============================================================================
 
 export const useMarkAllNotificationsAsReadMutation = () => {
     const queryClient = useQueryClient();
@@ -637,9 +618,6 @@ export const useDeleteNotificationMutation = () => {
     });
 };
 
-// =============================================================================
-// SOCIAL / FOLLOW
-// =============================================================================
 
 export const useToggleFollowUserMutation = () => {
     const queryClient = useQueryClient();
@@ -667,9 +645,6 @@ export const useToggleFollowUserMutation = () => {
     });
 };
 
-// =============================================================================
-// STORE
-// =============================================================================
 
 export const useCreateStoreMutation = (setError, setServerErrors, setServerMessage) => {
     const navigate = useNavigate();
@@ -706,9 +681,6 @@ export const useCreateStoreMutation = (setError, setServerErrors, setServerMessa
 };
 
 
-// =============================================================================
-// REPORT ABUSE
-// =============================================================================
 
 export const useReportProductMutation = (setError, setServerError) => {
     return useMutation({
@@ -724,9 +696,6 @@ export const useReportProductMutation = (setError, setServerError) => {
 };
 
 
-// =============================================================================
-// MESSAGING
-// =============================================================================
 
 export const useStartConversationMutation = () => {
     const queryClient = useQueryClient();
@@ -772,9 +741,6 @@ export const useMarkConversationReadMutation = (conversationId) => {
 };
 
 
-// =============================================================================
-// STORE (UPDATE)
-// =============================================================================
 
 export const useUpdateStoreMutation = (storeSlug, setError, setServerError, setServerMessage) => {
     const queryClient = useQueryClient();
@@ -796,9 +762,6 @@ export const useUpdateStoreMutation = (storeSlug, setError, setServerError, setS
 };
 
 
-// =============================================================================
-// PRODUCT RATING
-// =============================================================================
 
 export const useRateProductMutation = (productSlug) => {
     const queryClient = useQueryClient();

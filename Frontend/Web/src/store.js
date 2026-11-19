@@ -25,31 +25,26 @@ const persistedConfig = {
     whitelist: ['auth', 'user', 'notifications', 'categories', 'products', 'store'],
     
     transforms: [
-        // This timer handles the 'categories' reducer
         expireReducer('categories', {
             expireSeconds: 24 * 60 * 60, // 24 hours
             expiredState: { categories: [], subCategories: [] },
             autoExpire: true
         }),
-        // This timer handles the 'products' reducer
         expireReducer('products', {
             expireSeconds: 24 * 60 * 60, // 24 hours
             expiredState: { products: [], featuredProducts: [], productDetail: {} },
             autoExpire: true
         }),
-        // This timer handles the 'store' reducer
         expireReducer('store', {
             expireSeconds: 24 * 60 * 60, // 24 hours
             expiredState: { stores: [], storeDetail: {} }, 
             autoExpire: true
         }),
-        // This timer handles the 'user' reducer
         expireReducer('user', {
             expireSeconds: 24 * 60 * 60, // 24 hours
             expiredState: { user: {}, otherUser: {} }, 
             autoExpire: true
         }),
-        // This timer handles the 'notifications' reducer
         expireReducer('notifications', {
             expireSeconds: 24 * 60 * 60, // 24 hours
             expiredState: { notifications: [] }, 

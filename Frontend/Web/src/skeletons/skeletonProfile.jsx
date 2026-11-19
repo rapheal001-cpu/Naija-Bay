@@ -1,7 +1,6 @@
 const SkeletonProfile = () => {
     return (
         <>
-            {/* Header */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="bg-gray-100 h-8 w-28 rounded-lg" />
@@ -16,7 +15,6 @@ const SkeletonProfile = () => {
             <div className="h-16" />
 
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Profile Header */}
                 <div className="relative bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
                     <div className="bg-gray-100 h-28 sm:h-36 w-full" />
 
@@ -58,9 +56,7 @@ const SkeletonProfile = () => {
                     </div>
                 </div>
 
-                {/* Contact & Stats */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                    {/* Contact Card */}
                     <div className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl shadow-sm p-6 sm:p-7">
                         <div className="flex items-center gap-2.5 mb-5">
                             <div className="bg-gray-100 w-8 h-8 rounded-lg" />
@@ -99,7 +95,6 @@ const SkeletonProfile = () => {
                         </div>
                     </div>
 
-                    {/* Stats */}
                     <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 sm:gap-4">
                         <div className="relative flex items-center gap-3 sm:gap-4 bg-white border border-gray-100 rounded-xl sm:rounded-2xl p-4 sm:p-5 overflow-hidden">
                             <div className="bg-gray-100 w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl shrink-0" />
@@ -128,7 +123,6 @@ const SkeletonProfile = () => {
                     </div>
                 </div>
 
-                {/* Listings */}
                 <div className="mt-10">
                     <div className="flex items-center justify-between mb-1">
                         <div className="bg-gray-100 h-6 w-24 rounded-md" />

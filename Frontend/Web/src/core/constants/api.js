@@ -1,4 +1,3 @@
-// Shared API paths. Naija-Bay mounts everything under /api/v1.
 export const API = {
   MEDIA: {
     UPLOAD_INITIATE: "/api/v1/storage/media/uploads/initiate/",
@@ -9,7 +8,6 @@ export const API = {
   },
 };
 
-// Upload purposes must match NaijaBay.media.UPLOAD_PURPOSES in the backend.
 export const UPLOAD_PURPOSES = {
   PRODUCT_IMAGE: "product-image",
   AD_VIDEO: "ad-video",

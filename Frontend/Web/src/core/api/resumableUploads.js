@@ -1,6 +1,3 @@
-// S3 MULTIPART RESUMABLE UPLOADS (IndexedDB — small session records, never bytes).
-// Ported from SkillStream: a session is saved after initiate and after every
-// part, so a retry with the same file resumes instead of starting over.
 
 const DB_NAME = "naijabay-uploads";
 const STORE = "sessions";

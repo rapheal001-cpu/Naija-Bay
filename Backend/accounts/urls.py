@@ -22,24 +22,12 @@ from .views import (
 
 urlpatterns = [
     path("notifications/", notification_view, name="notifications"),
-    # -------------------------------------------------------------------------
-    # Other User profile
-    # -------------------------------------------------------------------------
     path("user/<int:pk>/", other_user_profile_view, name="other-user-profile"),
-    # -------------------------------------------------------------------------
-    # Store
-    # -------------------------------------------------------------------------
     path("create-store/", create_store_view, name="create-store"),
     path("my-store/", my_store_view, name="my-store"),
     path("store-detail/<slug:slug>/", store_detail_view, name="store-detail"),
-    # -------------------------------------------------------------------------
-    # Followers
-    # -------------------------------------------------------------------------
     path("followers/<int:pk>/", followers_list_view, name="followers-list"),
     path("following/<int:pk>/", following_list_view, name="following-list"),
-    # -------------------------------------------------------------------------
-    # Jiji-style extras
-    # -------------------------------------------------------------------------
     path("feedback/", SellerFeedbackListAPIView.as_view(), name="feedback-list"),
     path("feedback/create/", SellerFeedbackCreateAPIView.as_view(), name="feedback-create"),
     path("feedback/<int:pk>/", SellerFeedbackDetailAPIView.as_view(), name="feedback-detail"),
@@ -49,8 +37,5 @@ urlpatterns = [
     path("saved-searches/<int:pk>/", SavedSearchDetailAPIView.as_view(), name="saved-search-detail"),
     path("verification/submit/", VerificationRequestCreateAPIView.as_view(), name="verification-submit"),
     path("verification/me/", MyVerificationAPIView.as_view(), name="verification-me"),
-    # -------------------------------------------------------------------------
-    # Auth Kit
-    # -------------------------------------------------------------------------
     path("", include("auth_kit.urls")),
 ]

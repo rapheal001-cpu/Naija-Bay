@@ -22,9 +22,6 @@ from NaijaBay.throttling import (
 from NaijaBay.permissions import IsOwnerOnly
 
 
-# =============================================================================
-# NOTIFICATIONS
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(tags=["Notifications"], operation_id="Mark All Read")
@@ -117,9 +114,6 @@ class DeleteNotificationAPIView(APIView):
 delete_notification_view = DeleteNotificationAPIView.as_view()
 
 
-# =============================================================================
-# FAVORITES
-# =============================================================================
 
 @extend_schema_view(post=extend_schema(tags=["Products"], operation_id="Toggle Favorite"))
 class ToggleFavoriteProductAPIView(APIView):
@@ -130,7 +124,6 @@ class ToggleFavoriteProductAPIView(APIView):
     def post(self, request, product_slug, *args, **kwargs):
         product = get_object_or_404(Product, product_slug=product_slug, active=True)
 
-        # Efficient membership check
         is_favorite = product.favorites.filter(pk=request.user.pk).exists()
 
         if is_favorite:
@@ -152,9 +145,6 @@ class ToggleFavoriteProductAPIView(APIView):
 toggle_favorite_product_view = ToggleFavoriteProductAPIView.as_view()
 
 
-# =============================================================================
-# FOLLOW
-# =============================================================================
 
 @extend_schema_view(post=extend_schema(tags=["User"], operation_id="Toggle Follow User"))
 class ToggleFollowUserAPIView(APIView):
@@ -202,9 +192,6 @@ class ToggleFollowUserAPIView(APIView):
 toggle_follow_user_view = ToggleFollowUserAPIView.as_view()
 
 
-# =============================================================================
-# ATTRIBUTE DEFINITIONS
-# =============================================================================
 
 def _resolve_taxonomy(slug_value, model):
     """Resolve a category/subcategory slug (hyphen or underscore forms)."""

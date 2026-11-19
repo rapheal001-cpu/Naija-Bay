@@ -3,9 +3,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 
 
-# =============================================================================
-# STATE
-# =============================================================================
 
 class State(models.Model):
     name = models.CharField(_("State Name"), max_length=30, unique=True)
@@ -30,9 +27,6 @@ class State(models.Model):
         ]
 
 
-# =============================================================================
-# CITY
-# =============================================================================
 
 class City(models.Model):
     state = models.ForeignKey(
@@ -70,9 +64,6 @@ class City(models.Model):
         ]
 
 
-# =============================================================================
-# CATEGORY
-# =============================================================================
 
 class Category(models.Model):
     name = models.CharField(_("Category Name"), max_length=30, unique=True)
@@ -101,9 +92,6 @@ class Category(models.Model):
         ]
 
 
-# =============================================================================
-# SUB CATEGORY
-# =============================================================================
 
 class SubCategory(models.Model):
     category = models.ForeignKey(
@@ -141,9 +129,6 @@ class SubCategory(models.Model):
         ]
 
 
-# =============================================================================
-# ATTRIBUTE DEFINITION
-# =============================================================================
 
 class AttributeDefinition(models.Model):
     """One category-specific specification field (e.g. Vehicles → Fuel Type).
@@ -226,9 +211,6 @@ class AttributeDefinition(models.Model):
         ]
 
 
-# =============================================================================
-# ATTRIBUTE OPTION
-# =============================================================================
 
 class AttributeOption(models.Model):
     """A selectable choice for select/multiselect attribute definitions."""

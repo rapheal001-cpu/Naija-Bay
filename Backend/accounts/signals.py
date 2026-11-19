@@ -4,9 +4,6 @@ from NaijaBay.utils import NOTIFICATION_TEMPLATES
 from .models import User, Notifications
 
 
-# =============================================================================
-# USER WELCOME NOTIFICATION
-# =============================================================================
 
 @receiver(post_save, sender=User)
 def send_new_user_notification(sender, instance, created, **kwargs):

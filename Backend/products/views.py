@@ -44,9 +44,6 @@ from NaijaBay.throttling import (
 )
 
 
-# =============================================================================
-# GENERAL
-# =============================================================================
 
 @extend_schema_view(get=extend_schema(tags=["Products"], operation_id="Products"))
 class ProductsListAPIView(ListAPIView):
@@ -69,7 +66,6 @@ class ProductsListAPIView(ListAPIView):
     ]
 
     def get_queryset(self):
-        # Switch off paid boosts that have run out (cheap: runs at most once a minute).
         expire_boosts_if_due()
         now = timezone.now()
         return (
@@ -82,15 +78,6 @@ class ProductsListAPIView(ListAPIView):
             .order_by("-created_at")
         )
 
-    # ------------------------------------------------------------------
-    # Dynamic attribute filters (Stage 3B)
-    # ------------------------------------------------------------------
-    # Query shapes (all optional, combined with AND):
-    #   attr_<slug>=value              exact match (select/text/number/boolean/date)
-    #   attr_<slug>__in=a,b,c          any-of (select/text; multiselect: contains)
-    #   attr_<slug>_min= / _max=       numeric/date range
-    # Only definitions marked filterable=True are honored; unknown or
-    # non-filterable params are ignored (never a 400 for typos).
 
     def _attribute_definitions(self):
         """Filterable definitions for the current request's category scope."""
@@ -137,7 +124,6 @@ class ProductsListAPIView(ListAPIView):
         definitions = {
             f"attr_{d.slug}": d for d in self._attribute_definitions()
         }
-        # Build lookup including suffixed keys (handled below per definition).
         base_by_slug = {d.slug: d for d in self._attribute_definitions()}
 
         for key, raw in attr_params.items():
@@ -218,9 +204,6 @@ class ProductsListAPIView(ListAPIView):
             return False
         raise ValidationError({param: "Must be true or false."})
 
-    # ------------------------------------------------------------------
-    # Facet counts (Stage 3C): {slug: {option_value: product_count}}
-    # ------------------------------------------------------------------
 
     def _apply_attr_param(self, queryset, definition, mode, key, raw):
         """Apply one attr_* param for one definition; returns queryset."""
@@ -260,7 +243,6 @@ class ProductsListAPIView(ListAPIView):
                 return queryset.filter(**{f"{field}__in": [self._parse_bool(key, v) for v in values]})
             return queryset.filter(**{f"{field}__in": values})
 
-        # exact
         if typed == "value_number":
             return queryset.filter(**{field: self._parse_number(key, raw)})
         if typed == "value_bool":
@@ -366,7 +348,6 @@ class ProductsListAPIView(ListAPIView):
                 _favorites_total=Count("favorites", distinct=True)
             ).order_by("-promoted", "-boost_level", "-_favorites_total", "-created_at")
 
-        # Default: promoted listings first, then newest.
         return queryset.order_by("-promoted", "-boost_level", "-created_at")
 
 
@@ -502,7 +483,6 @@ class ProductsDetailAPIView(RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         obj = self.get_object()
 
-        # Track view: only if authenticated and NOT the owner
         if (
             request.user.is_authenticated
             and request.user.id != obj.product_user_id
@@ -522,9 +502,6 @@ class ProductsDetailAPIView(RetrieveUpdateDestroyAPIView):
 products_detail_view = ProductsDetailAPIView.as_view()
 
 
-# =============================================================================
-# AUTHENTICATED
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(tags=["Products"], operation_id="Create Product")
@@ -553,7 +530,6 @@ class ProductImageCreateAPIView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         product_id = request.data.get("product")
         images = request.FILES.getlist("images")
-        # Direct-to-storage uploads attach by object key (see media_uploads).
         keys = request.data.getlist("keys") if hasattr(request.data, "getlist") else []
         if not keys and request.data.get("key"):
             keys = [request.data.get("key")]
@@ -570,7 +546,6 @@ class ProductImageCreateAPIView(CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Verify product exists and belongs to the current user
         product = get_object_or_404(Product, id=product_id)
         if product.product_user.id != request.user.id:
             return Response(
@@ -606,9 +581,6 @@ class ProductImageCreateAPIView(CreateAPIView):
 create_product_images_view = ProductImageCreateAPIView.as_view()
 
 
-# =============================================================================
-# MY LISTINGS
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["Products"], operation_id="My Listings")
@@ -646,9 +618,6 @@ class MyProductsListAPIView(ListAPIView):
 my_products_view = MyProductsListAPIView.as_view()
 
 
-# =============================================================================
-# FAVORITES & RECENTLY VIEWED
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["Products"], operation_id="Favorite Products")
@@ -692,9 +661,6 @@ class RecentlyViewedProductsListAPIView(ListAPIView):
 recently_viewed_products_view = RecentlyViewedProductsListAPIView.as_view()
 
 
-# =============================================================================
-# REPORT ABUSE
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(
@@ -727,9 +693,6 @@ class ReportProductAPIView(CreateAPIView):
 report_product_view = ReportProductAPIView.as_view()
 
 
-# =============================================================================
-# IMAGE UPDATE / DELETE
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(tags=["Products"], operation_id="Replace Product Images")
@@ -765,7 +728,6 @@ class ProductImageUpdateAPIView(APIView):
             serializer.is_valid(raise_exception=True)
             validated.append(serializer)
 
-        # Replace the existing gallery once every new file has validated.
         ProductImage.objects.filter(product=product).delete()
         created = [serializer.save() for serializer in validated]
 

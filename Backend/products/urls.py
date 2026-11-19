@@ -39,7 +39,6 @@ urlpatterns = [
     path('recently-viewed/', recently_viewed_products_view, name='recently-viewed-products'),  # view history
     path('report/<slug:product_slug>/', report_product_view, name='report-product'),  # report abuse
     path('detail/<slug:product_slug>/', products_detail_view, name='product-detail'),  # product detail
-    # Jiji-style extras
     path('<slug:product_slug>/offers/', ProductOffersAPIView.as_view(), name='product-offers'),
     path('offers/<int:pk>/respond/', OfferRespondAPIView.as_view(), name='offer-respond'),
     path('<slug:product_slug>/callbacks/', CallbackCreateAPIView.as_view(), name='product-callback'),

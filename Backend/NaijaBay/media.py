@@ -24,10 +24,6 @@ from PIL import Image, UnidentifiedImageError
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Purposes. Keys are <prefix>/<user_id>/<uuid><ext> (or with the Cloudinary
-# PREFIX in front), so ownership is structural and can be verified without a DB.
-# ---------------------------------------------------------------------------
 
 UPLOAD_PURPOSES = {
     "product-image": {"prefix": "products/images", "kind": "image"},
@@ -59,9 +55,6 @@ MAX_IMAGE_SIZE = 2 * 1024 * 1024        # 2 MB — matches product image limits
 MAX_VIDEO_SIZE = 100 * 1024 * 1024      # 100 MB — marketplace ad videos / voice notes
 
 
-# ---------------------------------------------------------------------------
-# Storage backend detection
-# ---------------------------------------------------------------------------
 
 def get_media_storage():
     return default_storage
@@ -118,9 +111,6 @@ def cloudinary_prefix() -> str:
         return ""
 
 
-# ---------------------------------------------------------------------------
-# Storage helpers (used by post-processing / cleanup)
-# ---------------------------------------------------------------------------
 
 def media_exists(name: str) -> bool:
     return bool(name) and get_media_storage().exists(name)
@@ -166,9 +156,6 @@ def read_media_bytes(name: str) -> bytes:
         return handle.read()
 
 
-# ---------------------------------------------------------------------------
-# Validation for files that still travel through the app server (fallback)
-# ---------------------------------------------------------------------------
 
 def validate_image_upload(value, *, label: str = "Image", max_size: int | None = None):
     if value is None or isinstance(value, str):

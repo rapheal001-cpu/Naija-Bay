@@ -53,7 +53,6 @@ def user_inbox_group_name(user_id):
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     """Live chat room for one conversation."""
 
-    # (max events, window seconds) — sliding window per socket connection.
     RATE_LIMITS = {
         "message": (20, 10.0),
         "typing": (40, 10.0),
@@ -188,13 +187,11 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             "conversation_id": self.conversation_id,
             **room_extra,
         }
-        # Room participants get the live message.
         await async_safe_group_send(
             self.channel_layer,
             self.room_group_name,
             {"type": "chat.event", "event": "message", "payload": payload},
         )
-        # Both inboxes get presence + unread pushes.
         for member_id in await self.other_member_ids():
             await async_safe_group_send(
                 self.channel_layer,
@@ -232,8 +229,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         conversation = Conversation.objects.filter(pk=self.conversation_id).first()
         if not can_use_conversation(self.scope["user"], conversation):
             return None
-        # Message.save() notifies the recipient (existing Signal-free logic
-        # in the model) — no extra paths to keep in sync.
         message = Message.objects.create(
             conversation=conversation,
             sender=self.scope["user"],

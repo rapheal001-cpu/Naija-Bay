@@ -1,10 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube } from 'react-icons/fa';
 
-/**
- * Slim 2-row footer (brand + essential links). Content sections live in the
- * full sitemap on larger layouts; this stays compact everywhere.
- */
 const Footer = () => {
     const year = new Date().getFullYear();
     const social = [

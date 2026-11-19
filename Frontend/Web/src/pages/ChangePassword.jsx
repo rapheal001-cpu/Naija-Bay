@@ -23,7 +23,6 @@ const ChangePassword = () => {
 
     const newPassword1 = watch('new_password1');
 
-    // Pass all error handlers to the mutation hook
     const changePasswordMutation = useChangePasswordMutation(setError, setServerError, setServerMessage);
 
     useEffect(() => {
@@ -40,7 +39,6 @@ const ChangePassword = () => {
         });
     };
 
-    // Password strength
     const getStrength = (pwd) => {
         if (!pwd) return 0;
         let score = 0;
@@ -87,7 +85,6 @@ const ChangePassword = () => {
                     </div>
 
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 sm:p-10">
-                        {/* Success message */}
                         {serverMessage && (
                             <div className="flex items-start gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 mb-6">
                                 <HiOutlineCheckCircle size={20} className="text-emerald-600 shrink-0 mt-0.5" />
@@ -95,7 +92,6 @@ const ChangePassword = () => {
                             </div>
                         )}
 
-                        {/* Server-level error (non-field) */}
                         {serverError && (
                             <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                                 <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
@@ -105,7 +101,6 @@ const ChangePassword = () => {
 
                         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
-                            {/* Current Password */}
                             <div className="space-y-1.5">
                                 <label htmlFor="old_password" className="text-[13px] font-bold text-gray-700 ml-1">Current password</label>
                                 <div className="relative">
@@ -133,7 +128,6 @@ const ChangePassword = () => {
                                 )}
                             </div>
 
-                            {/* New Password */}
                             <div className="space-y-1.5">
                                 <label htmlFor="new_password1" className="text-[13px] font-bold text-gray-700 ml-1">New password</label>
                                 <div className="relative">
@@ -181,7 +175,6 @@ const ChangePassword = () => {
                                 )}
                             </div>
 
-                            {/* Confirm New Password */}
                             <div className="space-y-1.5">
                                 <label htmlFor="new_password2" className="text-[13px] font-bold text-gray-700 ml-1">Confirm new password</label>
                                 <div className="relative">

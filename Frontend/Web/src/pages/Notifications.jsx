@@ -42,7 +42,6 @@ const Notifications = () => {
     return (
         <AppLayout>
             <div className="py-8 sm:py-12">
-                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/10 text-brand">
@@ -87,7 +86,6 @@ const Notifications = () => {
                     )}
                 </div>
 
-                {/* Content */}
                 <div className="min-h-[40vh]">
                     {notificationData.isLoading ? (
                         <div className="space-y-3">

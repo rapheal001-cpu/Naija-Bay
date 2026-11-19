@@ -13,9 +13,6 @@ from NaijaBay.pagination import StandardPagination
 from .models import SellerFeedback, SavedSearch, VerificationRequest
 
 
-# ---------------------------------------------------------------------------
-# SELLER FEEDBACK
-# ---------------------------------------------------------------------------
 
 class SellerFeedbackSerializer(serializers.ModelSerializer):
     seller_username = serializers.CharField(source="seller.username", read_only=True)
@@ -100,9 +97,6 @@ class FeedbackResponseAPIView(APIView):
         return Response(SellerFeedbackSerializer(fb).data)
 
 
-# ---------------------------------------------------------------------------
-# SAVED SEARCHES
-# ---------------------------------------------------------------------------
 
 class SavedSearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -136,9 +130,6 @@ class SavedSearchDetailAPIView(RetrieveUpdateDestroyAPIView):
         return SavedSearch.objects.filter(user=self.request.user)
 
 
-# ---------------------------------------------------------------------------
-# VERIFIED ID (KYC)
-# ---------------------------------------------------------------------------
 
 class VerificationRequestSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)

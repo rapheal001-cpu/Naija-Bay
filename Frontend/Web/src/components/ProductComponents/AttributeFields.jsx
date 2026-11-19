@@ -1,14 +1,5 @@
 import { HiOutlineCollection } from 'react-icons/hi';
 
-/**
- * Dynamic category-specific specification fields, driven by
- * GET /api/v1/core/attributes/ definitions. Shared by SellForm and EditProductForm.
- *
- * Values register under `attributes.<slug>` (react-hook-form), so the submit
- * payload carries `attributes: { slug: value }` for the product serializer.
- *
- * @param {{ definitions: Array, register: Function, errors: Object }} props
- */
 const AttributeFields = ({ definitions, register, errors }) => {
     if (!definitions?.length) return null;
 

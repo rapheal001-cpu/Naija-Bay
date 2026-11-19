@@ -20,14 +20,12 @@ const Search = () => {
 
     return (
         <div className="relative w-full overflow-hidden bg-brand">
-            {/* Decorative background shapes */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-24 -left-24 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
                 <div className="absolute top-1/2 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
             </div>
 
             <div className="relative max-w-3xl mx-auto px-4 py-16 sm:py-20 lg:py-24 text-center">
-                {/* Heading */}
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3 tracking-tight">
                     What are you looking for?
                 </h1>
@@ -35,7 +33,6 @@ const Search = () => {
                     Search thousands of ads from sellers all over Nigeria.
                 </p>
 
-                {/* Search Bar */}
                 <div 
                     className={`
                         relative flex items-center bg-white rounded-2xl shadow-xl transition-all duration-300
@@ -69,7 +66,6 @@ const Search = () => {
                 </div>
             </div>
 
-            {/* Bottom curve */}
             <div className="absolute bottom-0 left-0 right-0">
                 <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto block">
                     <path d="M0 60L1440 60L1440 0C1440 0 1140 60 720 60C300 60 0 0 0 0L0 60Z" fill="white" />

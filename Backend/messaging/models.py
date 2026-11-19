@@ -6,9 +6,6 @@ from django.utils.translation import gettext_lazy as _
 from accounts.models import User
 
 
-# =============================================================================
-# CONVERSATION
-# =============================================================================
 
 class Conversation(models.Model):
     """A one-to-one chat thread between a buyer and a seller.
@@ -67,9 +64,6 @@ class Conversation(models.Model):
     def __str__(self):
         return f"{self.buyer.username} <-> {self.seller.username}"
 
-    # -------------------------------------------------------------------------
-    # Helpers
-    # -------------------------------------------------------------------------
 
     def participant_ids(self):
         return {self.buyer_id, self.seller_id}
@@ -107,9 +101,6 @@ class Conversation(models.Model):
         return bool(state and state.deleted_at)
 
 
-# =============================================================================
-# MESSAGE
-# =============================================================================
 
 class Message(models.Model):
     ATTACHMENT_TYPE_CHOICES = [
@@ -132,7 +123,6 @@ class Message(models.Model):
         db_index=True,
     )
     body = models.TextField(_("Message"), blank=True)
-    # Attachments (multi-image + voice notes share this WhatsApp-style shape).
     attachment_type = models.CharField(
         _("Attachment Type"), max_length=10, choices=ATTACHMENT_TYPE_CHOICES,
         blank=True, default="", db_index=True,
@@ -159,16 +149,13 @@ class Message(models.Model):
         super().save(*args, **kwargs)
 
         if is_new:
-            # Keep the thread at the top of both inboxes.
             Conversation.objects.filter(pk=self.conversation_id).update(
                 updated_at=timezone.now()
             )
-            # A new message restores a conversation cleared by either participant.
             ConversationUserState.objects.filter(
                 conversation_id=self.conversation_id
             ).update(deleted_at=None)
 
-            # Notify the recipient (never the sender).
             from accounts.models import Notifications
 
             recipient_id = (
@@ -192,9 +179,6 @@ class Message(models.Model):
                 )
 
 
-# =============================================================================
-# USER BLOCK
-# =============================================================================
 
 class UserBlock(models.Model):
     """A one-way block. Either direction blocks the conversation entirely."""
@@ -230,9 +214,6 @@ class UserBlock(models.Model):
         return f"{self.blocker_id} blocked {self.blocked_user_id}"
 
 
-# =============================================================================
-# PER-USER CLEAR STATE
-# =============================================================================
 
 class ConversationUserState(models.Model):
     """Per-user 'clear chat' marker: hides the thread only for that user."""

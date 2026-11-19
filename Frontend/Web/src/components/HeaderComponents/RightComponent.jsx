@@ -50,9 +50,7 @@ const RightComponent = () => {
 
     return (
         <>
-            {/* Desktop */}
             <div className="hidden lg:flex items-center gap-1">
-                {/* About — visible to everyone */}
                 <NavLink to="/about" className={navLinkClass}>
                     <FaCircleInfo size={16} />
                     <span>About</span>
@@ -164,7 +162,6 @@ const RightComponent = () => {
                 )}
             </div>
 
-            {/* Mobile */}
             <div className="lg:hidden relative" ref={mobileMenuRef}>
                 <button
                     type="button"
@@ -177,7 +174,6 @@ const RightComponent = () => {
 
                 {mobileMenuOpen && (
                     <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-                        {/* About — visible to everyone */}
                         <div className="py-1">
                             <NavLink to="/about" onClick={() => setMobileMenuOpen(false)} className={dropdownItem}>
                                 <FaCircleInfo size={15} className="text-gray-400" /> About

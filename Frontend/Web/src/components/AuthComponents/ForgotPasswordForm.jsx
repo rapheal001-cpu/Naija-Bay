@@ -23,7 +23,6 @@ const ForgotPasswordForm = () => {
         <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-linear-to-b from-gray-50 to-white">
             <div className="w-full max-w-md">
 
-                {/* Brand mark */}
                 <div className="flex items-center justify-center gap-2.5 mb-8">
                     <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shadow-lg shadow-brand/20">
                         <HiOutlineShieldCheck className="text-white" size={20} />
@@ -42,7 +41,6 @@ const ForgotPasswordForm = () => {
                         </p>
                     </div>
 
-                    {/* Server Message */}
                     {serverMessage && (
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 mb-6">
                             <HiOutlineCheckCircle size={20} className="text-emerald-600 shrink-0 mt-0.5" />
@@ -50,7 +48,6 @@ const ForgotPasswordForm = () => {
                         </div>
                     )}
 
-                    {/* Server Message */}
                     {serverError && (
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500 border border-red-100 mb-6">
                             <HiOutlineCheckCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
@@ -60,7 +57,6 @@ const ForgotPasswordForm = () => {
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
-                        {/* Email Field */}
                         <div className="space-y-1.5">
                             <label htmlFor="email" className="text-[13px] font-bold text-gray-700 ml-1">
                                 Email address
@@ -93,7 +89,6 @@ const ForgotPasswordForm = () => {
                             )}
                         </div>
 
-                        {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={requestPasswordReset.isPending}
@@ -112,7 +107,6 @@ const ForgotPasswordForm = () => {
                     </form>
                 </div>
 
-                {/* Footer */}
                 <p className="text-center text-sm text-gray-500 mt-8">
                     Remembered your password?{' '}
                     <Link to="/sign-in" className="text-brand font-bold hover:underline underline-offset-4">

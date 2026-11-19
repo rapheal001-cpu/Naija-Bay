@@ -49,9 +49,6 @@ from NaijaBay.pagination import StandardPagination
 from NaijaBay.permissions import IsOwnerOnly
 
 
-# =============================================================================
-# AUTH VIEWS
-# =============================================================================
 
 @extend_schema_view(post=extend_schema(tags=["Auth"], operation_id="Register"))
 class CustomRegisterView(RegisterView):
@@ -98,10 +95,6 @@ class CustomLoginView(LoginView):
     throttle_classes = [LoginThrottling]
 
     def post(self, request, *args, **kwargs):
-        # django-axes grind: for this JSON-based DRF API, axes cannot derive
-        # the username from request.POST, so its middleware-based lockout
-        # can't engage. Suppress: enforce the lockout here against the
-        # attempts axes faithfully records (username = submitted email).
         email = (request.data.get("email") or "").strip().lower()
         if email:
             from axes.models import AccessAttempt
@@ -141,11 +134,6 @@ class CustomLogoutView(LogoutView):
     throttle_classes = [LogoutThrottling]
 
     def initial(self, request, *args, **kwargs):
-        # auth_kit's LogoutView mutates request.data (sets "refresh").
-        # Frontend logout posts with no body, which DRF parses as an
-        # immutable form QueryDict — hand it a mutable copy so the
-        # mutation works (prevents an HTTP 500 on logout).
-        # NB: DRF caches parsed data in "_full_data" (the effective cache).
         from django.http import QueryDict
 
         data = request.data
@@ -169,9 +157,6 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     throttle_classes = [PasswordResetConfirmThrottling]
 
 
-# =============================================================================
-# CURRENT USER PROFILE (GET / PATCH)
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["User"], operation_id="Current User Profile"),
@@ -192,9 +177,6 @@ class CustomUserView(UserView):
         ).get(pk=self.request.user.pk)
 
 
-# =============================================================================
-# OTHER USER PROFILE
-# =============================================================================
 
 @extend_schema_view(get=extend_schema(tags=["User"], operation_id="Other User Profile"))
 class OtherUserProfileAPIView(RetrieveAPIView):
@@ -207,9 +189,6 @@ class OtherUserProfileAPIView(RetrieveAPIView):
 other_user_profile_view = OtherUserProfileAPIView.as_view()
 
 
-# =============================================================================
-# NOTIFICATIONS
-# =============================================================================
 
 @extend_schema_view(get=extend_schema(tags=["User"], operation_id="User Notifications"))
 class NotificationAPIView(ListAPIView):
@@ -226,9 +205,6 @@ class NotificationAPIView(ListAPIView):
 
 notification_view = NotificationAPIView.as_view()
 
-# =============================================================================
-# STORE
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(
@@ -258,7 +234,6 @@ class StoreCreateAPIView(CreateAPIView):
         store = serializer.save(user=request.user)
 
         if name_changed:
-            # Regenerate the slug so public URLs follow the new name.
             store.slug = ""
             store.save(update_fields=["slug"])
 
@@ -340,9 +315,6 @@ class MyStoreAPIView(RetrieveAPIView):
 my_store_view = MyStoreAPIView.as_view()
 
 
-# =============================================================================
-# FOLLOWERS / FOLLOWING
-# =============================================================================
 
 class FollowersListAPIView(ListAPIView):
     serializer_class = FollowUserSerializer

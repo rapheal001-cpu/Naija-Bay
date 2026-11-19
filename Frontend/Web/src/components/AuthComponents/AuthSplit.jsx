@@ -1,15 +1,9 @@
 import { Link } from 'react-router-dom';
 import { HiOutlineShieldCheck, HiOutlineLockClosed, HiOutlineChatAlt2 } from 'react-icons/hi';
 
-/**
- * Professional split-screen shell for all auth pages.
- * Desktop: brand panel (left) + form (right). Mobile: form only.
- * Blue-only palette (Jiji direction), no green accent.
- */
 const AuthSplit = ({ children, heading, subheading }) => {
     return (
         <div className="min-h-screen bg-gray-50 flex">
-            {/* Brand panel (desktop) */}
             <div className="hidden lg:flex w-[42%] flex-col justify-between bg-brand p-10 text-white relative overflow-hidden">
                 <div className="absolute -top-24 -left-24 w-80 h-80 bg-white/10 rounded-full blur-3xl" aria-hidden="true" />
                 <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" aria-hidden="true" />
@@ -48,7 +42,6 @@ const AuthSplit = ({ children, heading, subheading }) => {
                 <p className="relative text-sm text-white/50">© {new Date().getFullYear()} NaijaBay. All rights reserved.</p>
             </div>
 
-            {/* Form side */}
             <div className="flex-1 flex items-center justify-center px-4 py-12">
                 <div className="w-full max-w-md">
                     <div className="lg:hidden flex items-center justify-center gap-2.5 mb-8">

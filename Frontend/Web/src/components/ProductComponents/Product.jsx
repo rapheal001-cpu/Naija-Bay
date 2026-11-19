@@ -35,7 +35,6 @@ const Product = () => {
         .filter((item) => item.product_slug !== product?.product_slug && !item.sold)
         .slice(0, 4);
 
-    // Jiji-style "Market price" hint, estimated from similar ads in the same category.
     const marketPrices = similarAds
         .map((item) => Number(item.price) || 0)
         .filter((n) => n > 0)
@@ -96,7 +95,6 @@ const Product = () => {
     return (
         <AppLayout>
             <div className="py-6">
-                {/* Back link */}
                 <button
                     type="button"
                     onClick={() => navigate(-1)}
@@ -133,7 +131,6 @@ const Product = () => {
                 </nav>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-                    {/* Left: Image gallery */}
                     <div className="lg:col-span-7 xl:col-span-8">
                         <div className="relative w-full aspect-4/3 bg-gray-100 rounded-2xl overflow-hidden shadow-sm group">
                             <img
@@ -150,7 +147,6 @@ const Product = () => {
                                 </div>
                             )}
 
-                            {/* Nav arrows */}
                             {product?.images?.length > 1 && (
                                 <>
                                     <button
@@ -172,7 +168,6 @@ const Product = () => {
                                 </>
                             )}
 
-                            {/* Favorite — hidden for owner */}
                             {isAuthenticated && !isOwner && (
                                 <button
                                     type="button"
@@ -188,7 +183,6 @@ const Product = () => {
                                 </button>
                             )}
 
-                            {/* Image counter */}
                             {product?.images?.length > 1 && (
                                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-semibold">
                                     {activeImage + 1} / {product?.images?.length}
@@ -196,7 +190,6 @@ const Product = () => {
                             )}
                         </div>
 
-                        {/* Thumbnails */}
                         <div className="flex gap-2.5 mt-4 overflow-x-auto pb-1 scrollbar-hide">
                             {product?.images?.map((img, index) => (
                                 <button
@@ -219,9 +212,7 @@ const Product = () => {
                         </div>
                     </div>
 
-                    {/* Right: Info panel */}
                     <div className="lg:col-span-5 xl:col-span-4">
-                        {/* Price & Status */}
                         <div className="flex items-start justify-between">
                             <div>
                                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -262,7 +253,6 @@ const Product = () => {
                             )}
                         </div>
 
-                        {/* Owner Actions: Edit & Delete */}
                         {isOwner && (
                             <div className="flex items-center gap-2.5 mt-4">
                                 <Link
@@ -284,12 +274,10 @@ const Product = () => {
                             </div>
                         )}
 
-                        {/* Title */}
                         <h1 className="text-xl font-bold text-gray-900 mt-4 leading-snug">
                             {product?.product_name}
                         </h1>
 
-                        {/* Meta row */}
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
                             <div className="flex items-center gap-1 text-sm text-gray-500">
                                 <LuMapPin size={14} className="text-gray-400" />
@@ -306,7 +294,6 @@ const Product = () => {
                             </span>
                         </div>
 
-                        {/* Rating */}
                         <div className="mt-5 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                             <div className="flex items-center gap-2.5 flex-wrap">
                                 <Stars value={product?.average_rating || 0} size={15} />
@@ -338,7 +325,6 @@ const Product = () => {
                             )}
                         </div>
 
-                        {/* Attributes */}
                         <div className="grid grid-cols-2 gap-3 mt-6">
                             {product?.condition && (
                                 <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
@@ -372,7 +358,6 @@ const Product = () => {
                                     <p className="text-sm font-bold text-gray-800 capitalize">{product?.sub_category?.replace(/_/g, ' ')}</p>
                                 </div>
                             )}
-                            {/* Dynamic category specifications */}
                             {(product?.attributes || []).map((attr) => (
                                 <div key={attr.slug} className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
                                     <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{attr.label}</p>
@@ -385,13 +370,11 @@ const Product = () => {
                             ))}
                         </div>
 
-                        {/* Description */}
                         <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</p>
                             <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product?.description}</p>
                         </div>
 
-                        {/* Seller Card */}
                         {product?.product_user && (
                             <Link
                                 to={`/profile/${encodeURIComponent(product.product_user.id)}`}
@@ -419,7 +402,6 @@ const Product = () => {
                             </Link>
                         )}
 
-                        {/* Jiji-style safety block */}
                         <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
                             <div className="flex items-center gap-2">
                                 <TbAlertTriangleFilled size={18} className="text-amber-500" />
@@ -443,7 +425,6 @@ const Product = () => {
                             )}
                         </div>
 
-                        {/* Contact Actions — MULTI-METHOD */}
                         {!product?.sold && product?.product_user && !isOwner && (
                             <div className="flex flex-col gap-3 mt-6">
                                 <button
@@ -487,7 +468,6 @@ const Product = () => {
                 </div>
             </div>
 
-            {/* Jiji-style offer / callback / seller feedback */}
             {product?.product_user && (
                 <div className="mx-auto mt-10 grid max-w-7xl grid-cols-1 gap-5 px-4 lg:grid-cols-2">
                     {!isOwner && (
@@ -509,7 +489,6 @@ const Product = () => {
                 </div>
             )}
 
-            {/* Similar Ads */}
             {similarAds.length > 0 && (
                 <section className="mx-auto mt-14 max-w-7xl px-4 pb-4">
                     <div className="mb-6 flex items-end justify-between">

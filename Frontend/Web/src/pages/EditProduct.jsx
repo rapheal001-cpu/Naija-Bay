@@ -67,12 +67,10 @@ const EditProduct = () => {
             <Spacer space={'mb-36 md:mb-28'} />
 
             <div className="min-h-screen bg-linear-to-b from-gray-50 to-white py-10 sm:py-14 relative overflow-hidden">
-                {/* Decorative background */}
                 <div className="absolute top-0 left-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
                 <div className="absolute bottom-0 right-0 w-120 h-120 bg-brand/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
 
                 <div className="relative max-w-3xl mx-auto px-4 sm:px-6">
-                    {/* Top bar */}
                     <div className="flex items-center justify-between mb-8">
                         <button
                             type="button"
@@ -93,7 +91,6 @@ const EditProduct = () => {
                         </div>
                     </div>
 
-                    {/* Page header */}
                     <div className="mb-8">
                         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
                             Edit Product
@@ -103,7 +100,6 @@ const EditProduct = () => {
                         </p>
                     </div>
 
-                    {/* Form */}
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-6 sm:p-10">
                         <EditProductForm
                             productSlug={product_slug}
@@ -111,7 +107,6 @@ const EditProduct = () => {
                         />
                     </div>
 
-                    {/* Footer hint */}
                     <p className="text-center text-xs text-gray-400 mt-8">
                         By saving changes, you confirm that all information provided is accurate and up to date.
                     </p>

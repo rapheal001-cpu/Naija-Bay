@@ -12,9 +12,6 @@ class ProductAttributeInline(admin.TabularInline):
     extra = 0
     autocomplete_fields = ("definition",)
 
-# =============================================================================
-# PRODUCT ADMIN
-# =============================================================================
 
 
 @admin.register(Product)
@@ -67,9 +64,6 @@ class ProductAdmin(admin.ModelAdmin):
     list_select_related = ("product_user",)
     inlines = [ProductAttributeInline]
 
-    # Removed prepopulated_fields because your model's save() already handles
-    # slug generation with collision detection. The admin prepopulate would
-    # bypass that logic and risk duplicate slugs.
 
     @admin.display(description=_("Owner"))
     def owner(self, obj):
@@ -84,9 +78,6 @@ class ProductAdmin(admin.ModelAdmin):
         return obj.views_count
 
 
-# =============================================================================
-# PRODUCT IMAGE ADMIN
-# =============================================================================
 
 
 @admin.register(ProductImage)
@@ -107,9 +98,6 @@ class ProductImageAdmin(admin.ModelAdmin):
             )
 
 
-# =============================================================================
-# PRODUCT REPORT ADMIN
-# =============================================================================
 
 
 @admin.register(ProductReport)

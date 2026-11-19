@@ -9,10 +9,6 @@ import {
 import { useFetchCategories, useFetchUnreadCounts } from '../../hooks/UseQuery.js';
 import { setCategories } from '../../slice/CategorySlice.js';
 
-/**
- * Desktop left sidebar — the marketplace's primary navigation.
- * (Mobile collapses to the header search + bottom nav; sidebar hidden.)
- */
 const AppSidebar = () => {
     const categories = useSelector((state) => state.categories.categories) || [];
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);

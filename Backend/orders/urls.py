@@ -29,11 +29,9 @@ urlpatterns = [
     path('sales/', sales_list_view, name='sales-list'),  # seller's paid order items
     path('sales/<int:item_id>/status/', sales_status_view, name='sales-status'),  # seller updates fulfilment
     path('', my_orders_view, name='orders-list'),  # my orders
-    # Safe Deal (escrow) — literal path must precede the <reference> catch-all
     path('safe-deal/', SafeDealListAPIView.as_view(), name='safe-deal-list'),
     path('<str:reference>/cancel/', cancel_order_view, name='order-cancel'),  # cancel unpaid order
     path('<str:reference>/', order_detail_view, name='order-detail'),  # order detail
-    # Safe Deal actions
     path('<str:reference>/safe-deal/accept/', SafeDealAcceptAPIView.as_view(), name='safe-deal-accept'),
     path('<str:reference>/safe-deal/tracking/', SafeDealTrackingAPIView.as_view(), name='safe-deal-tracking'),
     path('<str:reference>/safe-deal/delivered/', SafeDealMarkDeliveredAPIView.as_view(), name='safe-deal-delivered'),

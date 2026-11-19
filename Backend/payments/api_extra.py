@@ -15,9 +15,6 @@ from .models import (
 )
 
 
-# ---------------------------------------------------------------------------
-# CREDITS WALLET
-# ---------------------------------------------------------------------------
 
 class CreditTransactionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,9 +46,6 @@ class CreditTransactionListAPIView(ListAPIView):
         return CreditTransaction.objects.filter(account__user=self.request.user).order_by("-created_at")
 
 
-# ---------------------------------------------------------------------------
-# REFERRALS
-# ---------------------------------------------------------------------------
 
 class ReferralBonusSerializer(serializers.ModelSerializer):
     referred_username = serializers.CharField(source="referred.username", read_only=True)
@@ -72,9 +66,6 @@ class ReferralListAPIView(ListAPIView):
         return ReferralBonus.objects.filter(referrer=self.request.user).select_related("referred").order_by("-created_at")
 
 
-# ---------------------------------------------------------------------------
-# BOOST AUTO-RENEWAL
-# ---------------------------------------------------------------------------
 
 class BoostAutoRenewalSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source="plan.name", read_only=True)
@@ -116,9 +107,6 @@ class BoostAutoRenewalDetailAPIView(RetrieveUpdateDestroyAPIView):
         return BoostAutoRenewal.objects.filter(user=self.request.user)
 
 
-# ---------------------------------------------------------------------------
-# PRO SALES (pay-per-click)
-# ---------------------------------------------------------------------------
 
 class ProSalesCampaignSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,4 +1,3 @@
-// Messaging API + TanStack cache helpers shared by the chat hooks and page.
 
 import { axiosInstance } from "../../service/axiosInstance.js";
 
@@ -22,7 +21,6 @@ export const clearConversationFn = async (conversationId) => {
     return data;
 };
 
-// ---- cache helpers -------------------------------------------------------
 
 export const prependChatMessage = (cached, message) => {
     if (!cached) return cached;

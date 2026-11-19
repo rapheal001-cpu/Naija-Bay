@@ -4,7 +4,6 @@ from NaijaBay.utils import NOT_ALLOWED_EMAIL_DOMAINS, NOT_ALLOWED_USERNAMES
 from allauth.account.utils import setup_user_email
 
 
-# Register Serializer
 class CustomRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(write_only=True, max_length=254, style={'input_type': 'email'})
     username = serializers.CharField(write_only=True, max_length=15)
@@ -12,7 +11,6 @@ class CustomRegisterSerializer(serializers.Serializer):
     password2 = serializers.CharField(write_only=True, min_length=8, max_length=16, style={'input_type': 'password'})
 
 
-    # Validate Username
     def validate_username(self, username):
         username = username.strip().lower()
 
@@ -29,7 +27,6 @@ class CustomRegisterSerializer(serializers.Serializer):
 
         return username
 
-    # Validate email
     def validate_email(self, email):
         email = email.strip().lower()
 
@@ -43,7 +40,6 @@ class CustomRegisterSerializer(serializers.Serializer):
 
         return email
 
-    # Validate password
     def validate(self, attrs):
         password1 = attrs.get('password1')
         password2 = attrs.get('password2')
@@ -56,7 +52,6 @@ class CustomRegisterSerializer(serializers.Serializer):
         
         return attrs
 
-    # Create user
     def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data['email'],
@@ -64,10 +59,8 @@ class CustomRegisterSerializer(serializers.Serializer):
             password=validated_data['password1']
         )
 
-        # Get the Request
         request = self.context.get('request')
 
-        # Send Verification Email
         setup_user_email(request, user, [])
 
         return user

@@ -43,7 +43,6 @@ const Settings = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    // Prevent flash of settings UI while redirecting or if auth is unknown
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -60,7 +59,6 @@ const Settings = () => {
             <div className="min-h-[85vh] bg-linear-to-b from-gray-50 to-white py-10">
                 <div className="max-w-2xl mx-auto px-4 sm:px-6">
 
-                    {/* Back link */}
                     <Link
                         to="/profile"
                         className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors mb-6"
@@ -71,7 +69,6 @@ const Settings = () => {
                         Back to profile
                     </Link>
 
-                    {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-black text-gray-900 tracking-tight">
                             Settings
@@ -81,7 +78,6 @@ const Settings = () => {
                         </p>
                     </div>
 
-                    {/* Settings List */}
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden divide-y divide-gray-50">
                         {SETTINGS_ITEMS.map((item) => {
                             const { to, icon: Icon, title, description, highlight, color, bg, border } = item;
@@ -121,7 +117,6 @@ const Settings = () => {
                         })}
                     </div>
 
-                    {/* Footer hint */}
                     <p className="text-center text-xs text-gray-400 mt-8">
                         Need help? Contact our support team for assistance.
                     </p>

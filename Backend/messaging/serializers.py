@@ -7,9 +7,6 @@ from products.models import Product
 from .models import Conversation, Message, UserBlock
 
 
-# =============================================================================
-# COMPACT USER / PRODUCT REPRESENTATIONS
-# =============================================================================
 
 class ChatUserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
@@ -62,9 +59,6 @@ class ChatProductSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(url) if request else url
 
 
-# =============================================================================
-# MESSAGE
-# =============================================================================
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = ChatUserSerializer(read_only=True)
@@ -83,7 +77,6 @@ class MessageSerializer(serializers.ModelSerializer):
         body = (attrs.get("body") or "").strip()
         attachment_type = attrs.get("attachment_type", "")
         attachment_url = attrs.get("attachment_url", "")
-        # Text messages OR attachment messages are valid; empty everything is not.
         if not body and not attachment_type:
             raise serializers.ValidationError("Message cannot be empty.")
         if attachment_type and attachment_type not in dict(Message.ATTACHMENT_TYPE_CHOICES):
@@ -123,9 +116,6 @@ class MessageSerializer(serializers.ModelSerializer):
         return value
 
 
-# =============================================================================
-# USER BLOCK
-# =============================================================================
 
 class UserBlockCreateSerializer(serializers.Serializer):
     user = serializers.IntegerField(help_text="ID of the user to block")
@@ -148,9 +138,6 @@ class UserBlockSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-# =============================================================================
-# CONVERSATION
-# =============================================================================
 
 class ConversationSerializer(serializers.ModelSerializer):
     product = ChatProductSerializer(read_only=True)
@@ -193,8 +180,6 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(MessageSerializer(allow_null=True))
     def get_last_message(self, obj):
-        # Serves from the prefetched messages cache (see conversations_for);
-        # falls back to a direct query only for single-object responses.
         cached = obj._prefetched_objects_cache.get("messages") if hasattr(obj, "_prefetched_objects_cache") else None
         if cached is not None:
             message = max(cached, key=lambda m: (m.created_at, m.pk)) if cached else None

@@ -36,9 +36,6 @@ def _init_response(payment):
     )
 
 
-# =============================================================================
-# ORDER PAYMENT
-# =============================================================================
 
 @extend_schema_view(post=extend_schema(tags=["Payments"], operation_id="Initialize Order Payment"))
 class InitializeOrderPaymentAPIView(APIView):
@@ -51,9 +48,6 @@ class InitializeOrderPaymentAPIView(APIView):
         return _init_response(payment)
 
 
-# =============================================================================
-# AD BOOSTING
-# =============================================================================
 
 @extend_schema_view(get=extend_schema(tags=["Payments"], operation_id="Boost Plans"))
 class BoostPlansListAPIView(ListAPIView):
@@ -108,9 +102,6 @@ class MyBoostsListAPIView(ListAPIView):
         return queryset
 
 
-# =============================================================================
-# VERIFY (browser callback) & WEBHOOK (Paystack -> server)
-# =============================================================================
 
 @extend_schema_view(get=extend_schema(tags=["Payments"], operation_id="Verify Payment"))
 class VerifyPaymentAPIView(APIView):
@@ -142,7 +133,6 @@ def paystack_webhook(request):
     try:
         result = services.process_webhook(payload)
     except Exception:
-        # 500 makes Paystack retry later; the event row was rolled back.
         logger.exception("Paystack webhook processing failed")
         return HttpResponse(status=500)
 

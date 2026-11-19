@@ -11,7 +11,6 @@ from NaijaBay.utils import (
 )
 
 
-# User Serailizer
 class CustomUserSerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True, read_only=True)
     favorites = ProductSerializer(many=True, read_only=True, source='favorite_products')
@@ -56,7 +55,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "last_login",
         )
 
-    # Computed read-only fields
 
     @extend_schema_field(serializers.CharField())
     def get_full_name(self, obj):
@@ -98,7 +96,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
             return False
         return obj.followers.filter(follower=request.user).exists()
 
-    # Field validators
 
     def validate_avatar(self, avatar):
         if avatar:
@@ -176,9 +173,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
             address = address.strip()
         return address
 
-    # -------------------------------------------------------------------------
-    # Update
-    # -------------------------------------------------------------------------
 
     def update(self, instance, validated_data):
 

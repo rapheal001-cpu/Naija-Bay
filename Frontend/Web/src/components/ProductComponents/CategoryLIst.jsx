@@ -68,7 +68,6 @@ const CategoryList = () => {
 
     return (
         <div className="relative border-b border-gray-100 bg-white">
-            {/* Category Scroll Bar */}
             <div className="relative">
                 <div className="w-full flex lg:justify-center gap-3 sm:gap-5 overflow-x-auto scroll-smooth snap-x px-4 py-5 scrollbar-hide">
                     {fetchCategories.isLoading ? (
@@ -107,27 +106,22 @@ const CategoryList = () => {
                     )}
                 </div>
 
-                {/* Scroll fade edges */}
                 <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-linear-to-r from-white to-transparent" />
                 <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-linear-to-l from-white to-transparent" />
             </div>
 
-            {/* Sub Categories Overlay */}
             {openCategory && (
                 <div
                     className="fixed inset-0 z-50 flex items-start justify-center pt-10 sm:pt-20 px-4 pb-4"
                     role="dialog"
                     aria-modal="true"
                 >
-                    {/* Backdrop */}
                     <div
                         className="absolute inset-0 bg-gray-900/40 backdrop-blur-[2px] animate-in fade-in duration-200"
                         onClick={() => setOpenCategory(false)}
                     />
 
-                    {/* Modal */}
                     <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                             <div className="flex items-center gap-3 min-w-0">
                                 <button
@@ -167,7 +161,6 @@ const CategoryList = () => {
                             </button>
                         </div>
 
-                        {/* Subcategory Grid */}
                         <div className="max-h-[60vh] overflow-y-auto p-5">
                             <button
                                 type="button"

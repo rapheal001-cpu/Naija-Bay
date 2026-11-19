@@ -4,9 +4,6 @@ import random
 
 MIN_PRODUCTS_PER_USER = 3
 
-# =============================================================================
-# REALISTIC PRODUCT CATALOG
-# =============================================================================
 
 PRODUCT_CATALOG = {
     "phones_tablets": {
@@ -608,9 +605,6 @@ PRODUCT_CATALOG = {
     },
 }
 
-# =============================================================================
-# DESCRIPTIONS
-# =============================================================================
 
 
 def generate_description(name, category, sub_category, condition):
@@ -651,9 +645,6 @@ def generate_description(name, category, sub_category, condition):
         return f"{name} in excellent working condition. Well maintained with no faults. Come and inspect before payment. Price is negotiable for serious buyers."
 
 
-# =============================================================================
-# REALISTIC PRICE RANGES PER SUBCATEGORY
-# =============================================================================
 
 PRICE_RANGES = {
     "phones_tablets": (45000, 950000),
@@ -692,9 +683,6 @@ def get_price(category, sub_category):
     return round(price / 500) * 500
 
 
-# =============================================================================
-# COLORS
-# =============================================================================
 
 COLORS = [
     "black",

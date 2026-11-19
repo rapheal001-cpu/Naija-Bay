@@ -9,7 +9,6 @@ from django.urls import reverse
 from django.middleware.csrf import get_token
 
 try:
-    # Django's own token matcher (handles masked or raw tokens).
     from django.middleware.csrf import _check_token_format, _does_token_match
     from django.middleware.csrf import InvalidTokenFormat
 
@@ -32,14 +31,8 @@ from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
-# Auth cookies issued by DRF Auth Kit (see settings.AUTH_KIT) — their mere
-# presence means the request MIGHT be exercised by a browser, so CSRF
-# validation applies. Requests without them (Authorization-header API
-# clients) cannot be driven by a browser form and are left to auth.
 AUTH_COOKIE_NAMES = ("access", "refresh")
 
-# Unsafe /api/ paths CSRF validation must never break:
-# - the Paystack webhook authenticates via HMAC signature, not cookies.
 CSRF_EXEMPT_PATH_PREFIXES = ("/api/v1/payments/webhook/",)
 
 
@@ -58,7 +51,6 @@ class CsrfGuardMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Issue/refresh the csrftoken cookie the SPA reads into X-CSRFToken.
         get_token(request)
 
         if request.method not in SAFE_METHODS and request.path.startswith("/api/"):
@@ -155,10 +147,6 @@ class TrustedOriginMiddleware:
                 source = None
                 present = False
 
-                # Approved Option A: browser cookie-authenticated unsafe
-                # requests must arrive with an Origin or Referer (browsers
-                # always send one; a request without either is suspicious).
-                # Token-less non-cookie API clients are untouched here.
                 if any(name in request.COOKIES for name in AUTH_COOKIE_NAMES):
                     logger.warning(
                         "Blocked cookie-authenticated %s to %s without Origin/Referer",

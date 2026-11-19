@@ -15,9 +15,6 @@ def _first_image(request, product):
     return request.build_absolute_uri(url) if request else url
 
 
-# =============================================================================
-# CART
-# =============================================================================
 
 class CartItemSerializer(serializers.Serializer):
     product_id = serializers.IntegerField(source="product.id")
@@ -58,9 +55,6 @@ class CartSerializer(serializers.Serializer):
         }
 
 
-# =============================================================================
-# CHECKOUT INPUT
-# =============================================================================
 
 class ShippingSerializer(serializers.Serializer):
     recipient_name = serializers.CharField(max_length=80)
@@ -82,9 +76,6 @@ class ShippingSerializer(serializers.Serializer):
         return value.replace(" ", "")
 
 
-# =============================================================================
-# ORDERS
-# =============================================================================
 
 class OrderItemSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -117,8 +108,6 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
 
     def get_last_payment_status(self, obj):
-        # Prefer the prefetched payments (order lists) to avoid a per-row
-        # ordered query; fall back only for single-object responses.
         cached = obj._prefetched_objects_cache.get("payments") if hasattr(obj, "_prefetched_objects_cache") else None
         if cached is not None:
             if not cached:

@@ -1,24 +1,12 @@
-// Product image uploads now use the shared SkillStream-style direct upload
-// client (Cloudinary / S3 / resumable multipart / local fallback).
 
 import { uploadMediaFile as uploadFile } from "../api/mediaApi.js";
 import { UPLOAD_PURPOSES } from "../constants/api.js";
 
-/**
- * Upload one product image.
- * @returns {{key, url}|File|null} object key for direct uploads, File for fallback
- */
 export const uploadMediaFileForProduct = async (file, { onProgress } = {}) =>
   uploadFile(file, UPLOAD_PURPOSES.PRODUCT_IMAGE, { onProgress });
 
-/** Backwards-compatible name used by older components. */
 export const uploadMediaFile = uploadMediaFileForProduct;
 
-/**
- * Upload every selected file, mixing direct keys and fallback Files so the
- * existing product-image endpoints accept the result as-is.
- * @returns {{ keys: string[], urls: string[], files: File[] }}
- */
 export const uploadProductImages = async (files, { onProgress } = {}) => {
   const keys = [];
   const urls = [];

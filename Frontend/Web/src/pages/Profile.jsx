@@ -27,43 +27,35 @@ const Profile = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    // Fetch current user
     const currentUser = useFetchUserData(isAuthenticated);
 
-    // Fetch other user — enable as soon as we have an id that might be different
-    // Convert to string for safe comparison
     const targetId = id?.toString();
     const currentUserId = user?.id?.toString();
     const isOtherUser = !!targetId && targetId !== currentUserId;
     
     const otherUserQuery = useFetchOtherUserData(targetId, isOtherUser);
 
-    // Sync current user to Redux
     useEffect(() => {
         if (currentUser.isSuccess && currentUser.data) {
             dispatch(setUser(currentUser.data));
         }
     }, [currentUser.isSuccess, currentUser.data, dispatch]);
 
-    // Sync other user to Redux
     useEffect(() => {
         if (otherUserQuery.isSuccess && otherUserQuery.data) {
             dispatch(setOtherUser(otherUserQuery.data));
         }
     }, [otherUserQuery.isSuccess, otherUserQuery.data, dispatch]);
 
-    // Clear otherUser when viewing own profile (prevents stale data)
     useEffect(() => {
         if (!isOtherUser && otherUser) {
             dispatch(removeOtherUser());
         }
     }, [isOtherUser, otherUser, dispatch]);
 
-    // Determine which profile to show
     const isOwnProfile = !targetId || targetId === currentUserId;
     const profile = isOwnProfile ? user : otherUser;
 
-    // Show loading while we're still figuring out who to show
     const isLoading = currentUser.isLoading || (isOtherUser && otherUserQuery.isLoading);
 
     if (isLoading) {

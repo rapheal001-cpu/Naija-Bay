@@ -1,4 +1,3 @@
-/** WhatsApp-style delivery marks for messages the current user sent. */
 const ReadReceipt = ({ isMine, read }) => {
     if (!isMine) return null;
     return (

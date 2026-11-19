@@ -101,14 +101,12 @@ export const categoryIconsMap = {
 
 
 export const subcategoryIconsMap = {
-  // Phones & Tablets
   'mobile-phones': TbDeviceMobile,
   'tablets': TbDeviceTablet,
   'phone-accessories': TbHeadphones,
   'smartwatches': TbDeviceWatch,
   'phone-parts': BiChip,
 
-  // Electronics
   'laptops-computers': TbDeviceLaptop,
   'tvs': TbDeviceTv,
   'audio-music': TbMusic,
@@ -117,7 +115,6 @@ export const subcategoryIconsMap = {
   'printers': TbPrinter,
   'computer-accessories': TbUsb,
 
-  // Vehicles
   'cars': TbCar,
   'motorcycles': TbMotorbike,
   'trucks-buses': TbTruck,
@@ -125,7 +122,6 @@ export const subcategoryIconsMap = {
   'boats': TbSailboat,
   'bicycles': TbBike,
 
-  // Real Estate
   'houses-rent': TbHome,
   'houses-sale': TbHomePlus,
   'flats-apartments': TbBuilding,
@@ -133,7 +129,6 @@ export const subcategoryIconsMap = {
   'commercial-property': TbBuildingStore,
   'short-let': TbHomeMove,
 
-  // Fashion
   'mens-clothing': TbShirt,
   'womens-clothing': TbHeart,
   'kids-clothing': TbMoodKid,
@@ -142,7 +137,6 @@ export const subcategoryIconsMap = {
   'watches-jewelry': MdWatch,
   'traditional-wear': TbShirt,
 
-  // Home & Garden
   'furniture': TbArmchair,
   'kitchen-appliances': TbToolsKitchen2,
   'bedding-linen': TbBed,
@@ -151,7 +145,6 @@ export const subcategoryIconsMap = {
   'generators': TbBolt,
   'air-conditioners': TbSnowflake,
 
-  // Jobs
   'accounting-finance': TbCalculator,
   'admin-office': TbBuilding,
   'engineering': TbTool,
@@ -161,7 +154,6 @@ export const subcategoryIconsMap = {
   'teaching': TbSchool,
   'driving-logistics': TbSteeringWheel,
 
-  // Services
   'repair-maintenance': TbTool,
   'cleaning-services': TbBucket,
   'catering': TbChefHat,
@@ -171,7 +163,6 @@ export const subcategoryIconsMap = {
   'tutoring': TbBook,
   'moving-delivery': TbTruckDelivery,
 
-  // Animals & Pets
   'dogs': TbDog,
   'cats': TbCat,
   'birds': GiBirdTwitter,
@@ -179,13 +170,11 @@ export const subcategoryIconsMap = {
   'pet-accessories': TbBone,
   'livestock': TbHorse,
 
-  // Food & Agriculture
   'farm-produce': TbCarrot,
   'processed-food': TbBox,
   'farming-equipment': TbTractor,
   'seeds-fertilizers': TbSeedling,
 
-  // Health & Beauty
   'skincare': TbDroplet,
   'hair-products': TbTool,
   'vitamins': TbPill,
@@ -193,19 +182,16 @@ export const subcategoryIconsMap = {
   'gym-fitness': TbBarbell,
   'perfumes': TbDroplet,
 
-  // Kids & Baby
   'baby-clothing': TbMoodKid,
   'toys-games': TbDeviceGamepad2,
   'baby-gear': MdOutlineStroller,
   'school-supplies': TbBackpack,
 
-  // Sports & Outdoor
   'football': TbBallFootball,
   'gym-equipment': TbBarbell,
   'outdoor-camping': TbTent,
   'cycling': TbBike,
 
-  // Books, Music & Movies
   'books-textbooks': TbBook,
   'music-instruments': TbMusic,
   'movies-dvds': TbMovie,

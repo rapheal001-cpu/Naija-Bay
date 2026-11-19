@@ -9,7 +9,6 @@ const MAX_ATTEMPTS = 6;
 
 const listSocketUrl = () => buildSocketUrl("/ws/chat/");
 
-/** Inbox socket: live previews, unread counts, typing, clear and block events. */
 export const useChatListSocket = ({ enabled, queryClient, onTyping, onBlocked }) => {
     const [status, setStatus] = useState("offline");
     const handlers = useRef({ onTyping, onBlocked });
@@ -74,7 +73,7 @@ export const useChatListSocket = ({ enabled, queryClient, onTyping, onBlocked })
                 try {
                     handle(JSON.parse(event.data));
                 } catch {
-                    /* ignore malformed frames */
+                    return;
                 }
             };
             socket.onclose = (event) => {

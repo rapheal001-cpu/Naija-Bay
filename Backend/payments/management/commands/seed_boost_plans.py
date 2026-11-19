@@ -4,8 +4,6 @@ from django.core.management.base import BaseCommand
 
 from payments.models import BoostPlan
 
-# Starter plans only. Edit freely in the Django admin (Payments -> Boost plans).
-# This command never overwrites a plan that already exists.
 DEFAULT_PLANS = [
     {
         "slug": "basic", "name": "Basic Boost", "price": Decimal("1500.00"),

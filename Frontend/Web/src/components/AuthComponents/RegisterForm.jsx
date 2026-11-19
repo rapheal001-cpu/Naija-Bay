@@ -23,7 +23,6 @@ const RegisterForm = () => {
         registerUser.mutate(data);
     };
 
-    // Simple password strength check
     const getPasswordStrength = (pwd) => {
         if (!pwd) return 0;
         let score = 0;
@@ -45,7 +44,6 @@ const RegisterForm = () => {
         >
             <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 sm:p-10">
 
-                    {/* Server Errors */}
                     {serverError && (
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                             <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
@@ -58,7 +56,6 @@ const RegisterForm = () => {
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
-                        {/* Username */}
                         <div className="space-y-1.5">
                             <label htmlFor="username" className="text-[13px] font-bold text-gray-700 ml-1">
                                 Username
@@ -90,7 +87,6 @@ const RegisterForm = () => {
                             )}
                         </div>
 
-                        {/* Email */}
                         <div className="space-y-1.5">
                             <label htmlFor="email" className="text-[13px] font-bold text-gray-700 ml-1">
                                 Email address
@@ -120,7 +116,6 @@ const RegisterForm = () => {
                             )}
                         </div>
 
-                        {/* Password */}
                         <div className="space-y-1.5">
                             <label htmlFor="password1" className="text-[13px] font-bold text-gray-700 ml-1">
                                 Password
@@ -157,7 +152,6 @@ const RegisterForm = () => {
                                 <p className="text-red-500 text-xs font-semibold ml-1">{errors.password1.message}</p>
                             )}
 
-                            {/* Strength meter */}
                             {password1 && !errors.password1 && (
                                 <div className="flex items-center gap-2 mt-2">
                                     <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -173,7 +167,6 @@ const RegisterForm = () => {
                             )}
                         </div>
 
-                        {/* Confirm Password */}
                         <div className="space-y-1.5">
                             <label htmlFor="password2" className="text-[13px] font-bold text-gray-700 ml-1">
                                 Confirm password
@@ -210,7 +203,6 @@ const RegisterForm = () => {
                             )}
                         </div>
 
-                        {/* Submit */}
                         <button
                             type="submit"
                             disabled={registerUser.isPending}
@@ -229,7 +221,6 @@ const RegisterForm = () => {
                     </form>
                 </div>
 
-                {/* Footer */}
                 <p className="text-center text-sm text-gray-500 mt-8">
                     Already have an account?{' '}
                     <Link to="/sign-in" className="text-brand font-bold hover:underline underline-offset-4">

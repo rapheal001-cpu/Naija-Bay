@@ -77,7 +77,6 @@ const Contact = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Wire to your API later
         alert('Message sent! We will get back to you shortly.');
         setForm({ name: '', email: '', subject: '', message: '' });
     };
@@ -88,7 +87,6 @@ const Contact = () => {
             <Spacer space="mb-36 md:mb-28" />
 
             <div className="max-w-5xl mx-auto px-4 py-6 pb-16 space-y-14">
-                {/* ── Hero ─────────────────────────────────────────── */}
                 <section className="text-center max-w-2xl mx-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-wider mb-5">
                         <FaHeadset className="w-3 h-3" />
@@ -103,7 +101,6 @@ const Contact = () => {
                     </p>
                 </section>
 
-                {/* ── Contact Cards ────────────────────────────────── */}
                 <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {contactMethods.map((method) => (
                         <a
@@ -127,9 +124,7 @@ const Contact = () => {
                     ))}
                 </section>
 
-                {/* ── Form + Info ──────────────────────────────────── */}
                 <section className="grid lg:grid-cols-5 gap-8">
-                    {/* Form */}
                     <div className="lg:col-span-3 bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-sm">
                         <h2 className="text-lg font-bold text-gray-900">Send us a message</h2>
                         <p className="text-sm text-gray-500 mt-1">
@@ -213,7 +208,6 @@ const Contact = () => {
                         </form>
                     </div>
 
-                    {/* Side info */}
                     <div className="lg:col-span-2 space-y-4">
                         <div className="bg-brand rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-brand/20">
                             <h3 className="text-lg font-bold">Need urgent help?</h3>
@@ -255,7 +249,6 @@ const Contact = () => {
                     </div>
                 </section>
 
-                {/* ── FAQ ──────────────────────────────────────────── */}
                 <section>
                     <div className="text-center mb-8">
                         <h2 className="text-2xl font-bold text-gray-900">Frequently asked questions</h2>

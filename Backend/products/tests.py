@@ -536,7 +536,6 @@ class ProductAttributeWriteTests(ProductAttributeAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 2)
 
-        # Re-submit a changed value; explicit null clears the attribute.
         response = self.client.patch(url, {"attributes": {"make": "apple", "year": None}}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ProductAttribute.objects.filter(product=product).count(), 1)
@@ -684,8 +683,6 @@ class ProductAttributeFacetTests(ProductAttributeAPITestCase):
         ProductAttribute.objects.create(product=p2, definition=self.make, value_text="samsung")
         ProductAttribute.objects.create(product=p2, definition=self.year, value_number=Decimal("2022"))
 
-        # Filtering by make=apple narrows the RESULT set to 1, but the make
-        # facet itself must still report samsung (its own filter excluded).
         response = self.client.get(
             reverse("products-list"),
             {"facets": "1", "category": "phones-tablets", "attr_make": "apple"},
@@ -725,7 +722,6 @@ class ListQueryCountTests(ProductAPITestCase):
             response = self.client.get(reverse("products-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 10)
-        # Constant regardless of row count: base + count + prefetches + facets off.
         self.assertLessEqual(len(ctx.captured_queries), 25, f"{len(ctx.captured_queries)} queries: N+1 regressed")
 
     def test_create_image_by_direct_upload_key(self):

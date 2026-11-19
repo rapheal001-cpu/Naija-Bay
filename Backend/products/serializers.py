@@ -22,9 +22,6 @@ from NaijaBay.utils import (
     _normalize,
 )
 
-# =============================================================================
-# PRODUCT SERIALIZER
-# =============================================================================
 
 class ProductUserSerializer(serializers.ModelSerializer):
     store = serializers.SerializerMethodField(read_only=True)
@@ -93,12 +90,9 @@ class ProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField(read_only=True)
     total_ratings = serializers.SerializerMethodField(read_only=True)
     user_rating = serializers.SerializerMethodField(read_only=True)
-    # Jiji-style read fields, derived from existing data (no migration needed).
     badge = serializers.SerializerMethodField(read_only=True)
     posted_ago = serializers.SerializerMethodField(read_only=True)
     location_label = serializers.SerializerMethodField(read_only=True)
-    # Write: {'year': 2019, 'make': 'toyota'} — validated against the
-    # category's AttributeDefinitions. Read: list of saved values.
     attributes = serializers.DictField(
         required=False,
         allow_null=True,
@@ -169,13 +163,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
-    # -------------------------------------------------------------------------
-    # Read-only computed fields
-    # -------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------
-    # Jiji-style presentation fields (derived, no schema change)
-    # -------------------------------------------------------------------------
 
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_badge(self, obj):
@@ -323,9 +311,6 @@ class ProductSerializer(serializers.ModelSerializer):
             ]
         return [img.image.url for img in images]
 
-    # -------------------------------------------------------------------------
-    # Category-specific attributes (write + read)
-    # -------------------------------------------------------------------------
 
     def _definitions_scope(self, category_value, sub_category_value):
         """AttributeDefinitions for a category (category-wide + subcategory)."""
@@ -407,7 +392,6 @@ class ProductSerializer(serializers.ModelSerializer):
                 )
             return {"value_text": None, "value_number": None, "value_bool": None, "value_date": None, "value_list": list(raw)}
 
-        # text
         text = str(raw).strip()
         if not text:
             raise serializers.ValidationError(f"'{definition.label}' cannot be empty.")
@@ -437,7 +421,6 @@ class ProductSerializer(serializers.ModelSerializer):
             except serializers.ValidationError as exc:
                 errors[slug] = exc.detail
 
-        # Required definitions must be supplied whenever attributes are posted.
         for definition in definitions:
             if definition.required and attributes.get(definition.slug) in (None, "", []):
                 errors[definition.slug] = f"'{definition.label}' is required for this category."
@@ -501,8 +484,6 @@ class ProductSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         output = []
-        # Prefetch(to_attr) rows land on the instance (zero extra queries);
-        # single/fresh objects fall back to one direct queryset.
         attribute_rows = getattr(instance, "prefetched_attribute_values", None)
         if attribute_rows is None:
             attribute_rows = getattr(instance, "_attribute_values_list", None)
@@ -530,9 +511,6 @@ class ProductSerializer(serializers.ModelSerializer):
         data["attributes"] = output
         return data
 
-    # -------------------------------------------------------------------------
-    # Field validators
-    # -------------------------------------------------------------------------
 
     def validate_product_name(self, value):
         value = value.strip().title()
@@ -556,8 +534,6 @@ class ProductSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "This category does not exist in our database."
             )
-        # Store the canonical choice key (e.g. ``phones_tablets``) even when
-        # the client sends the hyphenated public slug (``phones-tablets``).
         return normalized.replace("-", "_")
 
     def validate_sub_category(self, value):
@@ -623,16 +599,12 @@ class ProductSerializer(serializers.ModelSerializer):
             )
         return cleaned
 
-    # -------------------------------------------------------------------------
-    # Object-level validation
-    # -------------------------------------------------------------------------
 
     def validate(self, attrs):
         attrs = self._validate_attributes(attrs)
         category = attrs.get("category", getattr(self.instance, 'category', ''))
         sub_category = attrs.get("sub_category", getattr(self.instance, 'sub_category', ''))
 
-        # Category ↔ SubCategory relationship
         if category and sub_category:
             try:
                 cat = Category.objects.get(slug=_normalize(category))
@@ -647,7 +619,6 @@ class ProductSerializer(serializers.ModelSerializer):
         state = attrs.get("state", getattr(self.instance, 'state', ''))
         city = attrs.get("city", getattr(self.instance, 'city', ''))
 
-        # State ↔ City relationship
         if state and city:
             try:
                 st = State.objects.get(slug=_normalize(state))
@@ -657,7 +628,6 @@ class ProductSerializer(serializers.ModelSerializer):
             except State.DoesNotExist:
                 raise serializers.ValidationError({"state": f"{state} does not exist."})
 
-        # Contact methods ↔ Contact number relationship
         contact_methods = attrs.get("contact_methods", getattr(self.instance, 'contact_methods', []))
         contact_number = attrs.get("contact_number", getattr(self.instance, 'contact_number', ''))
 
@@ -677,9 +647,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    # -------------------------------------------------------------------------
-    # Create / Update
-    # -------------------------------------------------------------------------
 
     @transaction.atomic
     def create(self, validated_data):
@@ -701,12 +668,8 @@ class ProductSerializer(serializers.ModelSerializer):
         return instance
 
 
-# =============================================================================
-# PRODUCT IMAGE SERIALIZER
-# =============================================================================
 
 class ProductImageSerializer(serializers.ModelSerializer):
-    # Direct-to-storage uploads attach by object key instead of a file.
     image_key = serializers.CharField(write_only=True, required=False, max_length=512)
 
     class Meta:
@@ -731,9 +694,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError({"image_key": "This file was not uploaded by you."})
         if image_key:
-            # Direct-upload keys must resolve to a real object: existence is
-            # confirmed against storage (owner-prefixed keys cannot be forged
-            # into someone else's files, but a typo'd key would 404 anyway).
             from django.core.files.storage import default_storage
 
             try:
@@ -764,7 +724,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
                 f"Max image size is 2MB. This file is {mb:.1f}MB"
             )
 
-        # Sniff the actual bytes (extension/MIME are client-declared).
         try:
             image.seek(0)
             with Image.open(image) as sniffed:
@@ -804,9 +763,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return instance
 
 
-# =============================================================================
-# CATEGORY SERIALIZER
-# =============================================================================
 
 class CategorySerializer(serializers.ModelSerializer):
     sub_categories = serializers.SerializerMethodField(read_only=True)
@@ -827,9 +783,6 @@ class CategorySerializer(serializers.ModelSerializer):
         ]
 
 
-# =============================================================================
-# PRODUCT REPORT (ABUSE)
-# =============================================================================
 
 class ProductReportSerializer(serializers.ModelSerializer):
     reporter = ProductUserSerializer(read_only=True)
@@ -873,9 +826,6 @@ class ProductReportSerializer(serializers.ModelSerializer):
         return attrs
 
 
-# =============================================================================
-# PRODUCT RATING
-# =============================================================================
 
 class ProductRatingSerializer(serializers.ModelSerializer):
     user = ProductUserSerializer(read_only=True)
@@ -891,9 +841,6 @@ class ProductRatingSerializer(serializers.ModelSerializer):
         return value
 
 
-# =============================================================================
-# SELLER / STORE SUMMARY
-# =============================================================================
 
 class ProductSellerSerializer(serializers.Serializer):
     """Lightweight seller payload used by the public seller profile page."""

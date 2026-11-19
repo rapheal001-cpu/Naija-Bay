@@ -4,10 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useFetchCategories } from '../../hooks/UseQuery.js';
 import { setCategories } from '../../slice/CategorySlice.js';
 
-/**
- * Secondary header row: SEO-friendly category links + core marketplace links.
- * Category clicks land on `/:category` (handled by the Products page).
- */
 const CategoryNav = () => {
     const categories = useSelector((state) => state.categories.categories) || [];
     const dispatch = useDispatch();

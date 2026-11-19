@@ -13,7 +13,6 @@ const Header = () => {
     return (
         <>
             <header className="fixed top-0 z-50 w-full bg-brand shadow-md">
-                {/* Jiji-style utility strip */}
                 <div className="hidden items-center justify-between border-b border-white/10 px-4 py-1 text-[11px] text-white/70 md:flex lg:px-8">
                     <span className="font-semibold tracking-wide">Sell faster , Buy smarter</span>
                     <div className="flex items-center gap-4">
@@ -24,7 +23,6 @@ const Header = () => {
                     </div>
                 </div>
 
-                {/* Row 1: brand + search + account + post ad */}
                 <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 lg:gap-5 lg:px-8">
                     <LeftComponent />
 
@@ -44,12 +42,10 @@ const Header = () => {
                     </div>
                 </div>
 
-                {/* Mobile search row */}
                 <div className="px-4 pb-2.5 md:hidden">
                     <GlobalSearch compact />
                 </div>
 
-                {/* Row 2: category navigation (desktop) */}
                 <div className="hidden md:block">
                     <CategoryNav />
                 </div>

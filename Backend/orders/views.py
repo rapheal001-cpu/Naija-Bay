@@ -23,9 +23,6 @@ def _cart_response(request, cart, code=status.HTTP_200_OK):
     return Response(CartSerializer(cart, context={"request": request}).data, status=code)
 
 
-# =============================================================================
-# CART
-# =============================================================================
 
 @extend_schema_view(
     get=extend_schema(tags=["Orders"], operation_id="View Cart"),
@@ -78,9 +75,6 @@ class CartItemAPIView(APIView):
         return _cart_response(request, cart)
 
 
-# =============================================================================
-# CHECKOUT & ORDERS
-# =============================================================================
 
 @extend_schema_view(
     post=extend_schema(
@@ -132,7 +126,6 @@ class OrderDetailAPIView(RetrieveAPIView):
     lookup_url_kwarg = "reference"
 
     def get_queryset(self):
-        # Scoped to the buyer: other people's orders simply 404.
         return with_order_context(Order.objects.filter(buyer=self.request.user))
 
 
@@ -147,9 +140,6 @@ class CancelOrderAPIView(APIView):
         return Response(OrderSerializer(order, context={"request": request}).data)
 
 
-# =============================================================================
-# SELLER SALES
-# =============================================================================
 
 @extend_schema_view(get=extend_schema(tags=["Orders"], operation_id="My Sales"))
 class SalesListAPIView(ListAPIView):

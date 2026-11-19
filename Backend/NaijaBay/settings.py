@@ -15,9 +15,6 @@ from decouple import config
 from django.core.exceptions import ImproperlyConfigured
 
 
-# =============================================================================
-# Paths and environment helpers
-# =============================================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -73,9 +70,6 @@ def _secret_key() -> str:
     return value or "django-insecure-dev-only-key-change-in-production"
 
 
-# =============================================================================
-# Runtime mode and security
-# =============================================================================
 
 ENVIRONMENT = config("ENVIRONMENT", default="development", cast=str)
 IS_PRODUCTION = ENVIRONMENT == "production"
@@ -121,9 +115,6 @@ AUTH_USER_MODEL = "accounts.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# =============================================================================
-# Apps and middleware
-# =============================================================================
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -133,7 +124,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    # Local apps
     "accounts.apps.AccountsConfig",
     "products.apps.ProductsConfig",
     "core.apps.CoreConfig",
@@ -141,7 +131,6 @@ INSTALLED_APPS = [
     "orders.apps.OrdersConfig",
     "payments.apps.PaymentsConfig",
     "NaijaBay",
-    # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
@@ -184,9 +173,6 @@ MIDDLEWARE = [
 SITE_ID = config("SITE_ID", default=1, cast=int)
 
 
-# =============================================================================
-# CORS
-# =============================================================================
 
 CORS_ALLOWED_ORIGINS = _csv("CORS_ALLOWED_ORIGINS")
 if DEBUG and not CORS_ALLOWED_ORIGINS:
@@ -203,9 +189,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 
-# =============================================================================
-# URLs and templates
-# =============================================================================
 
 ROOT_URLCONF = "NaijaBay.urls"
 ASGI_APPLICATION = "NaijaBay.asgi.application"
@@ -229,9 +212,6 @@ TEMPLATES = [
 ]
 
 
-# =============================================================================
-# Database
-# =============================================================================
 
 DATABASE_URL = config("DATABASE_URL", default=None)
 if IS_PRODUCTION and DATABASE_URL and "CHANGE_ME" in DATABASE_URL:
@@ -254,9 +234,6 @@ else:
     }
 
 
-# =============================================================================
-# Authentication and password rules
-# =============================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -278,9 +255,6 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 APPEND_SLASH = True
 
 
-# =============================================================================
-# Static files and media storage
-# =============================================================================
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = (
@@ -333,8 +307,6 @@ else:  # cloudinary
         "API_SECRET": config("CLOUD_API_SECRET", default=""),
     }
 
-# Optional signed preset so Cloudinary can enforce a real file-size limit on
-# browser-direct uploads (the API response field is only advisory).
 CLOUDINARY_UPLOAD_PRESET = config("CLOUDINARY_UPLOAD_PRESET", default="", cast=str)
 
 STORAGES = {
@@ -345,9 +317,6 @@ STORAGES = {
 }
 
 
-# =============================================================================
-# Django REST framework
-# =============================================================================
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"]
@@ -427,9 +396,6 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-# =============================================================================
-# JWT cookies, allauth and auth_kit
-# =============================================================================
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
@@ -457,7 +423,6 @@ AUTH_KIT = {
     "AUTH_COOKIE_SAMESITE": "None" if IS_PRODUCTION else "Lax",
     "AUTH_JWT_COOKIE_NAME": "access",
     "AUTH_JWT_REFRESH_COOKIE_NAME": "refresh",
-    # Registration
     "REGISTER_SERIALIZER": "accounts.serializers.registration.CustomRegisterSerializer",
     "REGISTER_VIEW": "accounts.views.CustomRegisterView",
     "VERIFY_EMAIL_VIEW": "accounts.views.CustomVerifyEmailView",
@@ -467,17 +432,14 @@ AUTH_KIT = {
     "GET_EMAIL_VERIFICATION_URL_FUNC": "auth_kit.views.registration.get_email_verification_url",
     "SEND_VERIFY_EMAIL_FUNC": "auth_kit.views.registration.send_verify_email",
     "POST_SIGNUP_FUNC": "auth_kit.views.registration.default_post_signup",
-    # Login / logout
     "LOGIN_REQUEST_SERIALIZER": "auth_kit.serializers.login_factors.LoginRequestSerializer",
     "LOGIN_RESPONSE_SERIALIZER": "auth_kit.serializers.login_factors.BaseLoginResponseSerializer",
     "LOGIN_SERIALIZER_FACTORY": "auth_kit.serializers.login.get_login_serializer",
     "LOGIN_VIEW": "accounts.views.CustomLoginView",
     "LOGOUT_SERIALIZER": "auth_kit.serializers.logout.AuthKitLogoutSerializer",
     "LOGOUT_VIEW": "accounts.views.CustomLogoutView",
-    # User
     "USER_SERIALIZER": "accounts.serializers.user.CustomUserSerializer",
     "USER_VIEW": "accounts.views.CustomUserView",
-    # Password
     "PASSWORD_CHANGE_SERIALIZER": "auth_kit.serializers.PasswordChangeSerializer",
     "PASSWORD_CHANGE_VIEW": "accounts.views.CustomPasswordChangeView",
     "PASSWORD_RESET_SERIALIZER": "auth_kit.serializers.PasswordResetSerializer",
@@ -489,21 +451,16 @@ AUTH_KIT = {
     "SEND_PASSWORD_RESET_EMAIL_FUNC": "auth_kit.forms.send_password_reset_email",
     "OLD_PASSWORD_FIELD_ENABLED": True,
     "PASSWORD_RESET_PREVENT_ENUMERATION": True,
-    # JWT
     "JWT_TOKEN_CLAIMS_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
     "JWT_REFRESH_VIEW": "auth_kit.views.jwt.RefreshViewWithCookieSupport",
 }
 
-# Login brute-force lockout (time-based cool-off, not a permanent ban).
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=30)
 AXES_LOCK_OUT_AT_FAILURE = False
 AXES_COOLOFF_MODE = "immediately"
 
 
-# =============================================================================
-# Email, phone and payments
-# =============================================================================
 
 EMAIL_HOST = config("EMAIL_HOST", default="", cast=str)
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
@@ -520,7 +477,6 @@ EMAIL_BACKEND = (
 
 PHONENUMBER_DEFAULT_REGION = "NG"
 
-# Empty in development -> simulated checkout. Required in production.
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="", cast=str).strip()
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173", cast=str).strip()
 DELIVERY_FEE = config("DELIVERY_FEE", default=0, cast=int)
@@ -528,9 +484,6 @@ if IS_PRODUCTION and not PAYSTACK_SECRET_KEY:
     raise ImproperlyConfigured("PAYSTACK_SECRET_KEY must be set in production.")
 
 
-# =============================================================================
-# Logging
-# =============================================================================
 
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOGS_DIR, exist_ok=True)
@@ -578,9 +531,6 @@ LOGGING = {
 }
 
 
-# =============================================================================
-# Cache and Channels
-# =============================================================================
 
 REDIS_URL = config("REDIS_URL", cast=str, default="redis://127.0.0.1:6379/0")
 

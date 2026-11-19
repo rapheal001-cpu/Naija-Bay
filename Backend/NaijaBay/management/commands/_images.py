@@ -8,9 +8,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 from products.models import ProductImage
 
-# =============================================================================
-# PRODUCT IMAGE GENERATOR
-# =============================================================================
 
 IMAGE_FORMATS = [
     "JPEG",

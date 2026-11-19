@@ -48,9 +48,7 @@ const Home = () => {
                 </>
             }
         >
-            {/* Featured Section */}
             <section className="py-10 lg:py-14">
-                {/* Section Header */}
                 <div className="flex items-end justify-between mb-8">
                     <div>
                         <p className="text-xs font-bold text-brand uppercase tracking-[0.15em] mb-1.5">
@@ -77,7 +75,6 @@ const Home = () => {
 
                 <div className="w-full h-px bg-gray-100 mb-8" />
 
-                {/* Grid */}
                 {fetchFeaturedProducts.isLoading ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                         <SkeletonProductCard />
@@ -110,7 +107,6 @@ const Home = () => {
 
             </section>
 
-            {/* Latest Ads */}
             <section className="py-10 lg:py-14">
                 <div className="flex items-end justify-between mb-8">
                     <div>
@@ -156,7 +152,6 @@ const Home = () => {
                 )}
             </section>
 
-            {/* Promotional: sell CTA */}
             <section className="pb-10 lg:pb-14">
                 <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-brand to-brand-hover px-6 py-10 sm:px-10">
                     <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" aria-hidden="true" />
@@ -180,7 +175,6 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Why Naija-Bay trust strip */}
             <section className="pb-10 lg:pb-14">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
@@ -213,7 +207,6 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Jiji-style popular searches / browse links */}
             <section className="pb-12">
                 <div className="border-t border-gray-100 pt-8">
                     <h2 className="text-lg font-black text-gray-900 mb-4">Popular searches</h2>

@@ -6,7 +6,6 @@ import {PersistGate} from "redux-persist/integration/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import '@/style.css'
 
-// Urls
 import Home from "@/pages/Home.jsx";
 import NotFound from "@/pages/NotFound.jsx";
 import ProductDetail from "@/pages/ProductDetail.jsx";

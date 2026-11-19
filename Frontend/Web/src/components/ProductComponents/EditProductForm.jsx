@@ -47,7 +47,6 @@ const buildDefaultValues = (data) => ({
 const EditProductForm = ({ productSlug, initialData }) => {
     const navigate = useNavigate();
 
-    // --- Form & UI state ---
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
     const [serverError, setServerError] = useState('');
@@ -61,8 +60,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
     const isActive = watch('active');
     const isSold = watch('sold');
 
-    // When Active is turned OFF → Sold becomes TRUE automatically
-    // When Active is turned ON  → Sold becomes FALSE automatically
     useEffect(() => {
         if (!isActive) {
             setValue('sold', true, { shouldValidate: false });
@@ -178,7 +175,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
 
-                {/* Section: Status (Active / Sold) */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineCheckCircle size={18} className="text-brand" />
@@ -186,7 +182,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Active Switch */}
                         <label className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors select-none">
                             <div className="flex items-center gap-3">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-brand/10 text-brand' : 'bg-gray-200 text-gray-400'}`}>
@@ -207,7 +202,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
                             </div>
                         </label>
 
-                        {/* Sold Switch (read-only, controlled by Active) */}
                         <label className={`flex items-center justify-between p-4 rounded-2xl border transition-colors select-none ${isSold ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="flex items-center gap-3">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSold ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-200 text-gray-400'}`}>
@@ -235,7 +229,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Basic Info */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineTag size={18} className="text-brand" />
@@ -281,7 +274,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Pricing */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineBanknotes size={18} className="text-brand" />
@@ -364,7 +356,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Categorization */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineCollection size={18} className="text-brand" />
@@ -458,7 +449,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Specifications (dynamic, per category) */}
                 {definitions.length > 0 && (
                     <>
                         <AttributeFields definitions={definitions} register={register} errors={errors} />
@@ -466,7 +456,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
                     </>
                 )}
 
-                {/* Section: Location */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineLocationMarker size={18} className="text-brand" />
@@ -522,7 +511,6 @@ const EditProductForm = ({ productSlug, initialData }) => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Contact */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineChatAlt2 size={18} className="text-brand" />

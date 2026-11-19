@@ -58,7 +58,6 @@ const ProfileStatCard = ({ activeListings = [], soldListings = [], favoriteListi
                             </p>
                         </div>
 
-                        {/* Decorative corner - hidden on very small screens */}
                         <div className={`hidden sm:block absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 rounded-bl-4xl sm:rounded-bl-[40px] opacity-30 pointer-events-none ${stat.bg}`} />
                     </div>
                 );

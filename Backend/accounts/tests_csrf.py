@@ -48,7 +48,6 @@ class CsrfMatrixTests(TestCase):
 
     def test_login_flow_gets_cookies_and_is_not_blocked(self):
         response = _login(self.client)
-        # An unauthenticated login carries no auth cookies, so CSRF does not apply.
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", self.client.cookies)
         self.assertIn("refresh", self.client.cookies)
@@ -140,8 +139,6 @@ class CsrfMatrixTests(TestCase):
 
 class WebhookExemptionTests(TestCase):
     def test_signed_webhook_path_is_csrf_exempt(self):
-        # No cookies, no token: the webhook must reach signature validation
-        # (400 signature failure), NOT be stopped by CSRF (403).
         response = Client(enforce_csrf_checks=True).post(
             reverse("paystack-webhook"),
             b"{}",

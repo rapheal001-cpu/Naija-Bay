@@ -59,21 +59,18 @@ const Messages = () => {
         return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }, [searchParams]);
 
-    // ---- Auth guard (same pattern as Notifications.jsx) ----
     useEffect(() => {
         if (!isAuthenticated && !user) {
             navigate('/sign-in');
         }
     }, [isAuthenticated, user, navigate]);
 
-    // ---- Conversations list ----
     const conversationsQuery = useFetchConversations(isAuthenticated);
     const conversations = useMemo(
         () => conversationsQuery.data?.results || [],
         [conversationsQuery.data]
     );
 
-    // Default to the most recent conversation when none is selected.
     const effectiveId = activeId || conversations[0]?.id || null;
 
     const selectConversation = (id) => {
@@ -88,13 +85,9 @@ const Messages = () => {
         setSearchParams({}, { replace: true });
     };
 
-    // ---- Conversation detail (product context + counterpart) ----
     const conversationQuery = useFetchConversation(effectiveId);
     const conversation = conversationQuery.data || null;
 
-    // ---- Messages ----
-    // Fetch the full thread in one page (newest last on the server); the
-    // hook default (24) cut long conversations off at the oldest page.
     const messagesQuery = useQuery({
         queryKey: ['messages', effectiveId, 1],
         queryFn: () => fetchMessagesFn({ conversationId: effectiveId, pageSize: 100 }),
@@ -105,7 +98,6 @@ const Messages = () => {
         retry: 1,
         meta: { hookName: 'useFetchMessages' },
     });
-    // Older pages are fetched on demand ("Load older messages").
     const olderQueries = useQueries({
         queries: olderPages.map((page) => ({
             queryKey: ['messages', effectiveId, page],
@@ -135,7 +127,6 @@ const Messages = () => {
         return () => window.clearTimeout(timer);
     }, [effectiveId]);
 
-    // ---- Live sockets (reconnecting; REST polling remains the fallback) ----
     const handleIncomingMessage = (incoming) => {
         if (!incoming) return;
         queryClient.setQueryData(['messages', effectiveId, 1], (cached) => {
@@ -192,20 +183,17 @@ const Messages = () => {
 
     const socketReady = socketStatus === 'connected';
 
-    // ---- Mark the open thread as read ----
     const markRead = useMarkConversationReadMutation(effectiveId);
     useEffect(() => {
         if (effectiveId) markRead.mutate();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [effectiveId]);
 
-    // ---- Auto-scroll to the newest message ----
     useEffect(() => {
         const el = scrollRef.current;
         if (el) el.scrollTop = el.scrollHeight;
     }, [messages, effectiveId]);
 
-    // ---- Send (WebSocket first; REST fallback when offline) ----
     const sendMessage = useSendMessageMutation(effectiveId);
 
     const addPendingImages = (files) => {
@@ -248,7 +236,6 @@ const Messages = () => {
         if (!keep || chunks.length === 0) return;
         const blob = new Blob(chunks, { type: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
         const durationMs = Date.now() - startedAt;
-        // Treat the recording as one pending attachment slot (audio).
         setPendingImages((prev) => [
             ...prev.slice(0, 9),
             { id: `voice-${Date.now()}`, file: new File([blob], `voice-note.webm`, { type: blob.type }), url: URL.createObjectURL(blob), durationMs },
@@ -259,7 +246,6 @@ const Messages = () => {
         event.preventDefault();
         const body = draft.trim();
 
-        // Upload attachments first (direct-to-storage with progress).
         let attachmentUrls = [];
         if (pendingImages.length) {
             try {
@@ -283,7 +269,6 @@ const Messages = () => {
         if (!text && !attachmentType) return;
         setSendError('');
 
-        // Optimistic insert — replaced by the server message when it arrives.
         const optimistic = {
             id: `tmp-${optimisticIdRef.current++}`,
             conversation: effectiveId,
@@ -313,8 +298,8 @@ const Messages = () => {
                 setPendingImages([]);
                 sendTypingFrame(false);
                 return;
-            } catch {
-                // fall through to the REST mutation below
+            } catch (error) {
+                void error;
             }
         }
 
@@ -369,7 +354,6 @@ const Messages = () => {
         }
     };
 
-    // Block / clear actions
     const blockMutation = useMutation({
         mutationFn: blockUserFn,
         onSuccess: () => {
@@ -402,7 +386,6 @@ const Messages = () => {
         <AppLayout withSidebar={false}>
             <div className="min-h-screen pb-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Page header */}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand/10 text-brand">
                             <HiOutlineChatAlt2 size={20} />
@@ -418,7 +401,6 @@ const Messages = () => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* ---- Conversation list ---- */}
                         <aside className={`${mobileThreadOpen ? 'hidden lg:block' : 'block'} lg:col-span-4 xl:col-span-3 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden`}>
                             <div className="px-4 py-3 border-b border-gray-100">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -518,7 +500,6 @@ const Messages = () => {
                             )}
                         </aside>
 
-                        {/* ---- Thread ---- */}
                         <section className={`${mobileThreadOpen ? 'block' : 'hidden lg:block'} lg:col-span-8 xl:col-span-9 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[36rem] lg:h-[38rem]`}>
                             {!effectiveId ? (
                                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -532,7 +513,6 @@ const Messages = () => {
                                 </div>
                             ) : (
                                 <>
-                                    {/* Thread header: counterpart + product context */}
                                     <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
                                         <button
                                             type="button"
@@ -614,7 +594,6 @@ const Messages = () => {
                                         )}
                                     </div>
 
-                                    {/* Messages */}
                                     <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50/50 space-y-3">
                                         {messagesQuery.data?.next && (
                                             <div className="flex justify-center">
@@ -672,7 +651,6 @@ const Messages = () => {
                                         <TypingIndicator names={typingNames} />
                                     </div>
 
-                                    {/* Composer */}
                                     <form onSubmit={handleSend} className="border-t border-gray-100 px-4 py-3 shrink-0 bg-white">
                                         {sendError && (
                                             <p className="text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-2">

@@ -24,9 +24,6 @@ def _def(category, name, label, data_type, **extra):
 
 
 ATTRIBUTE_MAP = [
-    # ------------------------------------------------------------------
-    # Vehicles
-    # ------------------------------------------------------------------
     _def("vehicles", "make", "Make", "select", sub_category="cars", required=True, sort_order=1,
          options=[("toyota", "Toyota"), ("honda", "Honda"), ("lexus", "Lexus"), ("mercedes-benz", "Mercedes-Benz"),
                   ("bmw", "BMW"), ("hyundai", "Hyundai"), ("kia", "Kia"), ("nissan", "Nissan"), ("ford", "Ford"),
@@ -53,9 +50,6 @@ ATTRIBUTE_MAP = [
     _def("vehicles", "make", "Make", "select", sub_category="trucks-buses", sort_order=1,
          options=[("volvo", "Volvo"), ("mercedes-benz", "Mercedes-Benz"), ("man", "MAN"), ("hino", "Hino"),
                   ("toyota", "Toyota"), ("other", "Other")]),
-    # ------------------------------------------------------------------
-    # Real Estate
-    # ------------------------------------------------------------------
     _def("real-estate", "property_type", "Property Type", "select", sort_order=1,
          options=[("detached-house", "Detached House"), ("semi-detached", "Semi-Detached"), ("duplex", "Duplex"),
                   ("flat", "Flat"), ("terraced", "Terraced"), ("studio", "Studio"), ("room", "Room")]),
@@ -68,9 +62,6 @@ ATTRIBUTE_MAP = [
     _def("real-estate", "title", "Title", "select", sub_category="land-plots", sort_order=2,
          options=[("c-of-o", "C of O"), ("registered-survey", "Registered Survey"), ("governor-consent", "Governor's Consent"),
                   ("deed-of-assignment", "Deed of Assignment"), ("family-receipt", "Family Receipt")]),
-    # ------------------------------------------------------------------
-    # Phones & Tablets
-    # ------------------------------------------------------------------
     _def("phones-tablets", "brand", "Brand", "select", sort_order=1,
          options=[("apple", "Apple"), ("samsung", "Samsung"), ("xiaomi", "Xiaomi"), ("infinix", "Infinix"),
                   ("tecno", "Tecno"), ("google", "Google"), ("oppo", "Oppo"), ("nokia", "Nokia"), ("lenovo", "Lenovo"),
@@ -81,9 +72,6 @@ ATTRIBUTE_MAP = [
         ("256gb", "256GB"), ("512gb", "512GB"), ("1tb", "1TB")]),
     _def("phones-tablets", "ram", "RAM", "select", sub_category="mobile-phones", sort_order=4, options=[
         ("2gb", "2GB"), ("3gb", "3GB"), ("4gb", "4GB"), ("6gb", "6GB"), ("8gb", "8GB"), ("12gb", "12GB"), ("16gb", "16GB")]),
-    # ------------------------------------------------------------------
-    # Electronics
-    # ------------------------------------------------------------------
     _def("electronics", "brand", "Brand", "select", sort_order=1,
          options=[("apple", "Apple"), ("hp", "HP"), ("dell", "Dell"), ("lenovo", "Lenovo"), ("samsung", "Samsung"),
                   ("lg", "LG"), ("sony", "Sony"), ("hisense", "Hisense"), ("tcl", "TCL"), ("other", "Other")]),
@@ -93,58 +81,28 @@ ATTRIBUTE_MAP = [
     _def("electronics", "processor", "Processor", "text", sub_category="laptops-computers", sort_order=2),
     _def("electronics", "ram", "RAM", "select", sub_category="laptops-computers", sort_order=3, options=[
         ("4gb", "4GB"), ("8gb", "8GB"), ("16gb", "16GB"), ("32gb", "32GB")]),
-    # ------------------------------------------------------------------
-    # Fashion
-    # ------------------------------------------------------------------
     _def("fashion", "brand", "Brand", "text", sort_order=1),
     _def("fashion", "size", "Size", "select", sort_order=2,
          options=[("xs", "XS"), ("s", "S"), ("m", "M"), ("l", "L"), ("xl", "XL"), ("xxl", "XXL"),
                   ("uk-3", "UK 3"), ("uk-4", "UK 4"), ("uk-5", "UK 5"), ("uk-6", "UK 6"), ("uk-7", "UK 7"),
                   ("uk-8", "UK 8"), ("uk-9", "UK 9"), ("uk-10", "UK 10")]),
-    # ------------------------------------------------------------------
-    # Home & Garden
-    # ------------------------------------------------------------------
     _def("home-garden", "material", "Material", "select", sub_category="furniture", sort_order=1,
          options=[("wood", "Wood"), ("metal", "Metal"), ("plastic", "Plastic"), ("fabric", "Fabric"),
                   ("glass", "Glass"), ("leather", "Leather"), ("other", "Other")]),
-    # ------------------------------------------------------------------
-    # Jobs
-    # ------------------------------------------------------------------
     _def("jobs", "job_type", "Job Type", "select", sort_order=1,
          options=[("full-time", "Full Time"), ("part-time", "Part Time"), ("contract", "Contract"),
                   ("internship", "Internship"), ("remote", "Remote")]),
     _def("jobs", "experience_years", "Years of Experience", "number", filterable=True, min_value=0, sort_order=2),
-    # ------------------------------------------------------------------
-    # Services
-    # ------------------------------------------------------------------
     _def("services", "experience_years", "Years of Experience", "number", filterable=True, min_value=0, sort_order=1),
-    # ------------------------------------------------------------------
-    # Animals & Pets
-    # ------------------------------------------------------------------
     _def("animals-pets", "breed", "Breed", "text", sort_order=1),
     _def("animals-pets", "age_months", "Age", "number", unit="months", min_value=0, sort_order=2),
-    # ------------------------------------------------------------------
-    # Food & Agriculture
-    # ------------------------------------------------------------------
     _def("food-agriculture", "weight", "Weight", "number", unit="kg", filterable=True, min_value=0, sort_order=1),
-    # ------------------------------------------------------------------
-    # Health & Beauty
-    # ------------------------------------------------------------------
     _def("health-beauty", "brand", "Brand", "text", sort_order=1),
-    # ------------------------------------------------------------------
-    # Kids & Baby
-    # ------------------------------------------------------------------
     _def("kids-baby", "age_range", "Age Range", "select", sort_order=1,
          options=[("0-12-months", "0–12 months"), ("1-3-years", "1–3 years"), ("4-6-years", "4–6 years"),
                   ("7-12-years", "7–12 years"), ("teens", "Teens")]),
-    # ------------------------------------------------------------------
-    # Sports & Outdoor
-    # ------------------------------------------------------------------
     _def("sports-outdoor", "size", "Size", "select", sub_category="football", sort_order=1,
          options=[("size-3", "Size 3"), ("size-4", "Size 4"), ("size-5", "Size 5")]),
-    # ------------------------------------------------------------------
-    # Books, Music & Movies
-    # ------------------------------------------------------------------
     _def("books-music-movies", "author", "Author", "text", sub_category="books-textbooks", sort_order=1),
     _def("books-music-movies", "format", "Format", "select", sub_category="books-textbooks", sort_order=2,
          options=[("hardcover", "Hardcover"), ("paperback", "Paperback"), ("ebook", "eBook"), ("audiobook", "Audiobook")]),

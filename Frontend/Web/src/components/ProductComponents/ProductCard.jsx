@@ -7,7 +7,6 @@ import { useToggleFavoriteMutation } from '../../hooks/UseMutation';
 import { Stars } from './StarRating';
 import { timeAgo } from '../../dummyData.js';
 
-// Jiji-style tier colours, derived from the backend `badge` field.
 const BADGE_STYLES = {
     VIP: 'bg-amber-400 text-amber-950',
     PREMIUM: 'bg-sky-500 text-white',
@@ -62,7 +61,6 @@ const ProductCard = ({
             to={`/product/detail/${encodeURIComponent(product_slug)}`}
             className="group flex h-full flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition-shadow hover:shadow-lg"
         >
-            {/* Image */}
             <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                 <img
                     src={images?.[0] || null}
@@ -71,7 +69,6 @@ const ProductCard = ({
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
 
-                {/* Jiji-style tier badge */}
                 {tier && (
                     <span className={`absolute left-0 top-2 rounded-r px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow-sm ${BADGE_STYLES[tier] || BADGE_STYLES.PREMIUM}`}>
                         {tier}
@@ -100,7 +97,6 @@ const ProductCard = ({
                 )}
             </div>
 
-            {/* Body */}
             <div className="flex flex-1 flex-col p-3">
                 <div className="flex items-baseline gap-2">
                     <p className="text-base font-extrabold text-slate-900">
@@ -123,7 +119,6 @@ const ProductCard = ({
                     </p>
                 )}
 
-                {/* Rating row, like Jiji */}
                 {Number(total_ratings) > 0 && (
                     <div className="mt-1.5 flex items-center gap-1.5">
                         <Stars value={Number(average_rating) || 0} size={11} />
@@ -134,7 +129,6 @@ const ProductCard = ({
                     </div>
                 )}
 
-                {/* Condition + seller trust cue */}
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {condition && (
                         <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
@@ -148,14 +142,12 @@ const ProductCard = ({
                     )}
                 </div>
 
-                {/* Seller name */}
                 {product_user && (
                     <p className="mt-2 truncate text-[11px] font-medium text-slate-500">
                         {product_user.store?.name || product_user.full_name || product_user.username}
                     </p>
                 )}
 
-                {/* Footer: location + age + views */}
                 <div className="mt-auto flex items-center justify-between gap-1 border-t border-slate-100 pt-2 text-[10px] text-slate-400">
                     <span className="flex min-w-0 items-center gap-1 truncate">
                         <LuMapPin size={10} className="shrink-0" />

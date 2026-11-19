@@ -12,9 +12,6 @@ from NaijaBay.utils import (
 )
 
 
-# =============================================================================
-# USER MANAGER
-# =============================================================================
 
 class UserManager(BaseUserManager):
 
@@ -42,9 +39,6 @@ class UserManager(BaseUserManager):
         return self.create_user(email, username, password, **extra_fields)
 
 
-# =============================================================================
-# USER MODEL
-# =============================================================================
 
 class User(AbstractBaseUser, PermissionsMixin):
     avatar = models.ImageField(_("Avatar"), upload_to=user_avatar_upload_path, blank=True)
@@ -62,7 +56,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     state = models.CharField(_("State"), max_length=20, choices=STATE_CHOICES, blank=True)
     date_joined = models.DateTimeField(_("Date Joined"), auto_now_add=True)
 
-    # Status flags
     is_active = models.BooleanField(_("Active"), default=True, db_index=True)
     is_staff = models.BooleanField(_("Staff"), default=False, db_index=True)
     verified = models.BooleanField(_("Verified Seller"), default=False, db_index=True)
@@ -70,7 +63,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
-    # Object Manager
     objects = UserManager()
 
     @property
@@ -108,9 +100,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
 
 
-# =============================================================================
-# NOTIFICATIONS MODEL
-# =============================================================================
 
 class Notifications(models.Model):
     user = models.ForeignKey(
@@ -140,9 +129,6 @@ class Notifications(models.Model):
             models.Index(fields=['user', 'read', '-timestamp']),
         ]
 
-# =============================================================================
-# SELLER STORE
-# =============================================================================
 
 class Store(models.Model):
     """A public shop page that a seller can attach to their account."""
@@ -198,9 +184,6 @@ class Store(models.Model):
         ]
 
 
-# =============================================================================
-# FOLLOW (SELLER SUBSCRIPTIONS)
-# =============================================================================
 
 class Follow(models.Model):
     follower = models.ForeignKey(
@@ -241,9 +224,6 @@ class Follow(models.Model):
         ]
 
 
-# =============================================================================
-# SELLER FEEDBACK  (Jiji-style reviews, with moderation + appeal)
-# =============================================================================
 
 class SellerFeedback(models.Model):
     """A buyer's review of a seller. Moderated before it appears publicly."""
@@ -303,9 +283,6 @@ class SellerFeedback(models.Model):
         ]
 
 
-# =============================================================================
-# SAVED SEARCH  (Jiji: "save search and get notified about new ads")
-# =============================================================================
 
 class SavedSearch(models.Model):
     user = models.ForeignKey(
@@ -332,9 +309,6 @@ class SavedSearch(models.Model):
         ]
 
 
-# =============================================================================
-# VERIFICATION REQUEST  (Jiji "Verified ID" badge / KYC)
-# =============================================================================
 
 class VerificationRequest(models.Model):
     STATUS_CHOICES = [

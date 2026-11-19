@@ -21,7 +21,6 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
-# Namespaces used across Naija-Bay.
 ATTRIBUTE_DEFINITIONS_CACHE = "products:attribute-definitions"
 CATEGORY_LIST_CACHE = "products:categories"
 PRODUCT_LIST_CACHE = "products:list"

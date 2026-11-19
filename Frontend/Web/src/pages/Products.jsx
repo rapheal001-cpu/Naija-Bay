@@ -48,7 +48,6 @@ const buildFilters = (params) => {
         if (params.get(key) === 'true') filters[key] = true;
     });
 
-    // Dynamic attribute filters (attr_<slug>, attr_<slug>_min/_max, attr_<slug>__in)
     for (const [key, value] of params.entries()) {
         if (key.startsWith('attr_') && value) filters[key] = value;
     }
@@ -95,14 +94,12 @@ const Products = () => {
     });
 
     const searchQuery = filters.search || '';
-    // SEO path params (`/:category`, `/:category/:subCategory`) win over query params.
     const activeCategory = routeCategory || filters.category || '';
     const activeSubCategory = routeSubCategory || filters.sub_category || '';
     const activeSort = filters.sort || '';
 
     const categories = useSelector((state) => state.categories.categories);
 
-    // SEO path params flow into the API query alongside the URL filters.
     const effectiveFilters = useMemo(
         () => ({
             ...filters,
@@ -118,7 +115,6 @@ const Products = () => {
     );
     const fetchCategories = useFetchCategories();
 
-    // Category-specific filter definitions for the active scope
     const definitionsQuery = useFetchAttributeDefinitions(activeCategory || undefined, activeSubCategory || undefined);
     const filterDefinitions = useMemo(
         () => (definitionsQuery.data || []).filter((d) => d.filterable),
@@ -129,9 +125,6 @@ const Products = () => {
         [filterDefinitions]
     );
 
-    // Keep local inputs in sync when the URL changes (back button, chip
-    // removal). Derived during render instead of an effect, so typing in
-    // the inputs (which does not touch the URL) is never overwritten.
     const syncKey = JSON.stringify({
         searchQuery,
         condition: filters.condition || '',
@@ -163,7 +156,6 @@ const Products = () => {
         });
     }
 
-    // Infinite-scroll aggregation (DRF page results flattened below)
     const infiniteResults = useMemo(
         () => fetchProducts.data?.pages.flatMap((p) => p.results || []) || [],
         [fetchProducts.data]
@@ -191,9 +183,6 @@ const Products = () => {
         return activeSubCategory;
     }, [categories, activeSubCategory]);
 
-    // -------------------------------------------------------------------------
-    // URL helpers
-    // -------------------------------------------------------------------------
 
     const updateParams = (updates, { resetPage = true } = {}) => {
         const newParams = new URLSearchParams(searchParams);
@@ -215,8 +204,6 @@ const Products = () => {
         updateParams({ search: searchInput.trim() });
     };
 
-    // Category and page filters live in the SEO path (`/:category[/:subCategory]`);
-    // search/state/price filters stay in the query string.
     const navigateToBrowse = (path) => {
         const keep = new URLSearchParams(searchParams);
         keep.delete('category');
@@ -241,7 +228,6 @@ const Products = () => {
 
     const applyFilters = (e) => {
         e.preventDefault();
-        // Attribute filter params live alongside the classic ones in the query string.
         const attrUpdates = {};
         for (const key of Object.keys(searchParams).filter((k) => k.startsWith('attr_'))) {
             attrUpdates[key] = '';
@@ -301,7 +287,6 @@ const Products = () => {
     return (
         <AppLayout>
             <div className="min-h-screen pb-16">
-                {/* Search Hero */}
                 <div className="relative bg-brand overflow-hidden">
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30" />
                     <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
@@ -354,7 +339,6 @@ const Products = () => {
                         </form>
                     </div>
 
-                    {/* Bottom curve */}
                     <div className="absolute bottom-0 left-0 right-0">
                         <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto block">
                             <path d="M0 60L1440 60L1440 0C1440 0 1140 60 720 60C300 60 0 0 0 0L0 60Z" fill="white" />
@@ -363,10 +347,8 @@ const Products = () => {
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2">
-                    {/* Category Filter Bar */}
                     <div className="relative mb-6">
                         <div className="flex gap-2 sm:gap-3 overflow-x-auto scroll-smooth snap-x py-4 scrollbar-hide">
-                            {/* All button */}
                             <button
                                 type="button"
                                 onClick={() => handleCategoryClick('')}
@@ -388,7 +370,6 @@ const Products = () => {
                                 </span>
                             </button>
 
-                            {/* Categories from Redux */}
                             {categories.map((category) => {
                                 const Icon = categoryIconsMap[category.slug] || categoryIconsMap['default_icon'];
                                 const isActive = activeCategory === category.slug || parentOfActiveSub?.slug === category.slug;
@@ -419,12 +400,10 @@ const Products = () => {
                             })}
                         </div>
 
-                        {/* Scroll fade edges */}
                         <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-linear-to-r from-white to-transparent z-10" />
                         <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-linear-to-l from-white to-transparent z-10" />
                     </div>
 
-                    {/* Subcategory chips for the active category */}
                     {activeCategory && categories.find((c) => c.slug === activeCategory)?.sub_categories?.length > 0 && (
                         <div className="flex gap-2 overflow-x-auto scroll-smooth pb-2 mb-4 scrollbar-hide" role="group" aria-label="Subcategories">
                             <button
@@ -457,10 +436,8 @@ const Products = () => {
                         </div>
                     )}
 
-                    {/* Jiji-style two-column layout: filters sidebar + results */}
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
                     <aside className="self-start">
-                    {/* Toolbar: filters toggle + sort */}
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                         <button
                             type="button"
@@ -517,7 +494,6 @@ const Products = () => {
                         </label>
                     </div>
 
-                    {/* Advanced filters — always visible on xl as a sticky sidebar */}
                     <div className={`${showFilters ? 'block' : 'hidden'} xl:block`}>
                         <form
                             onSubmit={applyFilters}
@@ -588,7 +564,6 @@ const Products = () => {
                                     />
                                 </div>
 
-                                {/* Dynamic category-specific attribute filters */}
                                 {filterDefinitions.map((definition) => {
                                     const exactKey = `attr_${definition.slug}`;
                                     const minKey = `attr_${definition.slug}_min`;
@@ -765,7 +740,6 @@ const Products = () => {
                     </aside>
 
                     <main className="min-w-0">
-                    {/* Active Filters */}
                     {(searchQuery || activeCategory || activeSubCategory || activeFilterCount > 0) && (
                         <div className="flex items-center gap-2 mb-6 flex-wrap">
                             <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -899,7 +873,6 @@ const Products = () => {
                         </div>
                     )}
 
-                    {/* Jiji-style breadcrumb + results count */}
                     <nav aria-label="Breadcrumb" className="mb-2 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-500">
                         <Link to="/" className="hover:text-brand">Home</Link>
                         <span aria-hidden="true" className="text-slate-300">/</span>
@@ -939,7 +912,6 @@ const Products = () => {
                         )}
                     </div>
 
-                    {/* Grid */}
                     {fetchProducts.isLoading ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                             <SkeletonProductCard />

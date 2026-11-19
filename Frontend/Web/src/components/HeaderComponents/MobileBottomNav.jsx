@@ -3,10 +3,6 @@ import { HiOutlineHome, HiOutlineSearch, HiOutlinePlusCircle, HiOutlineChatAlt2,
 import { useSelector } from 'react-redux';
 import { useFetchUnreadCounts } from '../../hooks/UseQuery.js';
 
-/**
- * Mobile-first bottom navigation (shown below the lg breakpoint).
- * Unread message/notification badges come from the existing messaging API.
- */
 const MobileBottomNav = () => {
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const unread = useFetchUnreadCounts(isAuthenticated);

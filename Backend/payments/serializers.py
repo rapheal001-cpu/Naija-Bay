@@ -47,7 +47,6 @@ class ListingBoostSerializer(serializers.ModelSerializer):
         }
 
     def get_effective_status(self, obj):
-        # Reads correctly even before the background expiry job has run.
         if obj.status == "active" and obj.expires_at and obj.expires_at <= timezone.now():
             return "expired"
         return obj.status

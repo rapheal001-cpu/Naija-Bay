@@ -46,7 +46,6 @@ def _request(method, path, **kwargs):
         )
         body = response.json()
     except (requests.RequestException, ValueError) as exc:
-        # Log the exception type only: never the request (it carries the secret key).
         logger.error("Paystack request failed: %s", exc.__class__.__name__)
         raise PaystackError("Could not reach Paystack.") from exc
 

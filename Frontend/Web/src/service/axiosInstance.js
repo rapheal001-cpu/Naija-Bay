@@ -7,13 +7,10 @@ import { removeUserData } from '../slice/UserSlice';
 export const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL,
     withCredentials: true,
-    // timeout: 10000,
 });
 
 const UNSAFE_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
-// Double-submit CSRF: the API sets a readable `csrftoken` cookie on every
-// response; mirror it back as X-CSRFToken for unsafe requests.
 const readCsrfCookie = () => {
     const match = document.cookie
         .split(';')
@@ -32,7 +29,6 @@ axiosInstance.interceptors.request.use((config) => {
     return config;
 });
 
-// Endpoint(s) that should never trigger the refresh flow themselves
 const AUTH_REFRESH_URL = '/api/v1/accounts/auth/token/refresh/';
 
 let isRefreshing = false;
@@ -57,18 +53,14 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // No config (e.g. request was cancelled) — nothing we can do
         if (!originalRequest) {
             return Promise.reject(error);
         }
 
         const isRefreshCall = originalRequest.url?.includes(AUTH_REFRESH_URL);
 
-        // --- 401 handling ---
         if (error.response?.status === 401 && !originalRequest._retry) {
 
-            // The refresh request itself failed with 401 → refresh token is
-            // invalid/expired. Do NOT try to refresh again, just log out.
             if (isRefreshCall) {
                 isRefreshing = false;
                 onRefreshFailed(error);
@@ -81,7 +73,6 @@ axiosInstance.interceptors.response.use(
 
             originalRequest._retry = true;
 
-            // If a refresh is already in progress, wait for it instead of firing another
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     addRefreshSubscriber((refreshError) => {
@@ -105,7 +96,6 @@ axiosInstance.interceptors.response.use(
                 isRefreshing = false;
                 onRefreshFailed(refreshError);
 
-                // Refresh failed — refresh token itself expired, force logout
                 store.dispatch(removeIsAuthenticated());
                 store.dispatch(removeUserData());
 
@@ -113,7 +103,6 @@ axiosInstance.interceptors.response.use(
             }
         }
 
-        // --- 502 handling ---
         if (error.response?.status === 502 && !originalRequest._retry) {
             originalRequest._retry = true;
             window.location.href = '/network-error';

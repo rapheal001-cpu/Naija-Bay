@@ -6,9 +6,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-# =============================================================================
-# PAYMENT (one Paystack transaction)
-# =============================================================================
 
 class Payment(models.Model):
     PURPOSE_CHOICES = [("order", "Order"), ("boost", "Ad Boost")]
@@ -98,9 +95,6 @@ class WebhookEvent(models.Model):
         ]
 
 
-# =============================================================================
-# AD BOOSTING
-# =============================================================================
 
 class BoostPlan(models.Model):
     """A purchasable promotion tier. Fully editable from the Django admin."""
@@ -154,7 +148,6 @@ class ListingBoost(models.Model):
         related_name="boosts",
         verbose_name=_("Seller"),
     )
-    # OneToOne => a single payment can only ever activate a single boost.
     payment = models.OneToOneField(
         Payment, on_delete=models.PROTECT, related_name="boost", verbose_name=_("Payment")
     )
@@ -178,9 +171,6 @@ class ListingBoost(models.Model):
         ]
 
 
-# =============================================================================
-# CREDITS WALLET  (Jiji: 1 Credit = NGN 1, used only for premium services)
-# =============================================================================
 
 class CreditAccount(models.Model):
     user = models.OneToOneField(
@@ -268,9 +258,6 @@ class ReferralBonus(models.Model):
         ]
 
 
-# =============================================================================
-# BOOST AUTO-RENEWAL  (Paystack mandate, 5% cheaper renewal)
-# =============================================================================
 
 class BoostAutoRenewal(models.Model):
     STATUS_CHOICES = [
@@ -311,9 +298,6 @@ class BoostAutoRenewal(models.Model):
         ]
 
 
-# =============================================================================
-# PRO SALES  (Jiji pay-per-click campaigns with bid groups)
-# =============================================================================
 
 class ProSalesCampaign(models.Model):
     STATUS_CHOICES = [

@@ -11,7 +11,6 @@ from .views import (
 from NaijaBay.media_uploads import upload_initiate_view
 
 urlpatterns = [
-    # Notifications
     path(
         "mark-all-notifications-as-read/",
         mark_all_notifications_as_read_view,
@@ -32,25 +31,21 @@ urlpatterns = [
         delete_notification_view,
         name="delete-notification",
     ),
-    # Favorites
     path(
         "toggle-favorite-product/<slug:product_slug>/",
         toggle_favorite_product_view,
         name="toggle-favorite-product",
     ),
-    # Follows
     path(
         "toggle-follow-user/<int:user_id>/",
         toggle_follow_user_view,
         name="toggle-follow-user",
     ),
-    # Attribute definitions (Sell form specs, per category/subcategory)
     path(
         "attributes/",
         attribute_definitions_view,
         name="attribute-definitions",
     ),
-    # Direct-to-storage image uploads
     path(
         "media/upload-initiate/",
         upload_initiate_view,

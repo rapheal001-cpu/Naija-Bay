@@ -5,7 +5,6 @@ import ProductCard from './ProductCard';
 import SkeletonProductCard from '../../skeletons/SkeletonProductCard';
 import { useFetchFlashDeals } from '../../hooks/UseQuery';
 
-// Counts down to the next midnight, Temu "ends in" style.
 const useMidnightCountdown = () => {
     const [remaining, setRemaining] = useState('');
 

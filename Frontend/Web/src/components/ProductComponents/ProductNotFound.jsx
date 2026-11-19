@@ -7,7 +7,6 @@ const ProductNotFound = () => {
     return (
         <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50/50">
             <div className="max-w-md w-full text-center">
-                {/* Illustration */}
                 <div className="relative mx-auto w-40 h-40 mb-8">
                     <div className="absolute inset-0 bg-brand/5 rounded-full animate-pulse" />
                     <div className="relative w-full h-full rounded-3xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
@@ -27,13 +26,11 @@ const ProductNotFound = () => {
                             <line x1="15" y1="14" x2="9" y2="20" />
                         </svg>
                     </div>
-                    {/* Floating badge */}
                     <div className="absolute -top-2 -right-2 w-10 h-10 bg-brand text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand/20">
                         <span className="text-lg font-bold">?</span>
                     </div>
                 </div>
 
-                {/* Text content */}
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                     Product not found
                 </h1>
@@ -41,7 +38,6 @@ const ProductNotFound = () => {
                     The product you're looking for may have been removed, renamed, or is temporarily unavailable.
                 </p>
 
-                {/* Action buttons */}
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
@@ -60,7 +56,6 @@ const ProductNotFound = () => {
                     </button>
                 </div>
 
-                {/* Home link */}
                 <button
                     onClick={() => navigate('/')}
                     className="mt-6 inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-brand transition-colors font-medium"

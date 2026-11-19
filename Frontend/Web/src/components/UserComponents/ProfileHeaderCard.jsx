@@ -29,15 +29,12 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
 
     return (
         <div className="relative bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-            {/* Cover */}
             <div className="h-28 sm:h-36 bg-linear-to-r from-brand to-brand/80 relative">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30" />
             </div>
 
             <div className="px-5 sm:px-8 pb-6 sm:pb-8">
-                {/* Avatar + Info + Actions Row */}
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14">
-                    {/* Avatar */}
                     <div className="relative shrink-0">
                         <img
                             src={avatarUrl}
@@ -46,7 +43,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                         />
                     </div>
 
-                    {/* Name & Username */}
                     <div className="flex-1 min-w-0 sm:pb-1">
                         <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight truncate">
                             {fullName}
@@ -56,7 +52,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                         </p>
                     </div>
 
-                    {/* Actions */}
                     {isOwnProfile ? (
                         <div className="flex items-center gap-2 sm:pb-1 flex-wrap justify-end">
                             <Link
@@ -125,7 +120,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                     )}
                 </div>
 
-                {/* Meta Row */}
                 <div className="flex flex-wrap items-center gap-2 mt-5">
                     {(profile?.state || profile?.address) && (
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
@@ -143,7 +137,6 @@ const ProfileHeaderCard = ({ profile, isOwnProfile }) => {
                     </span>
                 </div>
 
-                {/* Social Stats */}
                 <div className="flex items-center gap-6 mt-5 pt-5 border-t border-gray-100">
                     <div className="text-center sm:text-left">
                         <p className="text-lg font-black text-gray-900">{followersCount.toLocaleString()}</p>

@@ -1,4 +1,3 @@
-// Shared loading-state primitives (show placeholders, not spinners).
 
 export const SkeletonBlock = ({ className = '' }) => (
     <div className={`bg-gray-100 animate-pulse rounded-xl ${className}`} aria-hidden="true" />

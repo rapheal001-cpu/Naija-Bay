@@ -18,9 +18,6 @@ from NaijaBay.utils import (
 )
 
 
-# =============================================================================
-# PRODUCT
-# =============================================================================
 
 class Product(models.Model):
     product_user = models.ForeignKey(
@@ -51,7 +48,6 @@ class Product(models.Model):
     sub_category = models.CharField(
         _("Sub Category"), max_length=20, choices=SUBCATEGORY_CHOICES, db_index=True
     )
-    # Relational references to the seeded taxonomy (nullable during migration).
     category_obj = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
@@ -99,7 +95,6 @@ class Product(models.Model):
     city = models.CharField(
         _("Product City"), max_length=20, choices=CITY_CHOICES, db_index=True
     )
-    # Relational references to the seeded location taxonomy (nullable during migration).
     state_obj = models.ForeignKey(
         State,
         on_delete=models.SET_NULL,
@@ -154,7 +149,6 @@ class Product(models.Model):
     delivery_available = models.BooleanField(_("Delivery Available"), default=False)
     expires_at = models.DateTimeField(_("Expires At"), null=True, blank=True)
 
-    # Social
     favorites = models.ManyToManyField(
         User,
         related_name="favorite_products",
@@ -168,13 +162,9 @@ class Product(models.Model):
         blank=True,
     )
 
-    # Timestamps
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
 
-    # -------------------------------------------------------------------------
-    # Properties
-    # -------------------------------------------------------------------------
 
     @property
     def discount_percent(self):
@@ -239,9 +229,6 @@ class Product(models.Model):
             and self.category not in NON_PURCHASABLE_CATEGORIES
         )
 
-    # -------------------------------------------------------------------------
-    # Methods
-    # -------------------------------------------------------------------------
 
     def __str__(self):
         return (
@@ -285,9 +272,6 @@ class Product(models.Model):
         ]
 
 
-# =============================================================================
-# PRODUCT IMAGE
-# =============================================================================
 
 class ProductImage(models.Model):
     product = models.ForeignKey(
@@ -314,9 +298,6 @@ class ProductImage(models.Model):
         ]
 
 
-# =============================================================================
-# PRODUCT REPORT (ABUSE)
-# =============================================================================
 
 class ProductReport(models.Model):
     REASON_CHOICES = [
@@ -374,9 +355,6 @@ class ProductReport(models.Model):
         ]
 
 
-# =============================================================================
-# PRODUCT RATING
-# =============================================================================
 
 class ProductRating(models.Model):
     product = models.ForeignKey(
@@ -417,9 +395,6 @@ class ProductRating(models.Model):
         ]
 
 
-# =============================================================================
-# PRODUCT ATTRIBUTE VALUE
-# =============================================================================
 
 class ProductAttribute(models.Model):
     """One typed specification value for a product (e.g. Cars → year=2019).
@@ -474,9 +449,6 @@ class ProductAttribute(models.Model):
         ]
 
 
-# =============================================================================
-# PRODUCT VIDEO  (Jiji allows video in ads)
-# =============================================================================
 
 class ProductVideo(models.Model):
     product = models.ForeignKey(
@@ -495,9 +467,6 @@ class ProductVideo(models.Model):
         verbose_name_plural = _("Product Videos")
 
 
-# =============================================================================
-# OFFER  (Jiji "Make an offer")
-# =============================================================================
 
 class Offer(models.Model):
     STATUS_CHOICES = [
@@ -540,9 +509,6 @@ class Offer(models.Model):
         ]
 
 
-# =============================================================================
-# CALLBACK REQUEST  (Jiji "Request call back")
-# =============================================================================
 
 class CallbackRequest(models.Model):
     STATUS_CHOICES = [

@@ -25,7 +25,6 @@ urlpatterns = [
     path('boost/my/', my_boosts_view, name='my-boosts'),  # my active / expired boosts
     path('verify/<str:reference>/', verify_payment_view, name='verify-payment'),  # verify with Paystack (callback page)
     path('webhook/', paystack_webhook, name='paystack-webhook'),  # Paystack -> server webhook
-    # Jiji-style monetisation extras
     path('credit/', CreditAccountAPIView.as_view(), name='credit-account'),
     path('credit/transactions/', CreditTransactionListAPIView.as_view(), name='credit-transactions'),
     path('referrals/', ReferralListAPIView.as_view(), name='referrals-list'),

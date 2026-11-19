@@ -4,15 +4,9 @@ from django.utils.text import slugify
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-# ==============================
-# Api Version
-# ==============================
 API_VERSION = 'api/v1/'
 
 
-# ==============================
-# Condition Choices
-# ==============================
 CONDITION_CHOICES = [
     ('', 'No Condition'),
     ('new', 'New'),
@@ -21,9 +15,6 @@ CONDITION_CHOICES = [
 ]
 
 
-# ==============================
-# Contact Method Choices
-# ==============================
 CONTACT_METHOD_CHOICES = [
     ('', 'Select Contact Method'),
     ('phone_call', 'Phone Call'),
@@ -31,9 +22,6 @@ CONTACT_METHOD_CHOICES = [
 ]
 
 
-# ===========================
-# Sub Category Map
-# ===========================
 SUBCATEGORY_MAP = {
     '': [''],
     'phones_tablets': ['mobile_phones', 'tablets', 'phone_accessories', 'smartwatches', 'phone_parts'],
@@ -53,9 +41,6 @@ SUBCATEGORY_MAP = {
 }
 
 
-# ===========================
-# Categories Choices
-# ===========================
 CATEGORY_LABELS = {
     '': 'Select Category',
     'phones_tablets': 'Phones & Tablets',
@@ -79,9 +64,6 @@ CATEGORY_CHOICES = [
 ]
 
 
-# ===========================
-# Sub Categories Choices
-# ===========================
 SUBCATEGORY_LABEL_OVERRIDES = {
     '': 'Select Sub Category',
     'it_telecoms': 'IT & Telecoms',
@@ -101,9 +83,6 @@ SUBCATEGORY_CHOICES = [
 ]
 
 
-# ===========================
-# State City Map
-# ===========================
 STATE_CITY_MAP = {
     '': [''],
     'abia': ['Aba', 'Umuahia', 'Ohafia', 'Arochukwu', 'Isuikwuato', 'Osisioma', 'Ukwa'],
@@ -146,9 +125,6 @@ STATE_CITY_MAP = {
 }
 
 
-# ===========================
-# State Choices
-# ===========================
 STATE_LABEL_OVERRIDES = {
     '': 'Select State',
     'fct': 'Federal Capital Territory (Abuja)',
@@ -164,9 +140,6 @@ STATE_CHOICES = [
 ]
 
 
-# ===========================
-# City Choices
-# ===========================
 CITY_LABEL_OVERRIDES = {
     '': 'Select City',
 }
@@ -187,17 +160,11 @@ CITY_CHOICES = [
 ]
 
 
-# ===========================
-# Not Allowed Usernames and Email Domains
-# ===========================
 NOT_ALLOWED_USERNAMES = ['admin', 'administrator', 'root', 'superuser', 'staff', 'support', 'contact', 'help', 'info', 'sales', 'marketing']
 
 NOT_ALLOWED_EMAIL_DOMAINS = ['yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']
 
 
-# ===========================
-# Notifications Types
-# ===========================
 NOTIFICATION_TYPES = [
     ('system_notification', 'System Notifications'),
     ('product_created', 'Product Created'),
@@ -217,16 +184,9 @@ NOTIFICATION_TYPES = [
 ]
 
 
-# ==============================
-# Categories that cannot be bought through the cart
-# (these are contact-the-seller listings)
-# ==============================
 NON_PURCHASABLE_CATEGORIES = ['real_estate', 'jobs', 'services', 'vehicles']
 
 
-# ==============================
-# Notifications message templates
-# ==============================
 NOTIFICATION_TEMPLATES = {
     "product_created": [
         'Your listing "{product_name}" was successfully published.',
@@ -269,17 +229,11 @@ NOTIFICATION_TEMPLATES = {
     ],
 }
 
-# ==============================
-# File Upload Settings
-# ==============================
 FILE_UPLOAD_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png']
 
 MAX_IMAGES = 10
 
 
-# ==============================
-# NULL OR EMPTY VALUES
-# ==============================
 NULL_VALUES = [
     '',
     None,

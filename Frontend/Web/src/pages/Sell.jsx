@@ -21,12 +21,10 @@ const Sell = () => {
     return (
         <AppLayout>
             <div className="min-h-screen py-10 sm:py-14 relative overflow-hidden">
-                {/* Decorative background */}
                 <div className="absolute top-0 left-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
                 <div className="absolute bottom-0 right-0 w-120 h-120 bg-brand/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
 
                 <div className="relative max-w-3xl mx-auto px-4 sm:px-6">
-                    {/* Top bar */}
                     <div className="flex items-center justify-between mb-8">
                         <button
                             type="button"
@@ -47,7 +45,6 @@ const Sell = () => {
                         </div>
                     </div>
 
-                    {/* Page header */}
                     <div className="mb-8">
                         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
                             Sell an item
@@ -57,12 +54,10 @@ const Sell = () => {
                         </p>
                     </div>
 
-                    {/* Form */}
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-6 sm:p-10">
                         <SellForm />
                     </div>
 
-                    {/* Footer hint */}
                     <p className="text-center text-xs text-gray-400 mt-8">
                         By listing an item, you agree to our terms of service and community guidelines.
                     </p>

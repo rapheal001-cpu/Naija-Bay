@@ -70,9 +70,6 @@ def _start_gateway(payment, email, metadata):
     return payment
 
 
-# =============================================================================
-# ORDER PAYMENTS
-# =============================================================================
 
 def initialize_order_payment(user, order_reference):
     from orders.models import Order
@@ -98,9 +95,6 @@ def initialize_order_payment(user, order_reference):
     )
 
 
-# =============================================================================
-# BOOST PAYMENTS
-# =============================================================================
 
 def initialize_boost_payment(user, product_id, plan_id):
     from products.models import Product
@@ -111,7 +105,6 @@ def initialize_boost_payment(user, product_id, plan_id):
     except (TypeError, ValueError):
         raise ValidationError({"detail": "A valid listing and plan are required."})
 
-    # Hide other sellers' listings entirely: 404, not 403.
     if product is None or product.product_user_id != user.id:
         raise NotFound("Listing not found.")
 
@@ -163,7 +156,6 @@ def activate_boost(payment):
     boost.expires_at = expires
     boost.save(update_fields=["status", "started_at", "expires_at"])
 
-    # update() on purpose: avoids the product post_save notification signal.
     Product.objects.filter(pk=product.pk).update(
         promoted=True,
         promoted_until=expires,
@@ -202,7 +194,6 @@ def expire_boosts():
                 "boost_expired",
                 f'The boost on "{boost.product.product_name}" has ended. Boost it again to stay on top.',
             )
-    # Safety net for rows whose end date passed without a ListingBoost update.
     Product.objects.filter(promoted=True, promoted_until__lte=now).update(
         promoted=False, promoted_until=None, boost_level=0
     )
@@ -220,15 +211,11 @@ def expire_boosts_if_due(force=False):
         return 0
 
 
-# =============================================================================
-# VERIFICATION (the single place a payment can become "success")
-# =============================================================================
 
 def _apply_success(payment, data):
     from orders.services import mark_order_paid
 
     with transaction.atomic():
-        # Conditional UPDATE = atomic idempotency: only one caller wins.
         won = (
             Payment.objects.filter(pk=payment.pk)
             .exclude(status="success")
@@ -271,7 +258,6 @@ def verify_payment(reference, user=None):
             reference, simulated_amount=to_kobo(payment.amount)
         )
     except paystack.PaystackNotFound:
-        # Customer never reached/opened the Paystack page.
         return payment
     except paystack.PaystackError as exc:
         logger.warning("Verify %s failed: %s", reference, exc)
@@ -295,15 +281,11 @@ def verify_payment(reference, user=None):
         _apply_non_success(payment, "failed", data.get("gateway_response") or "Payment failed.")
     elif gateway_status == "abandoned":
         _apply_non_success(payment, "abandoned", "Payment was abandoned.")
-    # anything else (pending / ongoing / processing / queued) stays pending
 
     payment.refresh_from_db()
     return payment
 
 
-# =============================================================================
-# WEBHOOK
-# =============================================================================
 
 def process_webhook(payload):
     """Handle a signature-verified webhook. Returns a short result string."""
@@ -318,9 +300,6 @@ def process_webhook(payload):
         return "unknown"
 
     event_key = f"{event}:{data.get('id') or reference}"[:120]
-    # Event row + processing share one transaction: if verification fails the row
-    # rolls back and Paystack's retry is processed again instead of skipped.
-    # The status flag keeps the outcome auditable (processing -> succeeded/failed).
     with transaction.atomic():
         record, created = WebhookEvent.objects.get_or_create(
             event_key=event_key,

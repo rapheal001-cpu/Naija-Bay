@@ -59,8 +59,6 @@ class ProductFilter(django_filters.FilterSet):
         ]
 
     def filter_category(self, queryset, name, value):
-        # Reads resolve through the relational FK first (Phase A cutover),
-        # falling back to the legacy string stored on the product.
         slug = _slug(value)
         return queryset.filter(
             Q(category_obj__slug=slug, category_obj__isnull=False)

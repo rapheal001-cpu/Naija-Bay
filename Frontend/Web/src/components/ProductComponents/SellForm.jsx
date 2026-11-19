@@ -55,7 +55,6 @@ const SellForm = () => {
         const files = Array.from(e.target.files);
         setImageError('');
 
-        // Reject any file that isn't jpg/jpeg/png, even if the OS file picker let it through
         const invalidFiles = files.filter((f) => !SUPPORTED_IMAGE_TYPES.includes(f.type));
         if (invalidFiles.length > 0) {
             setImageError(
@@ -93,7 +92,6 @@ const SellForm = () => {
             return;
         }
 
-        // Final safety net: block submission if any selected file isn't jpg/jpeg/png
         const invalidFiles = imageFiles.filter((f) => !SUPPORTED_IMAGE_TYPES.includes(f.type));
         if (invalidFiles.length > 0) {
             setImageError(
@@ -138,8 +136,6 @@ const SellForm = () => {
             }
 
             if (imageFiles.length > 0) {
-                // Direct-to-storage first (progress bars); File fallback still
-                // flows through the existing multipart endpoint as before.
                 const { keys, files: fallbackFiles } = await uploadProductImages(imageFiles, {
                     onProgress: setUploadProgress,
                 });
@@ -201,7 +197,6 @@ const SellForm = () => {
 
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
 
-                {/* Section: Photos */}
                 <div className="space-y-3">
                     <div className="flex items-center gap-2">
                         <HiOutlinePhotograph size={18} className="text-brand" />
@@ -233,7 +228,6 @@ const SellForm = () => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Basic Info */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineTag size={18} className="text-brand" />
@@ -279,7 +273,6 @@ const SellForm = () => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Pricing */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineBanknotes size={18} className="text-brand" />
@@ -362,7 +355,6 @@ const SellForm = () => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Categorization */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineCollection size={18} className="text-brand" />
@@ -456,7 +448,6 @@ const SellForm = () => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Specifications (dynamic, per category) */}
                 {definitions.length > 0 && (
                     <>
                         <AttributeFields definitions={definitions} register={register} errors={errors} />
@@ -464,7 +455,6 @@ const SellForm = () => {
                     </>
                 )}
 
-                {/* Section: Location */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineLocationMarker size={18} className="text-brand" />
@@ -520,7 +510,6 @@ const SellForm = () => {
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Section: Contact — MULTI-SELECT */}
                 <div className="space-y-5">
                     <div className="flex items-center gap-2">
                         <HiOutlineChatAlt2 size={18} className="text-brand" />
@@ -565,7 +554,6 @@ const SellForm = () => {
                         {errors.contact_methods && <p className="text-red-500 text-xs font-semibold ml-1">{errors.contact_methods.message}</p>}
                     </div>
 
-                    {/* Phone number — ONLY shown if phone or whatsapp selected */}
                     {needsPhone && (
                         <div className="space-y-1.5">
                             <label htmlFor="contact_number" className="text-[13px] font-bold text-gray-700 ml-1">

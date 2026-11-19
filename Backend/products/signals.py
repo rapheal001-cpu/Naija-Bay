@@ -8,9 +8,6 @@ from NaijaBay.utils import NOTIFICATION_TEMPLATES
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
-# PRODUCT CREATED & SOLD NOTIFICATIONS
-# =============================================================================
 
 @receiver(pre_save, sender=Product)
 def capture_product_old_state(sender, instance, **kwargs):
@@ -34,21 +31,16 @@ def product_notification(sender, instance, created, raw, **kwargs):
       2. An existing product is marked as sold
     """
 
-    # 1. Product created
     if created:
         message = NOTIFICATION_TEMPLATES["product_created"][1].format(product_name=instance.product_name)
         Notifications.objects.create(user=instance.product_user, message=message,notification_type="product_created")
 
-    # 2. Product marked as sold
     if not created:
         if instance.sold:
             message = NOTIFICATION_TEMPLATES["product_sold"][0].format(product_name=instance.product_name)
             Notifications.objects.create(user=instance.product_user, message=message, notification_type="product_sold")
 
 
-# =============================================================================
-# PRODUCT FAVORITE NOTIFICATION
-# =============================================================================
 
 @receiver(m2m_changed, sender=Product.favorites.through)
 def product_favorite_notification(sender, instance, action, reverse, pk_set, **kwargs):
@@ -60,7 +52,6 @@ def product_favorite_notification(sender, instance, action, reverse, pk_set, **k
         return
 
     try:
-        # Just notify once per favoriting action
         favoriter_count = len(pk_set)
         message = NOTIFICATION_TEMPLATES["product_favorite"][0].format(product_name=instance.product_name, count=favoriter_count)
         Notifications.objects.create(user=instance.product_user,message=message, notification_type="product_favorite")
@@ -72,9 +63,6 @@ def product_favorite_notification(sender, instance, action, reverse, pk_set, **k
         )
 
 
-# =============================================================================
-# PRODUCT VIEW MILESTONE NOTIFICATION
-# =============================================================================
 
 MILESTONE_INTERVAL = 100  # 100, 200, 300...
 
@@ -94,7 +82,6 @@ def product_view_milestone_notification(
         current_count = instance.views.count()
         previous_count = current_count - added_count
 
-        # Find every milestone crossed during this add operation
         crossed = []
         milestone = MILESTONE_INTERVAL
         while milestone <= current_count:

@@ -58,7 +58,6 @@ const About = () => {
             <Spacer space="mb-36 md:mb-28" />
 
             <div className="max-w-6xl mx-auto px-4 py-6 pb-16 space-y-16">
-                {/* ── Hero ───────────────────────────────────────── */}
                 <section className="text-center max-w-3xl mx-auto">
                     <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-wider mb-5">
                         <FaRocket className="w-3 h-3" />
@@ -90,7 +89,6 @@ const About = () => {
                     </div>
                 </section>
 
-                {/* ── Stats ──────────────────────────────────────── */}
                 <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {stats.map((stat) => (
                         <div
@@ -110,7 +108,6 @@ const About = () => {
                     ))}
                 </section>
 
-                {/* ── How it works ───────────────────────────────── */}
                 <section className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-10 shadow-sm">
                     <div className="text-center mb-10">
                         <h2 className="text-2xl font-bold text-gray-900">How NaijaBay works</h2>
@@ -120,7 +117,6 @@ const About = () => {
                     </div>
 
                     <div className="grid sm:grid-cols-3 gap-6 relative">
-                        {/* Connector line (desktop only) */}
                         <div className="hidden sm:block absolute top-8 left-[16.66%] right-[16.66%] h-0.5 bg-gray-100" />
 
                         {[
@@ -153,7 +149,6 @@ const About = () => {
                     </div>
                 </section>
 
-                {/* ── Jiji-style how to sell / how to buy ─────────── */}
                 <section className="grid lg:grid-cols-2 gap-6">
                     <div className="rounded-2xl border border-slate-200 bg-white p-6">
                         <h2 className="text-xl font-black text-slate-800">How to sell on NaijaBay</h2>
@@ -199,7 +194,6 @@ const About = () => {
                     </div>
                 </section>
 
-                {/* ── Features ───────────────────────────────────── */}
                 <section>
                     <div className="text-center mb-8">
                         <h2 className="text-2xl font-bold text-gray-900">Built for Nigerians</h2>
@@ -230,7 +224,6 @@ const About = () => {
                     </div>
                 </section>
 
-                {/* ── Mission & Values ─────────────────────────── */}
                 <section className="grid lg:grid-cols-2 gap-6">
                     <div className="bg-brand rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-brand/20">
                         <h2 className="text-xl font-bold">Our Mission</h2>
@@ -272,7 +265,6 @@ const About = () => {
                     </div>
                 </section>
 
-                {/* ── CTA ────────────────────────────────────────── */}
                 <section className="text-center bg-gray-900 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-brand/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />

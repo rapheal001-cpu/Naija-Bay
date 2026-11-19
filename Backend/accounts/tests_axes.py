@@ -40,8 +40,6 @@ class AxesLockoutTests(APITestCase):
                 format="json",
             )
             codes.append(response.status_code)
-        # auth_kit answers wrong-credentials with 400; after the configured
-        # threshold (5) the lockout engages with 429.
         self.assertIn(status.HTTP_400_BAD_REQUEST, codes)
         self.assertTrue(
             any(code == status.HTTP_429_TOO_MANY_REQUESTS for code in codes),

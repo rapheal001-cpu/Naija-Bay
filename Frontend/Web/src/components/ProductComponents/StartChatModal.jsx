@@ -4,11 +4,6 @@ import { HiOutlineChatAlt2 } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import { useStartConversationMutation } from '../../hooks/UseMutation';
 
-/**
- * Compose the first message of a product conversation.
- *
- * @param {{ open: boolean, onClose: () => void, product: Object }} props
- */
 const StartChatModal = ({ open, onClose, product }) => {
     const navigate = useNavigate();
     const [message, setMessage] = useState('Hi, is this still available?');
@@ -16,8 +11,6 @@ const StartChatModal = ({ open, onClose, product }) => {
 
     const startConversation = useStartConversationMutation();
 
-    // Reset the draft when the modal (re)opens — derived during render,
-    // the recommended pattern for prop-driven state resets.
     const [prevOpen, setPrevOpen] = useState(open);
     if (prevOpen !== open) {
         setPrevOpen(open);

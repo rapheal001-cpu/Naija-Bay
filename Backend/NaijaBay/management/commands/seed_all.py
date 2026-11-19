@@ -123,9 +123,6 @@ class Command(BaseCommand):
             help="Random seed for reproducible fixtures (default: 42).",
         )
 
-    # -------------------------------------------------------------------------
-    # Entry point
-    # -------------------------------------------------------------------------
 
     def handle(self, *args, **options):
         self.rng = random.Random(options["seed"])
@@ -145,9 +142,6 @@ class Command(BaseCommand):
                 sellers, categories, subcategories, cities, options["products_per_user"]
             )
 
-            # Social data covers EVERY product and user in the database (not
-            # just the ones created above), so listings made by create_user /
-            # seed_products also get favorites, views, ratings and chats.
             all_products = list(Product.objects.order_by("id"))
             all_users = list(User.objects.filter(is_active=True).order_by("id"))
 
@@ -161,9 +155,6 @@ class Command(BaseCommand):
 
         self._summary()
 
-    # -------------------------------------------------------------------------
-    # Clear
-    # -------------------------------------------------------------------------
 
     def _clear(self):
         self.stdout.write(self.style.WARNING("Clearing marketplace data..."))
@@ -184,25 +175,14 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Marketplace data cleared."))
 
-    # -------------------------------------------------------------------------
-    # Locations
-    # -------------------------------------------------------------------------
 
     def _seed_locations(self):
-        # Shared with the ``nigeria_states`` command so both stay identical.
         return seed_locations(self)
 
-    # -------------------------------------------------------------------------
-    # Categories
-    # -------------------------------------------------------------------------
 
     def _seed_categories(self):
-        # Shared with the ``categories`` command so both stay identical.
         return seed_categories(self)
 
-    # -------------------------------------------------------------------------
-    # Users & stores
-    # -------------------------------------------------------------------------
 
     def _seed_users(self, seller_count):
         sellers = []
@@ -248,7 +228,6 @@ class Command(BaseCommand):
             user.save(update_fields=["password"])
             buyers.append(user)
 
-        # allauth requires a verified primary email before login
         for user in sellers + buyers:
             EmailAddress.objects.get_or_create(
                 user=user,
@@ -301,9 +280,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Follows: {created} new follows."))
 
-    # -------------------------------------------------------------------------
-    # Products
-    # -------------------------------------------------------------------------
 
     def _seed_products(self, sellers, categories, subcategories, cities, per_user):
         conditions = [c[0] for c in CONDITION_CHOICES if c[0]]
@@ -352,8 +328,6 @@ class Command(BaseCommand):
                 is_expired = index == per_user - 2 and per_user >= 6
                 promoted = index < 2 and self.rng.random() < 0.5
 
-                # Temu-style discounts: ~40% of unsold listings have an
-                # original price 10-35% above the sale price.
                 original_price = None
                 if not is_sold and self.rng.random() < 0.4:
                     markup = self.rng.uniform(1.10, 1.35)
@@ -413,7 +387,6 @@ class Command(BaseCommand):
                 )
                 products.append(product)
 
-                # Backfill FKs for products seeded before the cutover.
                 if not was_created and (
                     product.category_obj_id is None
                     or product.state_obj_id is None
@@ -448,9 +421,6 @@ class Command(BaseCommand):
         )
         return products
 
-    # -------------------------------------------------------------------------
-    # Engagement
-    # -------------------------------------------------------------------------
 
     def _seed_engagement(self, products, sellers, buyers):
         favorites = 0
@@ -475,9 +445,6 @@ class Command(BaseCommand):
             )
         )
 
-    # -------------------------------------------------------------------------
-    # Ratings
-    # -------------------------------------------------------------------------
 
     def _seed_ratings(self, products, sellers, buyers):
         created = 0
@@ -485,7 +452,6 @@ class Command(BaseCommand):
         for product in products:
             if product.sold:
                 continue
-            # ~70% of active listings get 1-4 ratings from other users.
             if self.rng.random() >= 0.7:
                 continue
 
@@ -496,7 +462,6 @@ class Command(BaseCommand):
             for rater in raters:
                 if rater.id == product.product_user_id:
                     continue
-                # Skew positive like a real marketplace.
                 value = self.rng.choices([5, 4, 3, 2, 1], weights=[45, 30, 12, 8, 5])[0]
                 _, was_created = ProductRating.objects.get_or_create(
                     product=product,
@@ -507,9 +472,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Ratings: {created} new product ratings."))
 
-    # -------------------------------------------------------------------------
-    # Conversations
-    # -------------------------------------------------------------------------
 
     def _seed_conversations(self, products, sellers, buyers, count):
         sellable = [p for p in products if not p.sold]
@@ -534,8 +496,6 @@ class Command(BaseCommand):
                 seller=product.product_user,
             )
 
-            # Always consume the same RNG draws so repeated runs pick the
-            # same threads (idempotent seeding).
             conversation_count = self.rng.randint(3, 6)
 
             if created or not conversation.messages.exists():
@@ -559,9 +519,6 @@ class Command(BaseCommand):
             )
         )
 
-    # -------------------------------------------------------------------------
-    # Reports & notifications
-    # -------------------------------------------------------------------------
 
     def _seed_reports(self, products, buyers):
         created = 0
@@ -611,9 +568,6 @@ class Command(BaseCommand):
             self.style.SUCCESS(f"Notifications: {created} new notifications.")
         )
 
-    # -------------------------------------------------------------------------
-    # Summary
-    # -------------------------------------------------------------------------
 
     def _summary(self):
         self.stdout.write("")

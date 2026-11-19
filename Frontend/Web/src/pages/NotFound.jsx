@@ -9,22 +9,18 @@ const NotFound = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-linear-to-b from-gray-50 to-white relative overflow-hidden">
-            {/* Decorative background */}
             <div className="absolute top-1/4 left-0 w-72 h-72 bg-brand/5 rounded-full blur-3xl -translate-x-1/2 pointer-events-none" />
             <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl translate-x-1/3 pointer-events-none" />
 
             <div className="relative w-full max-w-lg text-center">
-                {/* Icon */}
                 <div className="mx-auto mb-8 flex items-center justify-center w-24 h-24 rounded-3xl bg-brand/10 border border-brand/10 shadow-sm shadow-brand/5">
                     <LuPackageCheck size={40} className="text-brand" strokeWidth={1.5} />
                 </div>
 
-                {/* 404 */}
                 <p className="text-8xl sm:text-9xl font-black text-gray-100 tracking-tighter leading-none select-none">
                     404
                 </p>
 
-                {/* Content */}
                 <div className="relative -mt-8 sm:-mt-10">
                     <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
                         Page not found
@@ -34,7 +30,6 @@ const NotFound = () => {
                     </p>
                 </div>
 
-                {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3 mt-10 justify-center">
                     <Link
                         to="/"
@@ -53,7 +48,6 @@ const NotFound = () => {
                     </Link>
                 </div>
 
-                {/* Go back */}
                 <button
                     type="button"
                     onClick={() => navigate(-1)}

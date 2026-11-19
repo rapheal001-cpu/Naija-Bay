@@ -27,7 +27,6 @@ const SignInForm = () => {
         >
             <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 sm:p-10">
 
-                    {/* Server Errors */}
                     {serverError && (
                         <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-100 mb-6">
                             <HiOutlineExclamationCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
@@ -41,7 +40,6 @@ const SignInForm = () => {
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
-                        {/* Email */}
                         <div className="space-y-1.5">
                             <label htmlFor="email" className="text-[13px] font-bold text-gray-700 ml-1">
                                 Email address
@@ -74,7 +72,6 @@ const SignInForm = () => {
                             )}
                         </div>
 
-                        {/* Password */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between ml-1">
                                 <label htmlFor="password" className="text-[13px] font-bold text-gray-700">
@@ -124,7 +121,6 @@ const SignInForm = () => {
                             )}
                         </div>
 
-                        {/* Sign In Button */}
                         <button
                             type="submit"
                             disabled={signInUser.isPending}
@@ -143,7 +139,6 @@ const SignInForm = () => {
                     </form>
                 </div>
 
-                {/* Footer */}
                 <p className="text-center text-sm text-gray-500 mt-8">
                     Don't have an account?{' '}
                     <Link to="/register" className="text-brand font-bold hover:underline underline-offset-4">

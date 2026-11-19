@@ -1,4 +1,3 @@
-// Small helpers shared by the cart / checkout / orders / boost screens.
 
 export const formatNaira = (value) =>
     `₦${Number(value || 0).toLocaleString('en-NG', { maximumFractionDigits: 2 })}`;
@@ -8,7 +7,6 @@ export const formatDateTime = (iso) =>
         ? new Date(iso).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })
         : '-';
 
-/** Turn a DRF / axios error into one readable sentence. */
 export const getErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {
     const data = error?.response?.data;
 

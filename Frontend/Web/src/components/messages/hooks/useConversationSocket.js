@@ -6,7 +6,6 @@ const MAX_ATTEMPTS = 6;
 const socketUrl = (conversationId) =>
     buildSocketUrl(`/ws/chat/${conversationId}/`);
 
-/** Per-conversation socket: messages, typing, read receipts, block events. */
 export const useConversationSocket = ({
     conversationId,
     enabled,
@@ -103,8 +102,6 @@ export const useConversationSocket = ({
             };
         };
 
-        // Defer the first connect so status updates do not happen synchronously
-        // inside the effect body.
         timer = window.setTimeout(connect, 0);
         return () => {
             stopped = true;

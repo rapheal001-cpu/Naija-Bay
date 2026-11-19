@@ -199,19 +199,24 @@ py manage.py check
 py manage.py runserver 0.0.0.0:8000
 ```
 
-## One command: migrate, seed and run
+## Development workflow (launcher + dedicated scripts)
 
 ```bash
 cd Backend
 copy .env.example .env          # first time only
-python run_server.py            # makemigrations + migrate + all seeds + runserver
+python run_migrations.py        # generate + apply migrations (dev only)
+python run_seed.py              # seed all development data (idempotent)
+python run_server.py            # launcher: Vite + Daphne (HTTP + WebSockets)
 ```
 
-See the root `README.md` for every flag (`--reset-db`, `--clear`, `--no-images`, `--port`, ...).
+`run_server.py` is a launcher only — it does not migrate, seed, check or test.
+Use `--no-frontend` to start only Daphne, or `--preflight-only` to inspect the
+plan. See the root `README.md` for all options and `run_seed.py --images` for
+placeholder photos.
 
 ## Seeding demo data
 
-All seed commands live in `core/management/commands/` and are idempotent — re-running them will not create duplicates.
+All seed commands live in `NaijaBay/management/commands/` (boost plans in `payments/management/commands/`), with shared helpers in private modules `_catalog.py` and `_images.py`. They are idempotent — re-running them will not create duplicates. `python run_seed.py` runs them in dependency order.
 
 ```bash
 # One command seeds everything: states/cities, categories/sub-categories,

@@ -21,7 +21,9 @@ Naija-Bay/
 │   ├── payments/         # Paystack initialize/verify/webhook, boost plans
 │   ├── core/             # states, cities, categories, attribute definitions
 │   ├── images/           # screenshots of the web app (REA captures)
-│   ├── run_server.py     # migrate + seed everything + start the server
+│   ├── run_server.py     # launcher only: Vite + Daphne (HTTP + WebSockets)
+│   ├── run_migrations.py # development migration helper
+│   ├── run_seed.py       # development seed helper
 │   ├── manage.py
 │   └── requirements.txt
 └── Frontend/
@@ -155,7 +157,7 @@ tested. Full checklist: [Backend/PRODUCTION.md](Backend/PRODUCTION.md).
 - CSRF 403s in dev: open the app via `http://localhost:5173` (not `127.0.0.1`),
   and check `CORS/CSRF` origins match.
 - Port already in use: `Get-NetTCPConnection -LocalPort 8000 | Stop-Process`.
-- Lost seeded data: `python run_server.py --reset-db` (backs up the old DB).
+- Lost seeded data: back up the current DB manually, then run `python manage.py migrate` and `python run_seed.py`.
 
 ## Quick start
 
@@ -169,24 +171,29 @@ pip install -r requirements.txt
 
 copy .env.example .env          # first time only
 
-python run_server.py --reset-db # first time only (see note below)
-python run_server.py            # every other time
+python run_migrations.py        # create + apply migrations
+python run_seed.py              # seed development data (idempotent)
+python run_server.py            # launcher: Vite + Daphne
 ```
 
-`--reset-db` renames any old `db.sqlite3` to `db.sqlite3.bak-<timestamp>` and starts clean. After the cutover reset every app carries a single `0001_cutover_baseline` migration, so a fresh database always matches the models.
+`run_server.py` is a **launcher only** (same pattern as SkillStream): it starts
+Daphne (HTTP API + WebSockets on port 8000) and the Vite dev server (port 5173),
+and stops both when you press Ctrl+C. It does not check, migrate or seed — use
+the two dedicated scripts above. To start a clean database, back up/remove
+`Backend/db.sqlite3` yourself, then run the two scripts again.
 
-`run_server.py` does everything in one go (all seed commands now live under `NaijaBay/management/commands/`):
+`run_seed.py` runs the approved seed commands in dependency order (all under
+`NaijaBay/management/commands/`):
 
-1. `migrate`
-2. Seeds states and cities (`nigeria_states`)
-3. Seeds categories and sub-categories (`categories`)
-4. Seeds the admin and regular users with avatars and verified emails (`create_user`)
-5. Gives every user a store and at least 3 products (`seed_products`)
-6. Seeds sellers, buyers, follows, favorites, views, ratings, chats, reports and notifications (`seed_all`)
-7. Seeds the 40 attribute definitions and 133 options (`attribute_definitions`)
-8. Starts the Django server at http://127.0.0.1:8000
+1. `nigeria_states` — 36 states + FCT and their cities
+2. `categories` — categories and sub-categories
+3. `seed_boost_plans` — Paystack boost plans
+4. `create_user` — admin and regular users with avatars and verified emails
+5. `seed_products` — a store and at least 3 products per user
+6. `seed_all` — sellers, buyers, follows, favourites, views, ratings, chats, reports, notifications
+7. `attribute_definitions` — 40 definitions and 133 options
 
-Every seed step is idempotent, so running it again does not create duplicates.
+Every seed step is idempotent, so running it again does not create duplicates. Shared seed helpers live in private modules `_catalog.py` and `_images.py` next to the commands.
 
 ### 2. Frontend
 
@@ -225,25 +232,29 @@ Local development only. Emails are already verified, so you can log in straight 
 | Buyers | `seedbuyer1@naijabay.test` ... `seedbuyer8@naijabay.test` | `TestPass123!` |
 | Generated users (about 50 in total) | printed as `first.lastNNN@gmail.com` in the database | `Password123@` |
 
-## `run_server.py` options
+## Development scripts
 
 Run from the `Backend` folder.
 
-| Option | What it does |
+| Script / option | What it does |
 |---|---|
-| `--reset-db` | Back up `db.sqlite3` with a timestamp and start from a fresh database |
-| `--clear` | Wipe seeded marketplace data (superusers are kept), then reseed |
-| `--no-images` | Skip generating product photos (faster, saves disk space) |
-| `--skip-seed` | Only run migrations and start the server |
-| `--skip-migrate` | Skip `makemigrations` and `migrate` |
-| `--host`, `--port` | Change where the server listens (default `127.0.0.1:8000`) |
-| `--noreload` | Turn off Django's auto-reloader |
+| `python run_migrations.py` | Check DB, generate migrations for local apps, apply them |
+| `python run_migrations.py --check-only` | Report model changes without writing anything |
+| `python run_seed.py` | Seed all development data (idempotent) |
+| `python run_seed.py --images` | Also generate placeholder product photos (6-10 each, slower) |
+| `python run_seed.py --clear` | Clear seeded data first, then reseed |
+| `python run_server.py` | Launch Vite + Daphne (HTTP + WebSockets) |
+| `--host`, `--port` | Daphne interface/port (default `127.0.0.1:8000`) |
+| `--no-frontend` | Do not start Vite (run `npm run dev` yourself) |
+| `--preflight-only` | Check prerequisites and print the plan without starting anything |
 
-Product photos are generated by default: roughly 6-10 per product, so a first run creates around 2,000 files in `Backend/mediafiles` and takes longer. Use `--no-images` for a quick start.
+Cleaning artifacts: from the project root run `python clean_project.py` (dry run)
+or `python clean_project.py --delete` (removes caches, generated migrations,
+SQLite DB/backups, `logs/`, `staticfiles/`, `mediafiles/` and `Frontend/Web/dist`).
 
 ## Seed commands
 
-All live in `Backend/core/management/commands/` and can also be run alone with `python manage.py <name>`.
+All live in `Backend/NaijaBay/management/commands/` (boost plans in `Backend/payments/management/commands/`) and can also be run alone with `python manage.py <name>`.
 
 | Command | Seeds |
 |---|---|
@@ -266,11 +277,11 @@ Restart the server after changing `.env`. In development, emails (verification, 
 ## Troubleshooting
 
 - **"Bad Request (400)" on every page:** `Backend/.env` is missing or has `DEBUG=False`. Copy `.env.example` to `.env`.
-- **"no such table" or "no such column":** the old `db.sqlite3` does not match the models. Run `python run_server.py --reset-db`.
+- **"no such table" or "no such column":** the old `db.sqlite3` does not match the models. Back it up/remove it, then run `python run_migrations.py` and `python run_seed.py`.
 - **Frontend requests go to port 5173 or fail with CORS errors:** check `Frontend/Web/.env` has `VITE_BASE_URL`, restart `npm run dev`, and make sure both sides use `localhost`.
 - **Login works in Swagger but not in the app:** the browser is mixing `localhost` and `127.0.0.1`. Use one of them for both.
 - **`pip install` complains about `requirements.txt`:** the file is saved as UTF-16. Re-save it as UTF-8.
-- **Seeding is slow:** use `--no-images`.
+- **Seeding is slow:** do not pass `--images` to `run_seed.py` (photos are optional).
 - **`vite.config.js` proxy target:** it is correctly set to `http://localhost:8000`. It is not used while the app talks to the API through `VITE_BASE_URL`.
 
 ## More documentation

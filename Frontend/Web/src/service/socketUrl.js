@@ -1,12 +1,15 @@
-// WebSocket URLs must point at the API/ASGI host, not the static frontend
-// host. Derive them from VITE_BASE_URL (the same origin Axios uses).
+// WebSocket URLs come from the configured API base only — never from
+// window.location (a Render static site's host is not the ASGI host).
+// Mirrors SkillStream: derive the ws/wss URL from the API origin, then set
+// the Channels route path.
+
+const API_BASE = import.meta.env.VITE_BASE_URL || 'http://localhost:8000';
 
 export const buildSocketUrl = (path) => {
-    const configured = import.meta.env.VITE_BASE_URL || '/api/v1';
-    const base = new URL(configured, window.location.origin);
-    base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
-    base.pathname = path;
-    base.search = '';
-    base.hash = '';
-    return base.toString();
+    const url = new URL(API_BASE);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = path;
+    url.search = '';
+    url.hash = '';
+    return url.toString();
 };

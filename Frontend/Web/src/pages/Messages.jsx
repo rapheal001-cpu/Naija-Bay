@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { HiOutlineChatAlt2, HiOutlinePaperAirplane, HiOutlineArrowLeft, HiOutlineInbox, HiOutlinePaperClip, HiOutlineMicrophone, HiOutlineStop, HiOutlineX } from 'react-icons/hi';
 import AppLayout from '../components/AppLayout.jsx';
-import { uploadProductImages } from '../core/utils/uploadImages.js';
+import { uploadMediaFile } from '../core/api/mediaApi.js';
+import { UPLOAD_PURPOSES } from '../core/constants/api.js';
 import {
     useFetchConversations,
     useFetchConversation,
@@ -215,11 +216,12 @@ const Messages = () => {
         let attachmentUrls = [];
         if (pendingImages.length) {
             try {
-                const { urls, files } = await uploadProductImages(pendingImages.map((p) => p.file));
-                attachmentUrls = urls;
-                if (files.length) {
-                    // Fallback files can't be sent generically: attach their names as a notice.
-                    attachmentUrls = attachmentUrls.concat(files.map((f) => f.name));
+                for (const item of pendingImages) {
+                    const purpose = item.file.type.startsWith('audio')
+                        ? UPLOAD_PURPOSES.CHAT_AUDIO
+                        : UPLOAD_PURPOSES.CHAT_IMAGE;
+                    const result = await uploadMediaFile(item.file, purpose);
+                    attachmentUrls.push(result?.key || result?.url || (typeof result === 'string' ? result : item.file.name));
                 }
             } catch (err) {
                 setSendError(err?.response?.data?.detail || 'Could not upload attachments. Try again.');

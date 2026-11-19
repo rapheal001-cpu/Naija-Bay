@@ -1,15 +1,29 @@
-import os
-import logging
+"""NaijaBay Django settings.
+
+Organised in small sections with helpers so environment handling is consistent.
+Behaviour matches the previous version: development defaults to SQLite, in-memory
+cache/channels and local media; production switches each backend via env vars.
+"""
+
+from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
+import logging
+import os
+
 from decouple import config
 from django.core.exceptions import ImproperlyConfigured
-from datetime import timedelta
+
+
+# =============================================================================
+# Paths and environment helpers
+# =============================================================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _load_env_file(candidate: Path) -> bool:
-    """Load ``KEY=VALUE`` pairs from ``candidate`` without overriding the real
-    process environment. Returns True if the file was read."""
+    """Load KEY=VALUE pairs without overriding the real process environment."""
     if not candidate.exists():
         return False
     for line in candidate.read_text(encoding="utf-8").splitlines():
@@ -25,12 +39,7 @@ def _load_env_file(candidate: Path) -> bool:
 
 
 def _load_env_files():
-    """Environment layering:
-    - The process environment always wins.
-    - When ENVIRONMENT=production, ``.env.production`` replaces ``.env``
-      entirely (production must never silently inherit development values).
-    - Otherwise the development ``.env`` is used.
-    """
+    """Production loads .env.production only; development loads .env."""
     base = Path(__file__).resolve().parent.parent
     if os.environ.get("ENVIRONMENT") == "production":
         if _load_env_file(base / ".env.production"):
@@ -41,8 +50,31 @@ def _load_env_files():
 _load_env_files()
 
 
+def _csv(name: str, default: str = "") -> list[str]:
+    """Comma-separated environment value -> trimmed, non-empty list."""
+    return [item.strip() for item in config(name, default=default, cast=str).split(",") if item.strip()]
+
+
+def _hostnames(values: list[str]) -> list[str]:
+    """Accept either bare hostnames or full URLs in ALLOWED_HOSTS."""
+    hosts = []
+    for value in values:
+        hostname = urlparse(value).hostname or value
+        if hostname and hostname not in hosts:
+            hosts.append(hostname)
+    return hosts
+
+
+def _secret_key() -> str:
+    value = config("SECRET_KEY", default="", cast=str)
+    placeholders = ("django-insecure", "CHANGE_ME", "YOUR_")
+    if IS_PRODUCTION and (not value or any(p in value for p in placeholders)):
+        raise ImproperlyConfigured("SECRET_KEY must be set to a secure value in production.")
+    return value or "django-insecure-dev-only-key-change-in-production"
+
+
 # =============================================================================
-# ENVIRONMENT
+# Runtime mode and security
 # =============================================================================
 
 ENVIRONMENT = config("ENVIRONMENT", default="development", cast=str)
@@ -50,74 +82,22 @@ IS_PRODUCTION = ENVIRONMENT == "production"
 
 logger = logging.getLogger(__name__)
 
-
-# =============================================================================
-# PATHS
-# =============================================================================
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# =============================================================================
-# SECURITY
-# =============================================================================
-
-try:
-    SECRET_KEY = config("SECRET_KEY", cast=str)
-    _SECRET_PLACEHOLDERS = ("django-insecure", "CHANGE_ME", "YOUR_")
-    if not SECRET_KEY or any(p in SECRET_KEY for p in _SECRET_PLACEHOLDERS):
-        if IS_PRODUCTION:
-            raise ValueError("SECRET_KEY must be set to a secure value in production.")
-except Exception as e:
-    if IS_PRODUCTION:
-        raise e
-    SECRET_KEY = "django-insecure-dev-only-key-change-in-production"
-
 DEBUG = config("DEBUG", default=False, cast=bool)
 if IS_PRODUCTION and DEBUG:
-    raise ValueError("DEBUG must be False in production.")
+    raise ImproperlyConfigured("DEBUG must be False in production.")
 
-# ALLOWED_HOSTS — robust parsing of URLs or plain hostnames
-try:
-    hosts_raw = config("ALLOWED_HOSTS", default="", cast=str)
-    ALLOWED_HOSTS = []
-    for host in hosts_raw.split(","):
-        host = host.strip()
-        if not host:
-            continue
-        parsed = urlparse(host)
-        hostname = parsed.hostname or host
-        if hostname:
-            ALLOWED_HOSTS.append(hostname)
+SECRET_KEY = _secret_key()
 
-    if IS_PRODUCTION and not ALLOWED_HOSTS:
-        raise ValueError("ALLOWED_HOSTS must be set in production.")
-except Exception as e:
-    if IS_PRODUCTION:
-        raise e
+ALLOWED_HOSTS = _hostnames(_csv("ALLOWED_HOSTS"))
+if IS_PRODUCTION and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("ALLOWED_HOSTS must be set in production.")
+if not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ["127.0.0.1", "localhost"] if DEBUG else []
 
-AUTH_USER_MODEL = "accounts.User"
+CSRF_TRUSTED_ORIGINS = _csv("CSRF_TRUSTED_ORIGINS")
+if DEBUG and not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
-# CSRF
-CSRF_TRUSTED_ORIGINS = []
-if DEBUG:
-    debug_csrf = config("CSRF_TRUSTED_ORIGINS", default="", cast=str)
-    if debug_csrf:
-        CSRF_TRUSTED_ORIGINS = [o.strip() for o in debug_csrf.split(",") if o.strip()]
-    else:
-        CSRF_TRUSTED_ORIGINS = [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ]
-else:
-    CSRF_TRUSTED_ORIGINS = [
-        o.strip()
-        for o in config("CSRF_TRUSTED_ORIGINS", default="", cast=str).split(",")
-        if o.strip()
-    ]
-
-# Production security headers
 if IS_PRODUCTION:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -137,9 +117,12 @@ else:
     SESSION_COOKIE_SAMESITE = "Lax"
     CSRF_COOKIE_SAMESITE = "Lax"
 
+AUTH_USER_MODEL = "accounts.User"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 
 # =============================================================================
-# APPS
+# Apps and middleware
 # =============================================================================
 
 INSTALLED_APPS = [
@@ -157,7 +140,6 @@ INSTALLED_APPS = [
     "messaging.apps.MessagingConfig",
     "orders.apps.OrdersConfig",
     "payments.apps.PaymentsConfig",
-    # Project package (configures management commands under NaijaBay/)
     "NaijaBay",
     # Third-party
     "rest_framework",
@@ -175,19 +157,11 @@ INSTALLED_APPS = [
     "cloudinary_storage",
 ]
 
-SITE_ID = config("SITE_ID", default=1, cast=int)
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
-
-
-# =============================================================================
-# MIDDLEWARE
-# =============================================================================
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -207,27 +181,16 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+SITE_ID = config("SITE_ID", default=1, cast=int)
+
 
 # =============================================================================
 # CORS
 # =============================================================================
 
-CORS_ALLOWED_ORIGINS = []
-if DEBUG:
-    debug_cors = config("CORS_ALLOWED_ORIGINS", default="", cast=str)
-    if debug_cors:
-        CORS_ALLOWED_ORIGINS = [o.strip() for o in debug_cors.split(",") if o.strip()]
-    else:
-        CORS_ALLOWED_ORIGINS = [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ]
-else:
-    CORS_ALLOWED_ORIGINS = [
-        o.strip()
-        for o in config("CORS_ALLOWED_ORIGINS", default="", cast=str).split(",")
-        if o.strip()
-    ]
+CORS_ALLOWED_ORIGINS = _csv("CORS_ALLOWED_ORIGINS")
+if DEBUG and not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -241,10 +204,12 @@ CORS_ALLOW_HEADERS = [
 
 
 # =============================================================================
-# URLS & TEMPLATES
+# URLs and templates
 # =============================================================================
 
 ROOT_URLCONF = "NaijaBay.urls"
+ASGI_APPLICATION = "NaijaBay.asgi.application"
+WSGI_APPLICATION = "NaijaBay.wsgi.application"
 
 TEMPLATES = [
     {
@@ -263,26 +228,21 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "NaijaBay.wsgi.application"
-
 
 # =============================================================================
-# DATABASE
+# Database
 # =============================================================================
 
 DATABASE_URL = config("DATABASE_URL", default=None)
-
 if IS_PRODUCTION and DATABASE_URL and "CHANGE_ME" in DATABASE_URL:
-    raise ValueError("DATABASE_URL contains placeholder values; ".format(DATABASE_URL))
+    raise ImproperlyConfigured("DATABASE_URL contains placeholder values.")
 
 if DATABASE_URL:
     import dj_database_url
 
     DATABASES = {
         "default": dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
+            default=DATABASE_URL, conn_max_age=600, conn_health_checks=True
         )
     }
 else:
@@ -295,38 +255,31 @@ else:
 
 
 # =============================================================================
-# PASSWORD VALIDATION
+# Authentication and password rules
 # =============================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 8},
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
-
-
-# =============================================================================
-# INTERNATIONALIZATION
-# =============================================================================
 
 LANGUAGE_CODE = config("LANGUAGE_CODE", default="en-us", cast=str)
 TIME_ZONE = config("TIME_ZONE", default="Africa/Lagos", cast=str)
 USE_I18N = True
 USE_TZ = True
 
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+APPEND_SLASH = True
+
 
 # =============================================================================
-# STATIC & MEDIA
+# Static files and media storage
 # =============================================================================
 
 STATIC_URL = "/static/"
@@ -340,10 +293,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
-# SkillStream-style storage switching: development allows local|cloudinary,
-# production allows s3|cloudinary. Validated at startup.
 MEDIA_STORAGE_BACKEND = config(
-    "MEDIA_STORAGE_BACKEND", cast=str,
+    "MEDIA_STORAGE_BACKEND",
+    cast=str,
     default="local" if ENVIRONMENT == "development" else "cloudinary",
 )
 MEDIA_STORAGE_BACKENDS = {
@@ -352,7 +304,7 @@ MEDIA_STORAGE_BACKENDS = {
     "staging": {"s3", "cloudinary"},
 }
 ALLOWED_MEDIA_STORAGES = MEDIA_STORAGE_BACKENDS.get(
-    ENVIRONMENT, MEDIA_STORAGE_BACKENDS.get("production", set())
+    ENVIRONMENT, MEDIA_STORAGE_BACKENDS["production"]
 )
 if MEDIA_STORAGE_BACKEND not in ALLOWED_MEDIA_STORAGES:
     raise ImproperlyConfigured(
@@ -364,62 +316,47 @@ AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", cast=str, default="")
 AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", cast=str, default="")
 AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", cast=str, default="")
 AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", cast=str, default="us-east-1")
-# Optional S3-compatible endpoint (e.g. Cloudflare R2) — empty means AWS.
 AWS_S3_ENDPOINT_URL = config("AWS_S3_ENDPOINT_URL", cast=str, default="")
 AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN", cast=str, default="")
 
 if MEDIA_STORAGE_BACKEND == "local":
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
+    MEDIA_BACKEND = "django.core.files.storage.FileSystemStorage"
 elif MEDIA_STORAGE_BACKEND == "s3":
     if not AWS_STORAGE_BUCKET_NAME:
         raise ImproperlyConfigured("AWS_STORAGE_BUCKET_NAME is required for S3 storage.")
-    STORAGES = {
-        "default": {
-            "BACKEND": "NaijaBay.storage.S3MediaStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
+    MEDIA_BACKEND = "NaijaBay.storage.S3MediaStorage"
 else:  # cloudinary
-    STORAGES = {
-        "default": {
-            "BACKEND": "NaijaBay.storage.AutoResourceCloudinaryStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
+    MEDIA_BACKEND = "NaijaBay.storage.AutoResourceCloudinaryStorage"
     CLOUDINARY_STORAGE = {
         "CLOUD_NAME": config("CLOUD_NAME", default=""),
         "API_KEY": config("CLOUD_API_KEY", default=""),
         "API_SECRET": config("CLOUD_API_SECRET", default=""),
     }
 
+# Optional signed preset so Cloudinary can enforce a real file-size limit on
+# browser-direct uploads (the API response field is only advisory).
+CLOUDINARY_UPLOAD_PRESET = config("CLOUDINARY_UPLOAD_PRESET", default="", cast=str)
+
+STORAGES = {
+    "default": {"BACKEND": MEDIA_BACKEND},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
+
 
 # =============================================================================
-# REST FRAMEWORK
+# Django REST framework
 # =============================================================================
 
 REST_FRAMEWORK = {
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ]
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"]
     + (["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG else []),
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "auth_kit.authentication.JWTCookieAuthentication",
+        "auth_kit.authentication.JWTCookieAuthentication"
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_THROTTLE_RATES": {
         "register": "1000/day",
         "verify_email": "1000/day",
@@ -448,14 +385,9 @@ REST_FRAMEWORK = {
     },
 }
 
-
-# =============================================================================
-# DRF SPECTACULAR
-# =============================================================================
-
 SPECTACULAR_SETTINGS = {
     "TITLE": "NaijaBay API",
-    "DESCRIPTION": "NaijaBay Marketplace API — endpoints for accounts, products and verification.",
+    "DESCRIPTION": "NaijaBay Marketplace API — accounts, products, orders and payments.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
@@ -463,35 +395,20 @@ SPECTACULAR_SETTINGS = {
     "SERVE_AUTHENTICATION": ["auth_kit.authentication.JWTCookieAuthentication"],
     "CONTACT": {
         "name": "NaijaBay Support",
-        "email": config(
-            "DEFAULT_FROM_EMAIL", default="support@naijabay.local", cast=str
-        ),
+        "email": config("DEFAULT_FROM_EMAIL", default="support@naijabay.local", cast=str),
     },
     "LICENSE": {"name": "Proprietary"},
     "TAGS": [
-        {
-            "name": "Authentication",
-            "description": "Register, login, password and verification endpoints.",
-        },
-        {
-            "name": "User",
-            "description": "Profile, notifications, and social endpoints.",
-        },
-        {
-            "name": "Products",
-            "description": "Product and category management endpoints.",
-        },
-        {"name": "Store", "description": "Store creation and management endpoints."},
-        {"name": "Core", "description": "Favorites, follows, and utility endpoints."},
-        {
-            "name": "Messaging",
-            "description": "Buyer and seller conversations and messages.",
-        },
-        {"name": "Verification", "description": "Paid user verification endpoints."},
-        {
-            "name": "Documentation",
-            "description": "Schema and interactive docs (Swagger / ReDoc).",
-        },
+        {"name": "Authentication", "description": "Register, login, password and verification."},
+        {"name": "User", "description": "Profile, notifications and social endpoints."},
+        {"name": "Products", "description": "Products, categories and attributes."},
+        {"name": "Store", "description": "Store creation and management."},
+        {"name": "Core", "description": "Favorites, follows and utilities."},
+        {"name": "Messaging", "description": "Buyer and seller conversations."},
+        {"name": "Feedback", "description": "Seller feedback and appeals."},
+        {"name": "Safe Deal", "description": "Escrow-style order lifecycle."},
+        {"name": "Verification", "description": "Verified ID (KYC) endpoints."},
+        {"name": "Documentation", "description": "Swagger and ReDoc."},
     ],
     "SWAGGER_UI_SETTINGS": {
         "defaultModelsExpandDepth": -1,
@@ -502,11 +419,7 @@ SPECTACULAR_SETTINGS = {
     },
     "APPEND_COMPONENTS": {
         "securitySchemes": {
-            "cookieAuth": {
-                "type": "apiKey",
-                "in": "cookie",
-                "name": "access",
-            }
+            "cookieAuth": {"type": "apiKey", "in": "cookie", "name": "access"}
         }
     },
     "SECURITY": [{"cookieAuth": []}],
@@ -515,7 +428,7 @@ SPECTACULAR_SETTINGS = {
 
 
 # =============================================================================
-# SIMPLE JWT
+# JWT cookies, allauth and auth_kit
 # =============================================================================
 
 SIMPLE_JWT = {
@@ -532,19 +445,9 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
 }
 
-
-# =============================================================================
-# ALLAUTH
-# =============================================================================
-
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_LOGIN_METHODS = {"email"}
-
-
-# =============================================================================
-# AUTH KIT
-# =============================================================================
 
 AUTH_KIT = {
     "AUTH_TYPE": "jwt",
@@ -564,7 +467,7 @@ AUTH_KIT = {
     "GET_EMAIL_VERIFICATION_URL_FUNC": "auth_kit.views.registration.get_email_verification_url",
     "SEND_VERIFY_EMAIL_FUNC": "auth_kit.views.registration.send_verify_email",
     "POST_SIGNUP_FUNC": "auth_kit.views.registration.default_post_signup",
-    # Login / Logout
+    # Login / logout
     "LOGIN_REQUEST_SERIALIZER": "auth_kit.serializers.login_factors.LoginRequestSerializer",
     "LOGIN_RESPONSE_SERIALIZER": "auth_kit.serializers.login_factors.BaseLoginResponseSerializer",
     "LOGIN_SERIALIZER_FACTORY": "auth_kit.serializers.login.get_login_serializer",
@@ -591,15 +494,7 @@ AUTH_KIT = {
     "JWT_REFRESH_VIEW": "auth_kit.views.jwt.RefreshViewWithCookieSupport",
 }
 
-
-# =============================================================================
-# DJANGO-AXES (login brute-force lockout, S4)
-# =============================================================================
-# For JSON APIs (DRF Auth Kit) the login body is JSON, so axes can only read
-# the client IP (AXES_USE_CLIENT_IP_GET_CLIENT? no — see get_client_username
-# falling back to IP). Thresholds below are per-IP + per-username when a
-# username is extractable. Cool-off is time-based, not a permanent lockout.
-# Production tuning: see final report.
+# Login brute-force lockout (time-based cool-off, not a permanent ban).
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=30)
 AXES_LOCK_OUT_AT_FAILURE = False
@@ -607,7 +502,7 @@ AXES_COOLOFF_MODE = "immediately"
 
 
 # =============================================================================
-# EMAIL
+# Email, phone and payments
 # =============================================================================
 
 EMAIL_HOST = config("EMAIL_HOST", default="", cast=str)
@@ -615,43 +510,26 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="", cast=str)
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="", cast=str)
-DEFAULT_FROM_EMAIL = config(
-    "DEFAULT_FROM_EMAIL", default="noreply@naijabay.com", cast=str
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@naijabay.com", cast=str)
+
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if IS_PRODUCTION and EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD
+    else "django.core.mail.backends.console.EmailBackend"
 )
-
-if IS_PRODUCTION and EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-
-# =============================================================================
-# PHONE NUMBER
-# =============================================================================
 
 PHONENUMBER_DEFAULT_REGION = "NG"
 
-
-# =============================================================================
-# PAYMENTS (PAYSTACK)
-# =============================================================================
-
-# Leave PAYSTACK_SECRET_KEY empty in development to use the built-in test mode
-# (payments are approved without charging anything; only works when DEBUG=True).
+# Empty in development -> simulated checkout. Required in production.
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="", cast=str).strip()
-
-# Where Paystack sends the buyer back after paying (the React app).
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173", cast=str).strip()
-
-# Flat delivery fee added once to every order (in naira). 0 = free delivery.
 DELIVERY_FEE = config("DELIVERY_FEE", default=0, cast=int)
-
 if IS_PRODUCTION and not PAYSTACK_SECRET_KEY:
-    raise ValueError("PAYSTACK_SECRET_KEY must be set in production.")
+    raise ImproperlyConfigured("PAYSTACK_SECRET_KEY must be set in production.")
 
 
 # =============================================================================
-# LOGGING
+# Logging
 # =============================================================================
 
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
@@ -665,18 +543,11 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
-        "simple": {
-            "format": "{levelname} {asctime} {message}",
-            "style": "{",
-        },
+        "simple": {"format": "{levelname} {asctime} {message}", "style": "{"},
     },
     "filters": {
-        "require_debug_true": {
-            "()": "django.utils.log.RequireDebugTrue",
-        },
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse",
-        },
+        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue"},
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
     },
     "handlers": {
         "console": {
@@ -699,50 +570,17 @@ LOGGING = {
         },
     },
     "loggers": {
-        "django": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "products": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "accounts": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "chat": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "orders": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "payments": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "messaging": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
+        name: {"handlers": ["console", "file"], "level": "INFO", "propagate": False}
+        for name in (
+            "django", "products", "accounts", "chat", "orders", "payments", "messaging"
+        )
     },
 }
 
 
 # =============================================================================
-# MISC
+# Cache and Channels
 # =============================================================================
-
-APPEND_SLASH = True
 
 REDIS_URL = config("REDIS_URL", cast=str, default="redis://127.0.0.1:6379/0")
 
@@ -760,32 +598,13 @@ if IS_PRODUCTION:
             "TIMEOUT": 60 * 30,
         }
     }
-else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "naijabay-cache",
-        }
-    }
-
-SESSION_COOKIE_AGE = 1209600  # 2 weeks
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-
-
-# =============================================================================
-# CHANNELS (WebSockets)
-# =============================================================================
-
-ASGI_APPLICATION = "NaijaBay.asgi.application"
-
-if IS_PRODUCTION:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
                 "hosts": [
                     {
-                        "address": config("REDIS_URL", cast=str, default="redis://127.0.0.1:6379/0"),
+                        "address": REDIS_URL,
                         "socket_connect_timeout": 5,
                         "socket_timeout": 20,
                         "socket_keepalive": True,
@@ -796,8 +615,12 @@ if IS_PRODUCTION:
         }
     }
 else:
-    CHANNEL_LAYERS = {
+    CACHES = {
         "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "naijabay-cache",
         }
+    }
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
     }

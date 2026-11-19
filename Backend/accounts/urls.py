@@ -1,4 +1,15 @@
 from django.urls import path, include
+from .api_extra import (
+    SellerFeedbackListAPIView,
+    SellerFeedbackCreateAPIView,
+    SellerFeedbackDetailAPIView,
+    FeedbackAppealAPIView,
+    FeedbackResponseAPIView,
+    SavedSearchListCreateAPIView,
+    SavedSearchDetailAPIView,
+    VerificationRequestCreateAPIView,
+    MyVerificationAPIView,
+)
 from .views import (
     notification_view,
     other_user_profile_view,
@@ -26,6 +37,18 @@ urlpatterns = [
     # -------------------------------------------------------------------------
     path("followers/<int:pk>/", followers_list_view, name="followers-list"),
     path("following/<int:pk>/", following_list_view, name="following-list"),
+    # -------------------------------------------------------------------------
+    # Jiji-style extras
+    # -------------------------------------------------------------------------
+    path("feedback/", SellerFeedbackListAPIView.as_view(), name="feedback-list"),
+    path("feedback/create/", SellerFeedbackCreateAPIView.as_view(), name="feedback-create"),
+    path("feedback/<int:pk>/", SellerFeedbackDetailAPIView.as_view(), name="feedback-detail"),
+    path("feedback/<int:pk>/appeal/", FeedbackAppealAPIView.as_view(), name="feedback-appeal"),
+    path("feedback/<int:pk>/respond/", FeedbackResponseAPIView.as_view(), name="feedback-respond"),
+    path("saved-searches/", SavedSearchListCreateAPIView.as_view(), name="saved-search-list"),
+    path("saved-searches/<int:pk>/", SavedSearchDetailAPIView.as_view(), name="saved-search-detail"),
+    path("verification/submit/", VerificationRequestCreateAPIView.as_view(), name="verification-submit"),
+    path("verification/me/", MyVerificationAPIView.as_view(), name="verification-me"),
     # -------------------------------------------------------------------------
     # Auth Kit
     # -------------------------------------------------------------------------

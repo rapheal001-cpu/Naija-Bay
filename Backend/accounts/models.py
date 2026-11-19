@@ -1,9 +1,10 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 from phonenumber_field.modelfields import PhoneNumberField
-from django.core.validators import validate_email
+from django.core.validators import validate_email, MinValueValidator, MaxValueValidator
 from NaijaBay.utils import (
     NOTIFICATION_TYPES,
     STATE_CHOICES,
@@ -237,4 +238,144 @@ class Follow(models.Model):
         indexes = [
             models.Index(fields=["follower", "following"]),
             models.Index(fields=["following", "follower"]),
+        ]
+
+
+# =============================================================================
+# SELLER FEEDBACK  (Jiji-style reviews, with moderation + appeal)
+# =============================================================================
+
+class SellerFeedback(models.Model):
+    """A buyer's review of a seller. Moderated before it appears publicly."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="feedback_received",
+        verbose_name=_("Seller"),
+        db_index=True,
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="feedback_given",
+        verbose_name=_("Author"),
+        db_index=True,
+    )
+    rating = models.PositiveSmallIntegerField(
+        _("Rating"), validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.TextField(_("Comment"), blank=True)
+    status = models.CharField(
+        _("Status"), max_length=10, choices=STATUS_CHOICES,
+        default="pending", db_index=True,
+    )
+    response = models.TextField(_("Seller Response"), blank=True)
+    appeal = models.TextField(_("Appeal"), blank=True)
+    edited = models.BooleanField(_("Edited"), default=False)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+
+    def __str__(self):
+        return f"{self.author_id} -> {self.seller_id} ({self.rating}/5, {self.status})"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Seller Feedback")
+        verbose_name_plural = _("Seller Feedback")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["seller", "author"], name="unique_feedback_per_author"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(seller=models.F("author")),
+                name="prevent_self_feedback",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["seller", "status", "-created_at"]),
+        ]
+
+
+# =============================================================================
+# SAVED SEARCH  (Jiji: "save search and get notified about new ads")
+# =============================================================================
+
+class SavedSearch(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_searches",
+        verbose_name=_("User"),
+        db_index=True,
+    )
+    name = models.CharField(_("Name"), max_length=80)
+    query_params = models.JSONField(_("Query Parameters"), default=dict, blank=True)
+    notify = models.BooleanField(_("Notify on new ads"), default=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user_id}: {self.name}"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Saved Search")
+        verbose_name_plural = _("Saved Searches")
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+
+# =============================================================================
+# VERIFICATION REQUEST  (Jiji "Verified ID" badge / KYC)
+# =============================================================================
+
+class VerificationRequest(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+    ID_TYPE_CHOICES = [
+        ("nin", "NIN"),
+        ("bvn", "BVN"),
+        ("passport", "International Passport"),
+        ("drivers_license", "Driver's Licence"),
+        ("voters_card", "Voter's Card"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="verification_requests",
+        verbose_name=_("User"),
+        db_index=True,
+    )
+    id_type = models.CharField(_("ID Type"), max_length=20, choices=ID_TYPE_CHOICES)
+    id_number = models.CharField(_("ID Number"), max_length=64)
+    selfie = models.ImageField(_("Selfie"), upload_to="verification/selfies/")
+    document = models.ImageField(_("ID Document"), upload_to="verification/documents/")
+    status = models.CharField(
+        _("Status"), max_length=10, choices=STATUS_CHOICES,
+        default="pending", db_index=True,
+    )
+    reviewer_note = models.TextField(_("Reviewer Note"), blank=True)
+    reviewed_at = models.DateTimeField(_("Reviewed At"), null=True, blank=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
+
+    def __str__(self):
+        return f"Verification #{self.pk} - {self.user_id} ({self.status})"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Verification Request")
+        verbose_name_plural = _("Verification Requests")
+        indexes = [
+            models.Index(fields=["user", "status", "-created_at"]),
         ]

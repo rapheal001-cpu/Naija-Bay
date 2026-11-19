@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import User, Notifications, Store, Follow
+from .models import (
+    User, Notifications, Store, Follow,
+    SellerFeedback, SavedSearch, VerificationRequest,
+)
 from django.utils.translation import gettext_lazy as _
 
 
@@ -137,3 +140,51 @@ class FollowAdmin(admin.ModelAdmin):
     autocomplete_fields = ("follower", "following")
     list_select_related = ("follower", "following")
     date_hierarchy = "created_at"
+
+
+# =============================================================================
+# SELLER FEEDBACK / SAVED SEARCH / VERIFICATION ADMIN
+# =============================================================================
+
+@admin.register(SellerFeedback)
+class SellerFeedbackAdmin(admin.ModelAdmin):
+    list_display = ("seller", "author", "rating", "status", "edited", "created_at")
+    list_filter = ("status", "rating", "created_at")
+    search_fields = ("seller__username", "author__username", "comment")
+    readonly_fields = ("created_at", "updated_at")
+    list_select_related = ("seller", "author")
+    actions = ["approve_feedback", "reject_feedback"]
+
+    @admin.action(description=_("Approve selected feedback"))
+    def approve_feedback(self, request, queryset):
+        queryset.update(status="approved")
+
+    @admin.action(description=_("Reject selected feedback"))
+    def reject_feedback(self, request, queryset):
+        queryset.update(status="rejected")
+
+
+@admin.register(SavedSearch)
+class SavedSearchAdmin(admin.ModelAdmin):
+    list_display = ("user", "name", "notify", "created_at")
+    list_filter = ("notify", "created_at")
+    search_fields = ("user__username", "name")
+
+
+@admin.register(VerificationRequest)
+class VerificationRequestAdmin(admin.ModelAdmin):
+    list_display = ("user", "id_type", "id_number", "status", "reviewed_at", "created_at")
+    list_filter = ("status", "id_type", "created_at")
+    search_fields = ("user__username", "user__email", "id_number")
+    readonly_fields = ("created_at",)
+    actions = ["approve_verification", "reject_verification"]
+
+    @admin.action(description=_("Approve selected verification requests"))
+    def approve_verification(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status="approved", reviewed_at=timezone.now())
+
+    @admin.action(description=_("Reject selected verification requests"))
+    def reject_verification(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status="rejected", reviewed_at=timezone.now())

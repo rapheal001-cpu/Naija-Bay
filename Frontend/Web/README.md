@@ -15,7 +15,7 @@ The frontend currently supports:
 - user authentication with sign-in and registration
 - seller listing flows for posting a product (with optional original price for discounts) and editing/deleting listings
 - profile, update profile, business detail, notifications, and message views
-- buyer–seller messaging (chat threads refresh via React Query polling — no websockets)
+- buyer–seller messaging over WebSockets with a REST fallback, including image and voice-note attachments
 - favorites and protected navigation
 
 ## Tech stack
@@ -31,19 +31,22 @@ The frontend currently supports:
 ## Frontend project structure
 
 ```text
-Frontend/
+Frontend/Web/
 ├── src/
-│   ├── assets/
-│   ├── components/         # Reusable UI pieces, headers, auth forms, product cards, and shared UI
-│   ├── hooks/              # React Query hooks for fetching and mutating data
+│   ├── core/
+│   │   ├── api/            # mediaApi.js, resumableUploads.js
+│   │   ├── constants/api.js# media paths + upload purposes
+│   │   └── utils/          # uploadImages.js
+│   ├── components/         # Header, Product, Shop, User, JijiComponents, shared UI
+│   ├── hooks/              # React Query hooks (UseQuery, UseMutation, useJiji, ...)
 │   ├── pages/              # Route-level screens
-│   ├── service/            # Backend endpoint helpers and Axios wiring
-│   ├── slice/              # Redux slices for auth, products, categories, notifications, and user data
-│   ├── skeletons/         # Loading placeholders for list/detail views
+│   ├── service/            # axiosInstance, Endpoints, ShopEndpoints, JijiEndpoints
+│   ├── slice/              # Redux slices (auth, user, product, category, ...)
+│   ├── skeletons/          # Loading placeholders
 │   └── style.css           # Global styles and Tailwind entry
-├── .env                    # Environment variables for backend connection
-├── package.json            # Frontend scripts and dependencies
-└── vite.config.js          # Vite dev server and API proxy configuration
+├── .env                    # VITE_BASE_URL for backend connection
+├── package.json            # Scripts and pinned dependencies
+└── vite.config.js          # Vite dev server, /api proxy, @ alias
 ```
 
 ## How it works
@@ -60,10 +63,10 @@ Frontend/
 The frontend uses a single environment entry for backend connectivity:
 
 ```env
-VITE_BASE_URL=http://127.0.0.1:8000
+VITE_BASE_URL=http://localhost:8000
 ```
 
-For Ngrok testing, set the same public backend URL in the frontend `.env` file and mirror it in the backend `.env` file as well. The Vite config reads this value and uses it for the `/api` proxy target during development.
+For Ngrok testing, set the same public backend URL in the frontend `.env` file and mirror it in the backend `.env` file. The Vite dev proxy targets `http://localhost:8000` directly; application requests use `VITE_BASE_URL`. Keep the web and API hostnames identical (`localhost`) so the auth cookies are same-site.
 
 All requests are then appended with backend paths such as:
 

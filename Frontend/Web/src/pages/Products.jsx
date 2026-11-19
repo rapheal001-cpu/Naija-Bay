@@ -2,7 +2,7 @@
 import { HiOutlineFunnel, HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2';
 import { HiOutlineSearch, HiOutlineX } from "react-icons/hi";
 import { BiSolidCategory } from 'react-icons/bi';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp, FaRegBookmark } from 'react-icons/fa';
 import AppLayout from '../components/AppLayout.jsx';
 import InfiniteListSentinel from '../components/InfiniteListSentinel.jsx';
 import ProductCard from '../components/ProductComponents/ProductCard.jsx';
@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setCategories } from '../slice/CategorySlice.js';
 import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom';
 import { categoryIconsMap, STATE_CHOICES, CONDITION_CHOICES } from '../dummyData.js';
+import { useCreateSavedSearch } from '../hooks/useJiji.js';
 
 
 const SORT_OPTIONS = [
@@ -59,6 +60,8 @@ const buildFilters = (params) => {
 const Products = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+    const createSavedSearch = useCreateSavedSearch();
     const routeParams = useParams();
     const routeCategory = routeParams.category || '';
     const routeSubCategory = routeParams.subCategory || '';
@@ -454,12 +457,15 @@ const Products = () => {
                         </div>
                     )}
 
+                    {/* Jiji-style two-column layout: filters sidebar + results */}
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+                    <aside className="self-start">
                     {/* Toolbar: filters toggle + sort */}
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                         <button
                             type="button"
                             onClick={() => setShowFilters((prev) => !prev)}
-                            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                            className={`xl:hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${
                                 showFilters || activeFilterCount
                                     ? 'bg-brand/5 border-brand/20 text-brand'
                                     : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
@@ -473,6 +479,26 @@ const Products = () => {
                                 </span>
                             )}
                             {showFilters ? <FaChevronUp size={11} /> : <FaChevronDown size={11} />}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!isAuthenticated) {
+                                    navigate('/sign-in');
+                                    return;
+                                }
+                                createSavedSearch.mutate({
+                                    name: searchQuery || activeSubCategoryName || activeCategory || 'My saved search',
+                                    query_params: effectiveFilters,
+                                    notify: true,
+                                });
+                            }}
+                            disabled={createSavedSearch.isPending}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-brand hover:text-brand disabled:opacity-50"
+                        >
+                            <FaRegBookmark size={15} />
+                            {createSavedSearch.isSuccess ? 'Saved!' : 'Save search'}
                         </button>
 
                         <label className="flex items-center gap-2 text-sm">
@@ -491,11 +517,11 @@ const Products = () => {
                         </label>
                     </div>
 
-                    {/* Advanced filters */}
-                    {showFilters && (
+                    {/* Advanced filters — always visible on xl as a sticky sidebar */}
+                    <div className={`${showFilters ? 'block' : 'hidden'} xl:block`}>
                         <form
                             onSubmit={applyFilters}
-                            className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 mb-6"
+                            className="rounded-xl border border-slate-200 bg-white p-4 xl:sticky xl:top-32"
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
@@ -735,8 +761,10 @@ const Products = () => {
                                 </button>
                             </div>
                         </form>
-                    )}
+                    </div>
+                    </aside>
 
+                    <main className="min-w-0">
                     {/* Active Filters */}
                     {(searchQuery || activeCategory || activeSubCategory || activeFilterCount > 0) && (
                         <div className="flex items-center gap-2 mb-6 flex-wrap">
@@ -967,6 +995,8 @@ const Products = () => {
                             )}
                         </>
                     )}
+                    </main>
+                    </div>
                 </div>
             </div>
         </AppLayout>

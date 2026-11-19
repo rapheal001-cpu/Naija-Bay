@@ -90,6 +90,17 @@ class MessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"attachment_type": "Invalid attachment type."})
         if attachment_type and not attachment_url:
             raise serializers.ValidationError({"attachment_url": "Attachment URL is required."})
+        if attachment_type and attachment_url:
+            from NaijaBay.direct_uploads import _prefixes, is_own_direct_upload_key
+
+            purpose = "chat-image" if attachment_type == "image" else "chat-audio"
+            value = str(attachment_url).strip()
+            user_id = getattr(getattr(self.context.get("request"), "user", None), "pk", None)
+            looks_like_direct_key = any(value.startswith(p + "/") for p in _prefixes(purpose))
+            if looks_like_direct_key and not is_own_direct_upload_key(value, user_id, purpose=purpose):
+                raise serializers.ValidationError(
+                    {"attachment_url": "This file was not uploaded by you."}
+                )
         return attrs
 
     @extend_schema_field(serializers.BooleanField(default=False))

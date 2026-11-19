@@ -18,6 +18,7 @@ const Header = () => {
                     <span className="font-semibold tracking-wide">Sell faster , Buy smarter</span>
                     <div className="flex items-center gap-4">
                         <Link to="/about" className="hover:text-white">About us</Link>
+                        <Link to="/safety" className="hover:text-white">Safety tips</Link>
                         <Link to="/contact" className="hover:text-white">Help &amp; Support</Link>
                         <span className="font-semibold text-white/90">EN</span>
                     </div>

@@ -125,6 +125,18 @@ class Product(models.Model):
     )
     contact_number = PhoneNumberField(_("Contact Number"))
     active = models.BooleanField(_("Active"), default=True, db_index=True)
+    is_draft = models.BooleanField(_("Draft"), default=False, db_index=True)
+    moderation_status = models.CharField(
+        _("Moderation Status"),
+        max_length=10,
+        choices=[
+            ("pending", "Pending review"),
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+        ],
+        default="approved",
+        db_index=True,
+    )
     sold = models.BooleanField(_("Sold"), default=False, db_index=True)
     promoted = models.BooleanField(_("Promoted"), default=False, db_index=True)
     promoted_until = models.DateTimeField(
@@ -459,4 +471,108 @@ class ProductAttribute(models.Model):
             models.Index(fields=["definition", "value_text"]),
             models.Index(fields=["product"]),
             models.Index(fields=["definition"]),
+        ]
+
+
+# =============================================================================
+# PRODUCT VIDEO  (Jiji allows video in ads)
+# =============================================================================
+
+class ProductVideo(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="videos", verbose_name=_("Product")
+    )
+    video = models.FileField(_("Video"), upload_to="products/videos/")
+    title = models.CharField(_("Title"), max_length=100, blank=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+
+    def __str__(self):
+        return f"Video for {self.product_id}"
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = _("Product Video")
+        verbose_name_plural = _("Product Videos")
+
+
+# =============================================================================
+# OFFER  (Jiji "Make an offer")
+# =============================================================================
+
+class Offer(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("declined", "Declined"),
+        ("expired", "Expired"),
+    ]
+
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="offers", verbose_name=_("Product")
+    )
+    buyer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="offers_made", verbose_name=_("Buyer")
+    )
+    amount = models.DecimalField(
+        _("Offer Amount"), max_digits=15, decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    message = models.CharField(_("Message"), max_length=500, blank=True)
+    status = models.CharField(
+        _("Status"), max_length=10, choices=STATUS_CHOICES, default="pending", db_index=True
+    )
+    expires_at = models.DateTimeField(_("Expires At"), null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+
+    def __str__(self):
+        return f"₦{self.amount} offer on {self.product_id} by {self.buyer_id}"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Offer")
+        verbose_name_plural = _("Offers")
+        constraints = [
+            models.UniqueConstraint(fields=["product", "buyer"], name="unique_offer_per_buyer"),
+        ]
+        indexes = [
+            models.Index(fields=["product", "status", "-created_at"]),
+        ]
+
+
+# =============================================================================
+# CALLBACK REQUEST  (Jiji "Request call back")
+# =============================================================================
+
+class CallbackRequest(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("done", "Done"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="callback_requests", verbose_name=_("Product")
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="callback_requests", verbose_name=_("User")
+    )
+    phone = PhoneNumberField(_("Phone Number"))
+    status = models.CharField(
+        _("Status"), max_length=10, choices=STATUS_CHOICES, default="pending", db_index=True
+    )
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
+
+    def __str__(self):
+        return f"Callback {self.user_id} on {self.product_id} ({self.status})"
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Callback Request")
+        verbose_name_plural = _("Callback Requests")
+        constraints = [
+            models.UniqueConstraint(fields=["product", "user"], name="unique_callback_per_user"),
+        ]
+        indexes = [
+            models.Index(fields=["product", "status", "-created_at"]),
         ]

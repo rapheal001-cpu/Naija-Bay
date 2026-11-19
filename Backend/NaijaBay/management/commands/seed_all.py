@@ -20,13 +20,13 @@ from django.utils import timezone
 from accounts.models import Follow, Notifications, Store, User
 from NaijaBay.management.commands.categories import seed_categories
 from NaijaBay.management.commands.nigeria_states import seed_locations
-from NaijaBay.management.commands.seed_products import (
+from NaijaBay.management.commands._catalog import (
     COLORS,
     PRODUCT_CATALOG,
-    attach_images_to_product,
     generate_description,
     get_price,
 )
+from NaijaBay.management.commands._images import attach_images_to_product
 from core.models import Category, City, State, SubCategory
 from messaging.models import Conversation, Message
 from NaijaBay.utils import (

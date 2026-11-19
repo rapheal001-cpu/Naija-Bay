@@ -110,6 +110,42 @@ class Order(models.Model):
     state = models.CharField(_("State"), max_length=25, choices=STATE_CHOICES, blank=True)
     note = models.CharField(_("Note"), max_length=300, blank=True)
 
+    # -------------------------------------------------------------------------
+    # Safe Deal (escrow): money is held until the buyer confirms delivery.
+    # -------------------------------------------------------------------------
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders_as_seller",
+        verbose_name=_("Seller"),
+    )
+    is_safe_deal = models.BooleanField(_("Safe Deal"), default=False, db_index=True)
+    ESCROW_STATUS_CHOICES = [
+        ("none", "Not a Safe Deal"),
+        ("paid", "Paid — awaiting shipment"),
+        ("shipped", "Shipped / handed to courier"),
+        ("delivered", "Delivered — buyer confirmation window open"),
+        ("confirmed", "Confirmed — payment released"),
+        ("disputed", "Disputed — under review"),
+        ("refunded", "Refunded"),
+    ]
+    escrow_status = models.CharField(
+        _("Escrow Status"), max_length=12, choices=ESCROW_STATUS_CHOICES,
+        default="none", db_index=True,
+    )
+    delivery_service = models.CharField(_("Delivery Service"), max_length=60, blank=True)
+    tracking_number = models.CharField(_("Tracking Number"), max_length=80, blank=True)
+    shipped_at = models.DateTimeField(_("Shipped At"), null=True, blank=True)
+    delivered_at = models.DateTimeField(_("Delivered At"), null=True, blank=True)
+    confirm_deadline = models.DateTimeField(_("Confirm Deadline"), null=True, blank=True, db_index=True)
+    buyer_confirmed_at = models.DateTimeField(_("Buyer Confirmed At"), null=True, blank=True)
+    dispute_opened_at = models.DateTimeField(_("Dispute Opened At"), null=True, blank=True)
+    dispute_reason = models.TextField(_("Dispute Reason"), blank=True)
+    seller_payout_at = models.DateTimeField(_("Seller Payout At"), null=True, blank=True)
+    payout_reference = models.CharField(_("Payout Reference"), max_length=64, blank=True)
+
     paid_at = models.DateTimeField(_("Paid At"), null=True, blank=True)
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)

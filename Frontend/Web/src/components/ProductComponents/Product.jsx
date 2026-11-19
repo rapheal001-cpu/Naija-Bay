@@ -14,6 +14,9 @@ import StartChatModal from './StartChatModal.jsx';
 import ReportModal from './ReportModal.jsx';
 import ProductCard from './ProductCard.jsx';
 import { useFetchProducts } from '../../hooks/UseQuery.js';
+import OfferPanel from '../JijiComponents/OfferPanel.jsx';
+import FeedbackSection from '../JijiComponents/FeedbackSection.jsx';
+import VideoUploader from '../JijiComponents/VideoUploader.jsx';
 
 
 const Product = () => {
@@ -483,6 +486,28 @@ const Product = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Jiji-style offer / callback / seller feedback */}
+            {product?.product_user && (
+                <div className="mx-auto mt-10 grid max-w-7xl grid-cols-1 gap-5 px-4 lg:grid-cols-2">
+                    {!isOwner && (
+                        <section className="rounded-xl border border-slate-200 bg-white p-5">
+                            <h2 className="text-base font-black text-slate-800">Deal options</h2>
+                            <OfferPanel
+                                product={product}
+                                isAuthenticated={isAuthenticated}
+                                onSignIn={() => navigate('/sign-in')}
+                            />
+                        </section>
+                    )}
+                    <FeedbackSection
+                        sellerId={product.product_user.id}
+                        currentUserId={user?.id}
+                        canReview={Boolean(isAuthenticated && !isOwner)}
+                    />
+                    {isOwner && <VideoUploader slug={product.product_slug} />}
+                </div>
+            )}
 
             {/* Similar Ads */}
             {similarAds.length > 0 && (

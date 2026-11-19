@@ -77,6 +77,10 @@ class City(models.Model):
 class Category(models.Model):
     name = models.CharField(_("Category Name"), max_length=30, unique=True)
     slug = models.SlugField(_("Category Slug"), unique=True, db_index=True)
+    max_free_ads = models.PositiveIntegerField(
+        _("Free ads limit"), default=10,
+        help_text=_("Number of free listings a seller may post in this category (Jiji-style ads limit)."),
+    )
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
 
     def __str__(self):

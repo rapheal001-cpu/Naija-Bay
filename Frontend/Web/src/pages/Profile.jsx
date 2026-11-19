@@ -6,6 +6,10 @@ import { useFetchOtherUserData, useFetchUserData } from '../hooks/UseQuery.js';
 import { removeOtherUser, setOtherUser, setUser } from '../slice/UserSlice.js';
 import ProfileNotFound from '../components/UserComponents/ProfileNotFound.jsx';
 import SkeletonProfile from '../skeletons/skeletonProfile.jsx';
+import FeedbackSection from '../components/JijiComponents/FeedbackSection.jsx';
+import VerifiedIdCard from '../components/JijiComponents/VerifiedIdCard.jsx';
+import SellerTools from '../components/JijiComponents/SellerTools.jsx';
+import SafeDealPanel from '../components/JijiComponents/SafeDealPanel.jsx';
 
 
 const Profile = () => {
@@ -67,7 +71,23 @@ const Profile = () => {
     }
 
     return profile ? (
-        <ProfileData profile={profile} isOwnProfile={isOwnProfile} />
+        <>
+            <ProfileData profile={profile} isOwnProfile={isOwnProfile} />
+            <div className="mx-auto max-w-5xl space-y-5 px-4 pb-12">
+                <FeedbackSection
+                    sellerId={profile.id}
+                    currentUserId={user?.id}
+                    canReview={!isOwnProfile}
+                />
+                {isOwnProfile && (
+                    <>
+                        <VerifiedIdCard isAuthenticated={isAuthenticated} />
+                        <SellerTools isAuthenticated={isAuthenticated} />
+                        <SafeDealPanel />
+                    </>
+                )}
+            </div>
+        </>
     ) : (
         <ProfileNotFound />
     );

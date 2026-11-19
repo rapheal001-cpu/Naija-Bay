@@ -271,7 +271,7 @@ Restart the server after changing `.env`. In development, emails (verification, 
 - **Login works in Swagger but not in the app:** the browser is mixing `localhost` and `127.0.0.1`. Use one of them for both.
 - **`pip install` complains about `requirements.txt`:** the file is saved as UTF-16. Re-save it as UTF-8.
 - **Seeding is slow:** use `--no-images`.
-- **`vite.config.js` proxy target:** it reads `https//localhost:8000` (typo). It is not used while the app talks to the API through `VITE_BASE_URL`, but fix it if you ever rely on the proxy.
+- **`vite.config.js` proxy target:** it is correctly set to `http://localhost:8000`. It is not used while the app talks to the API through `VITE_BASE_URL`.
 
 ## More documentation
 

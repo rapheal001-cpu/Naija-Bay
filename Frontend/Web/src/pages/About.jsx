@@ -65,12 +65,13 @@ const About = () => {
                         About NaijaBay
                     </span>
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
-                        Nigeria’s marketplace for{' '}
-                        <span className="text-brand">trusted deals</span>
+                        The best place to sell anything to{' '}
+                        <span className="text-brand">real people</span>
                     </h1>
                     <p className="mt-5 text-base sm:text-lg text-gray-500 leading-relaxed max-w-2xl mx-auto">
-                        NaijaBay was built to bridge the gap between buyers and sellers across Nigeria.
-                        We believe finding great products at fair prices should be simple, safe, and local.
+                        Nigeria&apos;s marketplace for new and used goods. Post free ads, chat directly
+                        with buyers, and pay securely with Paystack. Simple, local, and made for the way
+                        Nigerians actually trade.
                     </p>
                     <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                         <Link
@@ -149,6 +150,52 @@ const About = () => {
                                 </p>
                             </div>
                         ))}
+                    </div>
+                </section>
+
+                {/* ── Jiji-style how to sell / how to buy ─────────── */}
+                <section className="grid lg:grid-cols-2 gap-6">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                        <h2 className="text-xl font-black text-slate-800">How to sell on NaijaBay</h2>
+                        <ol className="mt-4 space-y-4">
+                            {[
+                                ['Register', 'Sign up with your email and phone number — a correct phone number helps buyers reach you.'],
+                                ['Make photos of your item', 'Use your smartphone and show the item in its best light. More photos sell faster.'],
+                                ['Press Sell', 'Choose a category, upload photos, write a clear title and full description, set a fair price, then post.'],
+                                ['Answer messages and calls', "Reply quickly to buyers. Your ad goes live after a short review and we'll notify you."],
+                            ].map(([title, text], i) => (
+                                <li key={title} className="flex gap-3">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-black text-brand">{i + 1}</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800">{title}</p>
+                                        <p className="mt-0.5 text-sm text-slate-500 leading-relaxed">{text}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                        <h2 className="text-xl font-black text-slate-800">How to buy on NaijaBay</h2>
+                        <ol className="mt-4 space-y-4">
+                            {[
+                                ['Search for the item', 'Use search and filters to narrow thousands of ads down to exactly what you need.'],
+                                ['Contact the seller', 'Chat on NaijaBay or call — discuss details, negotiate the price, and check feedback.'],
+                                ['Collect or arrange delivery', 'Meet in a public place, or use Safe Deal so your payment is held until you confirm receipt.'],
+                                ['Leave feedback', "Tell others how the deal went. Your review appears on the seller's profile."],
+                            ].map(([title, text], i) => (
+                                <li key={title} className="flex gap-3">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-black text-emerald-600">{i + 1}</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800">{title}</p>
+                                        <p className="mt-0.5 text-sm text-slate-500 leading-relaxed">{text}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ol>
+                        <Link to="/safety" className="mt-5 inline-block text-sm font-bold text-brand hover:underline">
+                            Read our safety tips →
+                        </Link>
                     </div>
                 </section>
 

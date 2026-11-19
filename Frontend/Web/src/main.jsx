@@ -28,6 +28,7 @@ import ChangePassword from '@/pages/ChangePassword';
 import Products from './pages/Products';
 import NetworkError from "@/pages/NetworkError";
 import EditProduct from './pages/EditProduct';
+import Safety from '@/pages/Safety.jsx';
 
 
 const router = createBrowserRouter([
@@ -110,6 +111,10 @@ const router = createBrowserRouter([
     {
         path: '/contact',
         element: <Contact />
+    },
+    {
+        path: '/safety',
+        element: <Safety />
     },
     {
         path: '/settings',

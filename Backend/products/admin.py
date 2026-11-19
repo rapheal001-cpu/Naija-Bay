@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Product, ProductImage, ProductReport, ProductRating, ProductAttribute
+from .models import (
+    Product, ProductImage, ProductReport, ProductRating, ProductAttribute,
+    ProductVideo, Offer, CallbackRequest,
+)
 
 
 class ProductAttributeInline(admin.TabularInline):
@@ -143,3 +146,26 @@ class ProductRatingAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("product", "user")
     list_select_related = ("product", "user")
+
+
+@admin.register(ProductVideo)
+class ProductVideoAdmin(admin.ModelAdmin):
+    list_display = ("product", "title", "created_at")
+    search_fields = ("product__product_name", "title")
+    autocomplete_fields = ("product",)
+
+
+@admin.register(Offer)
+class OfferAdmin(admin.ModelAdmin):
+    list_display = ("product", "buyer", "amount", "status", "expires_at", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("product__product_name", "buyer__username")
+    autocomplete_fields = ("product", "buyer")
+
+
+@admin.register(CallbackRequest)
+class CallbackRequestAdmin(admin.ModelAdmin):
+    list_display = ("product", "user", "phone", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("product__product_name", "user__username")
+    autocomplete_fields = ("product", "user")

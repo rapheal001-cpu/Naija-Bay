@@ -138,6 +138,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "views_count",
             "images_count",
             "active",
+            "is_draft",
+            "moderation_status",
             "sold",
             "promoted",
             "promoted_until",
@@ -159,6 +161,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "views",
             "favorites",
             "active",
+            "moderation_status",
             "promoted",
             "promoted_until",
             "boost_level",
@@ -715,14 +718,16 @@ class ProductImageSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        from NaijaBay.media_uploads import is_own_direct_upload_key
+        from NaijaBay.direct_uploads import is_own_direct_upload_key
 
         image = attrs.get("image")
         image_key = attrs.get("image_key")
         if not image and not image_key:
             raise serializers.ValidationError({"image": "Provide a file or an image_key."})
         if image_key is not None and not is_own_direct_upload_key(
-            image_key.strip(), getattr(self.context.get("request"), "user", None).pk if self.context.get("request") else None
+            image_key.strip(),
+            getattr(self.context.get("request"), "user", None).pk if self.context.get("request") else None,
+            purpose="product-image",
         ):
             raise serializers.ValidationError({"image_key": "This file was not uploaded by you."})
         if image_key:

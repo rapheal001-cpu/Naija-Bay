@@ -11,8 +11,11 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("reference", "buyer", "status", "payment_status", "total", "created_at")
-    list_filter = ("status", "payment_status")
+    list_display = (
+        "reference", "buyer", "status", "payment_status", "is_safe_deal",
+        "escrow_status", "total", "created_at",
+    )
+    list_filter = ("status", "payment_status", "is_safe_deal", "escrow_status")
     search_fields = ("reference", "buyer__email", "buyer__username", "recipient_name")
     readonly_fields = ("reference", "subtotal", "delivery_fee", "total", "currency", "paid_at", "created_at")
     inlines = [OrderItemInline]
